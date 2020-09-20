@@ -1,4 +1,4 @@
-[![](logo.png=200x)]
+[![](logo.png =200x)]
 # Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
 
@@ -32,21 +32,21 @@ The bot allows users to choose between including and excluding the annotations f
 Users can search songs and albums or use other features by navigating the Inline menu which is accessed using the `/start` command. Alternatively, they could navigate directly to the desired feature using the bot's commands:
 - **start**
   start the bot
-- **song_lyrics**
+- **song_lyrics**:
   get song lyrics
-- **album_lyrics**
+- **album_lyrics**:
   get album lyrics
-- **lyrics_language**
+- **lyrics_language**:
   set lyrics language
-- **include_annotations**
+- **include_annotations**:
   include annotations
-- **cancel**
+- **cancel**:
   cancel the current task
-- **stop**
+- **stop**:
   stop and end the conversation
-- **help**
+- **help**:
   more info about the bot
-- **contact_us**
+- **contact_us**:
   send us a message
 
 Users can also perform searches by using the inline search feature. For example:
