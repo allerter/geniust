@@ -1,15 +1,17 @@
 import re
 import logging
-import string_funcs
 import asyncio
 import queue
-import telegraph
 import json
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from socket import timeout
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
+
+import telegraph
+
+import string_funcs
 from constants import TELEGRAPH_TOKEN
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -37,7 +39,9 @@ def fetch(img):
 
 
 async def download_cover_arts(data, q):
-    """downloads covert arts, optimizing threads and avoids uploading the same pic more than once"""
+    """downloads covert arts, optimizing threads.
+    Avoids uploading the same pic more than once.
+    """
     all_pics = []
     for song in data['songs']:
         img = song['image']
@@ -93,10 +97,12 @@ def create_album_songs(account, data, cover_arts, user_data):
         if song['description']:
             lyrics = f'{song["description"]}\n\n{lyrics}'
         # place covert art in page
-        # TODO: compare images to avoid placing pics that have a higher resolution available
+        # TODO: compare images to avoid placing pics
+        # that have a higher resolution available
         cover_art = cover_arts[i]
         cover_art = cover_art if type(cover_art) is str else cover_arts[cover_art]
-        lyrics = f'<figure><img src="{cover_art}"><figcaption>{title}</figcaption></figure><br>{lyrics}'
+        caption = f'<figcaption>{title}</figcaption>'
+        lyrics = f'<figure><img src="{cover_art}">{caption}</figure><br>{lyrics}'
 
         # set line breaks for HTML
         lyrics = lyrics.replace('\n', '<br>')
@@ -133,10 +139,9 @@ def create_album_songs(account, data, cover_arts, user_data):
 
 
 def create_pages(user_data, data):
-    '''creates telegraph page of an album by creating pages for all songs, and a tracklist page
-    containing links to all the other pages.
+    """creates telegraph page of an album
     Returns the link to the final page.
-    '''
+    """
     # download cover arts async
     q = queue.Queue()
     new_loop = asyncio.new_event_loop()
@@ -155,12 +160,17 @@ def create_pages(user_data, data):
     if data['album_description']:
         page_text = f'{data["album_description"]}\n\nSongs:\n'
     # put the links in an HTML list
-    links = ''.join([f'<li><a href="{song_link.encode().decode()}">{song_title}</a></li>' for song_link, song_title in song_links])
+    links = ''.join(
+        [f'<li><a href="{song_link.encode().decode()}">{song_title}</a></li>'
+        for song_link, song_title in song_links]
+    )
+
     page_text = f'{page_text}<ol>{links}</ol>'
 
     # add album cover art to the album post
     album_art = cover_arts[-1]
-    page_text = f'<figure><img src="{album_art}"><figcaption>{data["album_title"]}</figcaption></figure>{page_text}'
+    caption = f'<figcaption>{data["album_title"]}</figcaption>'
+    page_text = f'<figure><img src="{album_art}">{caption}</figure>{page_text}'
 
     # set line breaks for HTML
     page_text = page_text.replace('\n', '<br>')
@@ -176,7 +186,10 @@ def create_pages(user_data, data):
 
 def test(json_file, lyrics_language, include_annotations):
     logging.getLogger(__name__).setLevel(logging.DEBUG)
-    user_data = {'lyrics_lang': lyrics_language, 'include_annotations': include_annotations}
+    user_data = {
+        'lyrics_lang': lyrics_language,
+        'include_annotations': include_annotations
+    }
     with open(json_file, 'r') as f:
         data = json.loads(f.read())
     print(create_pages(user_data=user_data, data=data))

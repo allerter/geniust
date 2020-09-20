@@ -1,8 +1,9 @@
 import re
-from zipfile import (ZipFile, ZIP_DEFLATED)
+from zipfile import ZipFile, ZIP_DEFLATED
 from io import BytesIO
-import string_funcs
 import json
+
+import string_funcs
 
 
 def create_zip(data, user_data):
@@ -58,7 +59,10 @@ def create_zip(data, user_data):
 def test(json_file, lyrics_language, include_annotations):
     with open(json_file) as f:
         data = json.load(f)
-    user_data = {'lyrics_lang': lyrics_language, 'include_annotations': include_annotations}
+    user_data = {
+        'lyrics_lang':lyrics_language,
+        'include_annotations': include_annotations
+    }
     file = create_zip(data, user_data)
     with open('test.zip', 'wb') as f:
         f.write(file.getvalue())

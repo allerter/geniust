@@ -1,3 +1,7 @@
+import re
+from io import BytesIO
+import json
+
 import reportlab
 from reportlab.platypus import Paragraph, Spacer, Image, PageBreak
 from reportlab.platypus.tableofcontents import TableOfContents
@@ -9,11 +13,9 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from rtl import reshaper
 from bidi.algorithm import get_display
-import re
-from io import BytesIO
 import requests
+
 import string_funcs
-import json
 
 reportlab.rl_config.TTFSearchPath.append(r'Fonts')
 font_regular = 'Regular'
@@ -51,8 +53,10 @@ class MyDocTemplate(BaseDocTemplate):
         BaseDocTemplate.__init__(self, filename, **kw)
         frameT = Frame(self.leftMargin, self.bottomMargin,
                        self.width, self.height, id='normal')
-        self.addPageTemplates([PageTemplate(id='First', frames=frameT, pagesize=self.pagesize),
-                               PageTemplate(id='Later', frames=frameT, pagesize=self.pagesize)])
+        self.addPageTemplates(
+            [PageTemplate(id='First', frames=frameT, pagesize=self.pagesize),
+             PageTemplate(id='Later', frames=frameT, pagesize=self.pagesize)]
+        )
 
     def afterFlowable(self, flowable):
         """adds song title to bookmarks and the TOC"""
@@ -91,9 +95,15 @@ def get_farsi_text(text, long_text=False):
 
 
 def create_pdf(data, user_data):
-    """creates a PDF file from the data applyting user_data, and returns an in-memory file"""
+    """creates a PDF file from the data"""
     bio = BytesIO()
-    doc = MyDocTemplate(bio, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    doc = MyDocTemplate(
+        bio,
+        rightMargin=72,
+        leftMargin=72,
+        topMargin=72,
+        bottomMargin=18
+    )
     Story = []
     check_char = re.compile(r'[^\x00-\x7F]')  # Check for Non-English chars
     # Title
@@ -111,11 +121,15 @@ def create_pdf(data, user_data):
         album_artist = get_farsi_text(album_title[:sep - 1])
         album_title = get_farsi_text(album_title[sep + 1:])
         translation = True
-    album_artist = f'<font name="{font_persian if persian else font_regular}" size="{25 if len(album_title) < 20 else 20}">{album_artist}</font>'
+    font_name = f'name="{font_persian if persian else font_regular}"'
+    font_size = f'size="{25 if len(album_title) < 20 else 20}"'
+    album_artist = f'<font {font_name} {font_size}>{album_artist}</font>'
     Story.append(Paragraph(album_artist, styles['Titles']))
     Story.append(Spacer(1, 12))
 
-    album_title = f'<font name="{font_persian if persian else font_regular}" size="{40 if len(album_title) < 20 else 30}">{album_title}</font>'
+    font_name = f'name="{font_persian if persian else font_regular}"'
+    font_size = f'size="{40 if len(album_title) < 20 else 30}"'
+    album_title = f'<font {font_name} {font_size}>{album_title}</font>'
     Story.append(Paragraph(album_title, styles["Titles"]))
     Story.append(Spacer(1, 50))
     # Image
@@ -131,8 +145,16 @@ def create_pdf(data, user_data):
         Story.append(Spacer(1, 20))
         biography = get_farsi_text(data['album_description'])
         font = font_persian if check_char.search(biography) else font_regular
-        Story.append(Paragraph(biography, ParagraphStyle(name='Biography', fontName=font, leading=15,
-                                                         embeddedHyphenation=1, alignment=4, fontSize=14,)))
+        Story.append(Paragraph(
+            biography,
+            ParagraphStyle(
+                name='Biography',
+                fontName=font,
+                leading=15,
+                embeddedHyphenation=1,
+                alignment=4,
+                fontSize=14,))
+        )
         Story.append(page_break)
 
     # Tracklist TODO
@@ -165,8 +187,13 @@ def create_pdf(data, user_data):
         Story.append(Paragraph(title, styles['Songs']))
         Story.append(Spacer(1, 50))
         # format annotations
-        lyrics = string_funcs.format_annotations(lyrics, song['annotations'], include_annotations,
-                                                 format_type='pdf', lyrics_language=lyrics_language)
+        lyrics = string_funcs.format_annotations(
+            lyrics,
+            song['annotations'],
+            include_annotations,
+            format_type='pdf',
+            lyrics_language=lyrics_language
+        )
         # lyrics
         lyrics = string_funcs.format_language(lyrics, lyrics_language)
         lyrics = get_farsi_text(lyrics).replace('\n', '<br/>')
