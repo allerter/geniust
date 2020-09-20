@@ -1,4 +1,5 @@
 <img src="logo.png" width="200"/>
+
 # Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
 
@@ -71,7 +72,7 @@ The bot has the following environment variables:
 - **SERVER_PORT**:
   port of the server where the bot operates on (used for the webhook).
 - **SERVER_ADDRESS**:
-  The address of the server (Used on Heroku to keep bot alive).
+  The address of the server (used for the webhook).
 - **TELETHON_API_ID**:
   A Telegram API ID.
 - **TELETHON_API_HASH**:
