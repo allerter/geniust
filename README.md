@@ -1,4 +1,5 @@
-# [![image](logo.png)]
+[![image](logo.png)]
+# Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
 
 ## Table of Contents
