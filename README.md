@@ -1,4 +1,4 @@
-[![](logo.png =200x)]
+<img src="logo.png" width="200"/>
 # Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
 
