@@ -1,0 +1,33 @@
+﻿◻️ Welcome to the Genius T bot!
+Genius T offers the following services:
+▪️Getting song and album lyrics from Genius
+▪️Customizing lyrics to include annotations and removing English/Non-English characters from lyrics
+▪️Getting album lyrics in PDF, ZIP or TELEGRA.PH pages (see below for more info)
+
+🔶 You can search for song lyrics using inline search too! Genius T will automatically apply your customizations.
+
+The bot has a menu with an InlineKeyboard that can be accessed using /start. But the commands below are there for convenience.
+➖➖ Available commands ➖➖
+/song_lyrics - search for song lyrics
+/album_lyrics use - get album lyrics
+/lyrics_language - set the language of the lyrics
+/include_annotations - include annotations or not
+/cancel - cancel the current task
+/stop - stop and end the conversation
+/help - gets you this message
+/contact_us - send us a message
+
+➖➖ Inline Mode ➖➖
+Normally inline mode will look for songs. But if you want to search album lyrics, just add a "@" at the end of your search. For example:
+
+Searching songs:
+<code>@genius_the_bot some title</code>
+
+Searching albums:
+<code>@genius_the_bot some title @</code>
+
+➖➖ Album Formats ➖➖
+User customizations (including annotations and lyrics language) are automatically applied to the provided lyrics.
+▪️ PDF: works fine with English and Persian (languages with Arabic alphabet) songs.
+▪️ ZIP: a zip file contatining text files of song lyrics. Includations are seperated using <code>!--!</code> and <code>!__!</code> identifiers specifing beginning and ending of each annotation respectively.
+▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
