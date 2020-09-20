@@ -1,4 +1,4 @@
-[![image](logo.png)]
+[![](logo.png=200x)]
 # Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
 
@@ -30,15 +30,24 @@ The bot allows users to choose between including and excluding the annotations f
 
 ### Telegram Features
 Users can search songs and albums or use other features by navigating the Inline menu which is accessed using the `/start` command. Alternatively, they could navigate directly to the desired feature using the bot's commands:
-- start - start the bot
-- song_lyrics - get song lyrics
-- album_lyrics - get album lyrics
-- lyrics_language - set lyrics language
-- include_annotations - include annotations
-- cancel - cancel the current task
-- stop - stop and end the conversation
-- help - more info about the bot
-- contact_us - send us a message
+- **start**
+  start the bot
+- **song_lyrics**
+  get song lyrics
+- **album_lyrics**
+  get album lyrics
+- **lyrics_language**
+  set lyrics language
+- **include_annotations**
+  include annotations
+- **cancel**
+  cancel the current task
+- **stop**
+  stop and end the conversation
+- **help**
+  more info about the bot
+- **contact_us**
+  send us a message
 
 Users can also perform searches by using the inline search feature. For example:
 - searching songs: `@the_bot we will rock you`
@@ -47,14 +56,25 @@ Users can also perform searches by using the inline search feature. For example:
 
 ## Requirements
 The bot has the following environment variables:
-- BOT_TOKEN: Telegram bot token
-- DATABASE_URL: URL of the database to connect to and save user customizations.
-- TELEGRAPH_TOKEN: Telegraph token used to upload songs/albums on Telegraph.
-- GENIUS_TOKEN: Genius token used to perform searches and scrape lyrics from Genius.
-- ANNOTATIONS_TELEGRAM_CHANNEL: Username of the channel where the bot uploads the annotations (the string session at the bottom has to be an admin in the channel).
-- DEVELOPERS: A list of Telegram IDs which will be notified when the bot faces an error.
-- SERVER_PORT: port of the server where the bot operates on (used for the webhook).
-- SERVER_ADDRESS: The address of the server (Used on Heroku to keep bot alive).
-- TELETHON_API_ID: A Telegram API ID.
-- TELETHON_API_HASh: A Telegram API hash.
-- TELETHON_SESSION_STRING: A Telegram session string used to upload annotations faster.
+- **BOT_TOKEN**:
+  Telegram bot token
+- **DATABASE_URL**:
+  URL of the database to connect to and save user customizations.
+- **TELEGRAPH_TOKEN**:
+  Telegraph token used to upload songs/albums on Telegraph.
+- **GENIUS_TOKEN**:
+  Genius token used to perform searches and scrape lyrics from Genius.
+- **ANNOTATIONS_TELEGRAM_CHANNEL**:
+  Username of the channel where the bot uploads the annotations (the string session at the bottom has to be an admin in the channel).
+- **DEVELOPERS**:
+  A list of Telegram IDs which will be notified when the bot faces an error.
+- **SERVER_PORT**:
+  port of the server where the bot operates on (used for the webhook).
+- **SERVER_ADDRESS**:
+  The address of the server (Used on Heroku to keep bot alive).
+- **TELETHON_API_ID**:
+  A Telegram API ID.
+- **TELETHON_API_HASH**:
+  A Telegram API hash.
+- **TELETHON_SESSION_STRING**:
+  A Telegram session string used to upload annotations faster.
