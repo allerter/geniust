@@ -60,7 +60,7 @@ def test(json_file, lyrics_language, include_annotations):
     with open(json_file) as f:
         data = json.load(f)
     user_data = {
-        'lyrics_lang':lyrics_language,
+        'lyrics_lang': lyrics_language,
         'include_annotations': include_annotations
     }
     file = create_zip(data, user_data)
