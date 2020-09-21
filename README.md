@@ -1,4 +1,4 @@
-<img src="logo.png" width="200" align="center"/>
+<h1 align="center"><img src="logo.png" width="200" align="center"/>Genius T</h1>
 
 # Genius T
 A Telegram bot that provides song and album lyrics along with their annotations on Genius.
