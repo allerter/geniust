@@ -1,18 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# This program is dedicated to the public domain under the MIT license.
-
 """
 Main script of the bot which contains most of the functions.
 """
+import os
+import logging
+import traceback
+import sys
+import threading
 
-from telegram import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    InlineQueryResultArticle,
-    InputTextMessageContent
-)
 from telegram.ext import (
+    Defaults,
     Updater,
     CommandHandler,
     MessageHandler,
@@ -21,56 +17,39 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler
 )
-from telegram.constants import MAX_MESSAGE_LENGTH
-from telegram.utils.helpers import mention_html, create_deep_linked_url
-from telegram.ext.dispatcher import run_async
-from telegram.error import BadRequest, TimedOut, NetworkError
+
+from telegram import Bot
+from telegram import InlineKeyboardButton as IButton
+from telegram import InlineKeyboardMarkup as IBKeyboard
+from telegram.utils.helpers import mention_html
 from tornado.web import url, RequestHandler
 from telegram.utils.webhookhandler import WebhookServer
-from bs4 import BeautifulSoup
-import psycopg2
 import tornado.ioloop
 import tornado.web
-import requests
 
-import string_funcs
-import api
-from zip_album import create_zip
-from pdf import create_pdf
-from lyrics_to_telegraph import create_pages
+from handlers import (
+    album,
+    artist,
+    song,
+    customize,
+    inline_query
+)
 from constants import (
     DEVELOPERS,
+    END, LYRICS_LANG, BOT_LANG, INCLUDE, MAIN_MENU, SELECT_ACTION,
     BOT_TOKEN,
-    GENIUS_TOKEN,
-    DATABASE_URL,
     SERVER_PORT,
-    SERVER_ADDRESS
+    SERVER_ADDRESS,
+    TYPING_ALBUM, TYPING_ARTIST, TYPING_SONG, TYPING_FEEDBACK,
 )
-
-from urllib.parse import urlparse
-from uuid import uuid4
-import logging
-import traceback
-import sys
-import re
-import threading
+from constants import username
 
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
-logging.getLogger('telethon').setLevel(logging.CRITICAL)
-logger = logging.getLogger(__name__)
-
-# Shortcut for ConversationHandler.END
-END = ConversationHandler.END
-
-# State definitions for conversation
-(SELECT_ACTION, GENIUS, TELEGRAPH, CHECK_GENIUS_ALBUM, CUSTOMIZE_GENIUS, TYPING,
- OPTION1, OPTION2, OPTION3, OPTION4, IDENTIFIER, AUTHOR_NAME, AUTHOR_URL, ANNOTATIONS,
- LYRICS_LANG, START_OVER, INCLUDE, TYPING_ALBUM, STATISTICS, CURRENT_LEVEL,
- CREATE_ACCOUNT, CREATE_PAGES, CUSTOMIZE_TELEGRAPH, LOGIN, DESCRIPTION, SELF,
- CHECK_GENIUS_SONG, TYPING_SONG, TYPING_ACCOUNT, DOWNLOAD_ALBUM) = range(30)
+logging.getLogger('telethon').setLevel(logging.ERROR)
+logger = logging.getLogger('geniust')
 
 
 class PostHandler(RequestHandler):
@@ -101,758 +80,67 @@ class WebhookThread(threading.Thread):
         self.webhooks.shutdown()
 
 
-def database(chat_id=None, action='select', data=None, update=None, table='data'):
-    """all the database requests go through here"""
-    res = ''
-    if action == 'create':
-        if table == 'data' or chat_id:
-            data = [data['chat_id'], data['include_annotations'], data['lyrics_lang']]
-            data = f"""({data[0]}, {data[1]}, '{data[2]}')"""
-        query = f"""INSERT INTO {table} VALUES {data};"""
-    elif action == 'update':
-        query = f"UPDATE data SET {update} = %s WHERE chat_id = {chat_id}"
-    elif action == 'select':
-        if table == 'data' or chat_id:
-            query = f"""SELECT * FROM data WHERE chat_id = {chat_id};"""
+def main_menu(update, context):
+    """Genius main menu.
+    Displays song lyrics, album lyrics, and customize output.
 
-    # connect to database
-    with psycopg2.connect(DATABASE_URL, sslmode='require') as con:
-        with con.cursor() as cursor:
-            if action == 'update':
-                cursor.execute(query, (data, ))
-            else:
-                cursor.execute(query)
-            if action == 'select':
-                res = cursor.fetchall()
-    if res and table == 'data':
-        res = res[0]
-        res = {'chat_id': res[0], 'include_annotations': res[1], 'lyrics_lang': res[2]}
-    return res
-
-
-def create_user(user_data):
-    """Check for user in database, and create one if there's none"""
-    chat_id = user_data['chat_id']
-
-    res = database(chat_id=chat_id, action='select')
-    if res:
-        user_data.update(res)
-    else:
-        # create user data with default preferences
-        data = {}
-        data['lyrics_lang'] = 'English + Non-English'
-        data['include_annotations'] = False
-        user_data.update(data)
-        database(chat_id=chat_id, action='create', data=user_data)
-
-
-@run_async
-def genius(update, context):
-    """Genius main menu to get song lyrics, album lyrics, and customize output"""
-    context.user_data[CURRENT_LEVEL] = SELF
+    """
     context.user_data['command'] = False
     if update.message:
         chat_id = update.message.chat.id
         context.user_data['chat_id'] = chat_id
     else:
-        chat_id = context.user_data['chat_id'] = update.callback_query.message.chat.id
-    # check if user data is present
-    if not context.user_data.get('lyrics_lang'):
-        create_user(context.user_data)
+        chat_id = update.callback_query.message.chat.id
+        context.user_data['chat_id'] = chat_id
+
     text = 'What would you like to do?'
-    buttons = [[
-        InlineKeyboardButton(text='Song Lyrics',
-                             callback_data=str(CHECK_GENIUS_SONG)),
-        InlineKeyboardButton(text='Album Lyrics',
-                             callback_data=str(CHECK_GENIUS_ALBUM))
-    ],
+
+    buttons = [
         [
-        InlineKeyboardButton(text='Customize Lyrics',
-                             callback_data=str(CUSTOMIZE_GENIUS))
-    ],
+            IButton('Album', str(TYPING_ALBUM)),
+            IButton('Artist', str(TYPING_ARTIST)),
+            IButton('Song', str(TYPING_SONG)),
+
+        ],
+
         [
-        InlineKeyboardButton(text='Done',
-                             callback_data=str(END))
-    ]]
-    keyboard = InlineKeyboardMarkup(buttons)
+            IButton('Customize Lyrics', str(LYRICS_LANG)),
+            IButton('Change Language', str(BOT_LANG))
+        ],
+
+    ]
+    keyboard = IBKeyboard(buttons)
+
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+        update.callback_query.edit_message_text(
+            text=text,
+            reply_markup=keyboard)
     else:
-        context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=keyboard)
+
     return SELECT_ACTION
 
 
-@run_async
 def stop(update, context):
     """End Conversation by command"""
     update.message.reply_text('Stopped.')
     return END
 
 
-@run_async
-def inline_query(update, context):
-    """Handle inline queries and /start that has arguments."""
-    context.user_data[CURRENT_LEVEL] = GENIUS
-    genius_api = api.Genius(GENIUS_TOKEN)
-    if update.inline_query:
-        text = update.inline_query.query
-        text = text.split('@')
-        if text[0] == '':
-            text = 'HOW TO SEARCH'
-            description = 'Short tutorial on searching songs and albums'
-            answer_text = ('Normally inline mode will look for songs.'
-                'But if you want to search album lyrics,'
-                'just add a "@" at the end of your search. For example:\n'
-                'Searching songs:\n<code>@genius_the_bot some title</code>\n'
-                'Searching albums:\n<code>@genius_the_bot some title @</code>')
-            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(
-                text='Search...', switch_inline_query_current_chat='')]]
-            )
-            answer = InlineQueryResultArticle(
-                id=uuid4(),
-                title=text,
-                description=description,
-                input_message_content=InputTextMessageContent(answer_text,
-                                                              parse_mode='HTML'),
-                reply_markup=keyboard
-            )
-            update.inline_query.answer([answer])
-            return END
-        if len(text) == 1:
-            # length of one means no '@' in query, so the bot will search songs
-            json_search = genius_api._make_api_request((text, 'search'))
-            n_hits = min(5, len(json_search['hits']))
-            hits = []
-            for i in range(n_hits):
-                search_hit = json_search['hits'][i]['result']
-                found_song = search_hit['title']
-                found_artist = search_hit['primary_artist']['name']
-                text = string_funcs.format_title(found_artist, found_song)
-                song_id = search_hit['id']
-                song_url = search_hit['url']
-                description = 'Translation' if 'Genius' in found_artist else ''
-                answer_text = f'<a href="{song_url}">Song page on Genius</a>'
-                button_url = create_deep_linked_url(
-                    context.bot.get_me().username,
-                    str(song_id)
-                )
-                keyboard = InlineKeyboardMarkup(
-                    [[InlineKeyboardButton(text='Get lyrics',
-                                           url=button_url)],
-                    [InlineKeyboardButton(text='Search...',
-                                          switch_inline_query_current_chat='')]]
-                )
-                answer = InlineQueryResultArticle(
-                    id=uuid4(),
-                    title=text,
-                    thumb_url=search_hit['song_art_image_thumbnail_url'],
-                    input_message_content=InputTextMessageContent(
-                        answer_text,
-                        parse_mode='HTML'),
-                    reply_markup=keyboard,
-                    description=description
-                )
-                # It's possible to provide results that are captioned photos
-                # of the song cover art, but that requires using InlineQueryResultPhoto
-                # and user might not be able to choose the right song this way,
-                # since all they get is only the cover arts of the hits.
-                # answer = InlineQueryResultPhoto(id=uuid4(),
-                #    photo_url=search_hit['song_art_image_url'],
-                #    thumb_url=search_hit['song_art_image_thumbnail_url'],
-                #    reply_markup=keyboard, description=description)
-                hits.append(answer)
-        else:
-            json_search = genius_api.search_genius_web(text)
-            hits = []
-            for i, hit in enumerate(json_search['sections'][4]['hits']):
-                album = hit['result']
-                album_url = album['url']
-                album_id = album['id']
-                artist_id = album['artist']['id']
-                # can't use string_funcs.format_title here
-                # because of the album name in response
-                if 'Genius' in album['name_with_artist']:
-                    text = album['name']
-                    description = 'Translation'
-                else:
-                    text = album['full_title'].split(' by ')
-                    text = f'{text[1]} - {text[0]}'
-                    description = ''
-                answer_text = f'<a href="{album_url}">Album page on Genius</a>'
-                button_url_1 = create_deep_linked_url(
-                    context.bot.get_me().username,
-                    str(f'{artist_id}_{album_id}_{OPTION1}'))
-                button_url_2 = create_deep_linked_url(
-                    context.bot.get_me().username,
-                    str(f'{artist_id}_{album_id}_{OPTION2}'))
-                button_url_3 = create_deep_linked_url(
-                    context.bot.get_me().username,
-                    str(f'{artist_id}_{album_id}_{OPTION3}'))
-                keyboard = InlineKeyboardMarkup(
-                    [[InlineKeyboardButton(text='PDF', url=button_url_1)],
-                    [InlineKeyboardButton(text='ZIP', url=button_url_2)],
-                    [InlineKeyboardButton(text='TELEGRA.PH', url=button_url_3)],
-                    [InlineKeyboardButton(text='Search...',
-                                          switch_inline_query_current_chat='')]]
-                )
-                answer = InlineQueryResultArticle(
-                    id=uuid4(),
-                    title=text,
-                    thumb_url=album['cover_art_thumbnail_url'],
-                    input_message_content=InputTextMessageContent(
-                        answer_text,
-                        parse_mode='HTML'),
-                    reply_markup=keyboard, description=description
-                )
-
-                hits.append(answer)
-        if len(hits) == 0:
-            button_url = create_deep_linked_url(context.bot.get_me().username)
-            keyboard = keyboard = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(text='Start a chat', url=button_url)]]
-            )
-            answer_text = f'Search in a chat with the bot:'
-            hits = [InlineQueryResultArticle(
-                id=uuid4(), title='Nothing Found...',
-                input_message_content=InputTextMessageContent(answer_text),
-                reply_markup=keyboard)
-            ]
-        update.inline_query.answer(hits)
-    # this part is for when users who have used inline queries,
-    # click /start to get song or album lyrics
-    elif context.args:
-        data = context.args[0].split('_')
-        context.user_data['chat_id'] = update.message.chat.id
-        if not context.user_data.get('lyrics_lang'):
-            create_user(context.user_data)
-        # song data: {song_id}
-        # album data: {artist_id}_{album_id}_{OPTION}
-        if len(data) == 1:
-            p = threading.Thread(target=print_lyrics,
-                                 args=(context.bot,
-                                       context.user_data,
-                                       int(data[0]),
-                                       genius_api,))
-            p.start()
-            p.join()
-        else:
-            artist_id, album_id, album_format = [int(x) for x in data]
-            found = False
-            page = 1
-            while not found:
-                res = genius_api._make_public_request(
-                    f'artists/{artist_id}/albums',
-                    page
-                )
-                for album in res['albums']:
-                    if int(album['id']) == album_id:
-                        album_url = album['url']
-                        found = True
-                        break
-                else:
-                    page += 1
-            p = threading.Thread(
-                target=get_album,
-                args=(GENIUS_TOKEN, album_url,
-                      update.message, context.user_data,
-                      album_format, context.bot,))
-            p.start()
-            p.join()
-    return END
-
-
-@run_async
-def check_album_link(update, context):
-    """Checks album link or return search results, or prompt user for format"""
-    context.user_data[CURRENT_LEVEL] = GENIUS
-    genius_api = api.Genius(GENIUS_TOKEN)
-    # the case where user enters the function by message which is either
-    # the /album_lyrics command, sending song link, or a title to search.
-    if update.message:
-        text = update.message.text
-        chat_id = update.message.chat.id
-        # if user enters by command
-        if text == '/album_lyrics':
-            if not context.user_data.get('lyrics_lang'):
-                chat_id = update.message.chat.id
-                res = database(chat_id=chat_id, action='select')
-                context.user_data.update(res)
-            update.message.reply_text('Send me an album link or album name to search.')
-            return TYPING_ALBUM
-        parsed_url = urlparse(text)
-        # if the message is a link
-        if parsed_url[0] and parsed_url[1]:
-            page = requests.get(text)
-            html = BeautifulSoup(page.text, "html.parser")
-            image_link = str(html.find_all("meta"))
-            # check album validy by finding album_id from meta tag
-            m = re.search(r'{"name":"album_id","values":\["([0-9]+)', image_link)
-            if not m:
-                update.message.reply_text('Invalid link.\nSend a new link.')
-                return TYPING_SONG
-        # the message is a name (not a valid link)
-        else:
-            json_search = genius_api.search_genius_web(text)
-            hits = []
-            for i, hit in enumerate(json_search['sections'][4]['hits']):
-                album = hit['result']
-                album_id = album['id']
-                artist_id = album['artist']['id']
-                if 'Genius' in album['name_with_artist']:
-                    text = album['name']
-                else:
-                    text = album['full_title'].split(' by ')
-                    text = f'{text[1]} - {text[0]}'
-                hits.append([InlineKeyboardButton(
-                    text=text,
-                    callback_data=str(f'{artist_id}_{album_id}'))]
-                )
-            hits.append([InlineKeyboardButton(text='None', callback_data=str(END))])
-            keyboard = InlineKeyboardMarkup(hits)
-            update.message.reply_text(text='Choose an album', reply_markup=keyboard)
-            return CHECK_GENIUS_ALBUM
-    # user has chosen one of the hits or selected Album Lyrics from the main menu
-    elif update.callback_query:
-        data = update.callback_query.data.split('_')
-        # user entering Album Lyrics
-        if len(data) == 1:
-            update.callback_query.answer()
-            msg = 'Send me an album link or album name to search.'
-            update.callback_query.edit_message_text(text=msg)
-            return TYPING_ALBUM
-        # user has selected a hit
-        else:
-            artist_id, album_id = [int(x) for x in data]
-            found = False
-            page = 1
-            while not found:
-                res = genius_api._make_public_request(
-                    f'artists/{artist_id}/albums',
-                    page
-                )
-                for album in res['albums']:
-                    if int(album['id']) == album_id:
-                        text = album['url']
-                        found = True
-                        break
-                else:
-                    page += 1
-
-            chat_id = update.callback_query.message.chat.id
-            context.bot.delete_message(
-                chat_id=chat_id,
-                message_id=update.callback_query.message.message_id
-            )
-
-    buttons = [[
-        InlineKeyboardButton(text='PDF', callback_data=str(OPTION1)),
-    ],
-        [
-        InlineKeyboardButton(text='ZIP', callback_data=str(OPTION2))
-    ],
-        [
-        InlineKeyboardButton(text='TELEGRA.PH', callback_data=str(OPTION3))
-    ]]
-    keyboard = InlineKeyboardMarkup(buttons)
-    context.bot.send_message(
-        text='Choose a format',
-        chat_id=chat_id,
-        reply_markup=keyboard
-    )
-    context.user_data['album_url'] = text
-    return DOWNLOAD_ALBUM
-
-
-@run_async
-def get_album_format(update, context):
-    """Create a thread to download the album"""
-    message = update.callback_query.message
-    album_format = int(update.callback_query.data)
-    p = threading.Thread(
-        target=get_album,
-        args=(GENIUS_TOKEN, context.user_data['album_url'],
-              message, context.user_data, album_format, context.bot,))
-    p.start()
-    p.join()
-    return END
-
-
-def get_album(GENIUS_TOKEN, link, message, user_data, album_format, bot):
-    """Download and send the album to the user in the selected format"""
-    chat_id = message.chat.id
-    genius_api = api.Genius(GENIUS_TOKEN)
-    text = 'Downloading album...'
-
-    # try clause for the callback query users and
-    # the except clause for inline query users
-    try:
-        progress = bot.edit_message_text(chat_id=chat_id, text=text,
-                                         message_id=message.message_id)
-    except BadRequest:
-        progress = bot.send_message(chat_id=chat_id, text=text,
-                                    message_id=message.message_id,)
-
-    # get album
-    album = api.async_album_search(api=genius_api, link=link,
-                                   include_annotations=user_data['include_annotations'])
-    # result should be a dict if the operation was successful
-    if not isinstance(album, dict):
-        text = "Couldn't get the album."
-        bot.send_message(chat_id=chat_id, text=text)
-        logger.critical(f"Couldn't get album: {album}")
-        return END
-
-    # convert
-    text = 'Converting to specified format...'
-    bot.edit_message_text(chat_id=progress.chat.id,
-                          message_id=progress.message_id, text=text)
-    if album_format == OPTION1:  # PDF
-        file = create_pdf(album, user_data)
-    elif album_format == OPTION2:  # ZIP
-        file = create_zip(album, user_data)
-    elif album_format == OPTION3:  # TELEGRA.PH
-        link = create_pages(user_data=user_data, data=album)
-        bot.send_message(chat_id=chat_id, text=link)
-
-    # send the file
-    if album_format == OPTION1 or album_format == OPTION2:
-        i = 1
-        while True:
-            if i != 0 and i < 6:
-                try:
-                    bot.send_document(chat_id=chat_id, document=file,
-                                      caption=file.name[:-4], timeout=20,)
-                except (TimedOut, NetworkError):
-                    i += 1
-                else:
-                    i = 0
-            if i == 0:
-                break
-    text = "Here's the album:"
-    bot.edit_message_text(chat_id=progress.chat.id,
-                          message_id=progress.message_id, text=text)
-
-
-def print_lyrics(bot, user_data, song_id, genius_api, message_id=None):
-    """retrieve and send song lyrics to user"""
-    if user_data.get('lyrics_lang'):
-        lyrics_language = user_data['lyrics_lang']
-        include_annotations = user_data['include_annotations']
-    else:
-        # default settings for new users (probably unnecessary)
-        lyrics_language = 'English + Non-English'
-        include_annotations = False
-    if message_id:
-        bot.edit_message_text(chat_id=user_data['chat_id'],
-                              message_id=message_id, text='getting lyrics...')
-    else:
-        message_id = bot.send_message(
-            chat_id=user_data['chat_id'],
-            text='getting lyrics...')['message_id']
-    json_song = api._API._make_api_request(genius_api, (song_id, 'song'))
-    lyrics = api._API._scrape_song_lyrics_from_url(
-        genius_api,
-        json_song['song']['url'],
-        song_id,
-        include_annotations=include_annotations,
-        telegram_song=True,
-        lyrics_language=lyrics_language)[0]
-
-    # formatting lyrics language
-    lyrics = string_funcs.format_language(lyrics, lyrics_language)
-    for res in re.findall(r'<a[^>]*>(.*[\n]*.*?)</a>', lyrics):
-        lyrics = lyrics.replace(res, string_funcs.format_language(res, lyrics_language))
-    lyrics = lyrics.replace('!--!', '').replace('!__!', '')
-    exp = (r'<(?:\/(?!(?:a|b|br|strong|em|i)>)[^>]*|'
-           r'(?!\/)(?!(?:a\s+[^\s>]+|b|br|strong|em|i)>)[^>]*)>')
-    lyrics = re.sub(exp, '', lyrics)
-    # edit the message for callback query users
-    if message_id:
-        bot.edit_message_text(chat_id=user_data['chat_id'],
-                              message_id=message_id,
-                              text="Here's the lyrics:")
-
-    len_lyrics = len(lyrics)
-    sent = 0
-    i = 0
-    # missing_a = False
-    # link = ''
-    # get_link = re.compile(r'<a[^>]+href=\"(.*?)\"[^>]*>')
-    # this sends the lyrics in messages if it exceeds message length limit
-    # it's possible that the final <a> won't be closed because of slicing the message so
-    # that's dealt with too
-    max_length = MAX_MESSAGE_LENGTH
-    while sent < len_lyrics:
-        text = lyrics[i * max_length: (i * max_length) + max_length]
-        a_start = text.count('<a')
-        a_end = text.count('</a>')
-        if a_start != a_end:
-            a_pos = text.rfind('<a')
-            text = text[:a_pos]
-        bot.send_message(
-            chat_id=user_data['chat_id'],
-            text=text,
-            parse_mode='HTML',
-            disable_web_page_preview=True)
-        sent += len(text)
-        i += 1
-
-
-@run_async
-def check_song(update, context):
-    """Handle incoming song request"""
-    context.user_data[CURRENT_LEVEL] = GENIUS
-    genius_api = api.Genius(GENIUS_TOKEN)
-
-    # user has entered the function through main menu or has selected a hit
-    if update.callback_query:
-        if int(update.callback_query.data) == CHECK_GENIUS_SONG:
-            update.callback_query.answer()
-            msg = 'Send me either a Genius song link, or a title to search'
-            update.callback_query.edit_message_text(msg)
-            return TYPING_SONG
-        else:
-            song_id = int(update.callback_query.data)
-            # get song
-            p = threading.Thread(
-                target=print_lyrics,
-                args=(context.bot, context.user_data, song_id, genius_api,
-                      update.callback_query.message.message_id,))
-            # p.daemon = True
-            p.start()
-            p.join()
-    # user has sent either a song link, a title to search or /song_lyrics
-    elif update.message:
-        context.user_data['chat_id'] = chat_id = update.message.chat.id
-        text = update.message.text
-
-        # user has entered the function using command
-        if text == '/song_lyrics':
-            if not context.user_data.get('lyrics_lang'):
-                res = database(chat_id=chat_id, action='select')
-                context.user_data.update(res)
-            msg = 'Send me either a Genius song link, or a title to search'
-            update.message.reply_text(msg)
-            return TYPING_SONG
-        parsed_url = urlparse(text)
-        # check if the message is a URL
-        if parsed_url[0] and parsed_url[1]:
-            page = requests.get(text)
-            html = BeautifulSoup(page.text, "html.parser")
-            image_link = str(html.find_all("meta"))
-            # check page validity by finding song_id from the meta tag
-            m = re.search(r'{"name":"song_id","values":\["([0-9]+)', image_link)
-            if m:
-                song_id = m.group(1)
-            else:
-                update.message.reply_text('Invalid link.\nSend a new link')
-                return TYPING_SONG
-            # get song
-            p = threading.Thread(
-                target=print_lyrics,
-                args=(context.bot, context.user_data, song_id, genius_api,))
-            # p.daemon = True
-            p.start()
-            p.join()
-        # user has sent a title (which is an invalid link)
-        else:
-            # get <= 10 hits for user input from Genius API search
-            json_search = genius_api._make_api_request((text, 'search'))
-            n_hits = min(10, len(json_search['hits']))
-            buttons = []
-            for i in range(n_hits):
-                search_hit = json_search['hits'][i]['result']
-                found_song = search_hit['title']
-                found_artist = search_hit['primary_artist']['name']
-                text = string_funcs.format_title(found_artist, found_song)
-                buttons.append([InlineKeyboardButton(
-                    text=text,
-                    callback_data=str(search_hit['id']))]
-                )
-
-            buttons.append([InlineKeyboardButton(text='None', callback_data=str(END))])
-            keyboard = InlineKeyboardMarkup(buttons)
-            update.message.reply_text(text='Choose a song', reply_markup=keyboard)
-            return CHECK_GENIUS_SONG
-    return END
-
-
-@run_async
-def customize_genius(update, context):
-    """main menu for lyrics customizations"""
-    context.user_data[CURRENT_LEVEL] = GENIUS
-    chat_id = update.callback_query.message.chat.id
-    buttons = [
-        [InlineKeyboardButton(text='Lyrics Language', callback_data=str(LYRICS_LANG))],
-        [InlineKeyboardButton(text='Annotations', callback_data=str(INCLUDE))],
-        [InlineKeyboardButton(text='Back', callback_data=str(END))],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    include = context.user_data['include_annotations']
-    lyrics_lang = context.user_data['lyrics_lang']
-    text = ('What would you like to customize?'
-            '\nYour customizations will be used for all lyrics requests'
-            ' (songs, albums, and inline searches).'
-            '\nCurrent settings:'
-            f'\nLyrics Language: <b>{lyrics_lang}</b>'
-            f'\nInclude Annotations: <b>{"Yes" if include else "No"}</b>'
-            )
-
-    try:
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=text,
-            reply_markup=keyboard,
-            parse_mode='HTML')
-    except (AttributeError, BadRequest):
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=keyboard,
-            parse_mode='HTML')
-    return SELECT_ACTION
-
-
-@run_async
-def set_lyrics_language(update, context):
-    """Set lyrics language from one of three options."""
-    ud = context.user_data
-    buttons = [
-        [InlineKeyboardButton(
-            text='Only English (ASCII)',
-            callback_data=str(OPTION1))],
-        [InlineKeyboardButton(
-            text='Only non-English (non-ASCII)',
-            callback_data=str(OPTION2))],
-        [InlineKeyboardButton(
-            text='English + non-English',
-            callback_data=str(OPTION3))],
-        [InlineKeyboardButton(
-            text='Back',
-            callback_data=str(END))]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    text = ('What characters would you like to be in the lyrics?'
-            '\nNote that by English I mean ASCII characters. This option is'
-            'useful for languages with non-ASCII alphabet (like Persian and Arabic).')
-    # command
-    if update.message:
-        ud['chat_id'] = chat_id = update.message.chat.id
-        ud['command'] = True
-        if not ud.get('lyrics_lang'):
-            create_user(ud)
-        update.message.reply_text(text, reply_markup=keyboard)
-        return LYRICS_LANG
-    # callback query
-    else:
-        ud[CURRENT_LEVEL] = CUSTOMIZE_GENIUS
-        chat_id = update.callback_query.message.chat.id
-
-    data = int(update.callback_query.data)
-    if data >= OPTION1 and data <= OPTION3:
-        ud = context.user_data
-        if data == OPTION1:
-            ud['lyrics_lang'] = 'English'
-        elif data == OPTION2:
-            ud['lyrics_lang'] = 'Non-English'
-        else:
-            ud['lyrics_lang'] = 'English + Non-English'
-        database(
-            chat_id=chat_id,
-            action='update',
-            data=ud['lyrics_lang'],
-            update='lyrics_lang'
-        )
-        text = f'Updated your preferences.\n{text}'
-        if ud.get('command'):
-            if ud['command']:
-                text = ('Updated your preferences.\n\nCurrent language:'
-                        f'<b>{context.user_data["lyrics_lang"]}</b>')
-                update.callback_query.answer()
-                update.callback_query.edit_message_text(text=text, parse_mode='HTML')
-                return END
-
-    text = f'{text}\n\nCurrent language: <b>{context.user_data["lyrics_lang"]}</b>'
-
-    try:
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=text,
-            reply_markup=keyboard,
-            parse_mode='HTML')
-    except BadRequest:
-        pass
-    return LYRICS_LANG
-
-
-@run_async
-def choose_include_annotations(update, context):
-    """Set whether to include annotations or not"""
-    ud = context.user_data
-
-    buttons = [
-        [InlineKeyboardButton(text='Yes', callback_data=str(OPTION1))],
-        [InlineKeyboardButton(text='No', callback_data=str(OPTION2))],
-        [InlineKeyboardButton(text='Back', callback_data=str(END))]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    text = 'Would you like to include the annotations in the lyrics?'
-
-    # command
-    if update.message:
-        ud['chat_id'] = chat_id = update.message.chat.id
-        ud['command'] = True
-        if not ud.get('lyrics_lang'):
-            create_user(ud)
-        update.message.reply_text(text=text, reply_markup=keyboard)
-        return ANNOTATIONS
-    # callback query
-    else:
-        ud[CURRENT_LEVEL] = CUSTOMIZE_GENIUS
-        chat_id = update.callback_query.message.chat.id
-    # set choice
-    data = int(update.callback_query.data)
-    if data == OPTION1 or data == OPTION2:
-        ud['include_annotations'] = True if data == OPTION1 else False
-        database(
-            chat_id=chat_id,
-            action='update',
-            data=ud['include_annotations'],
-            update='include_annotations'
-        )
-        text = f'Updated your preferences.\n{text}'
-        if ud.get('command'):
-            if ud['command']:
-                include = ud['include_annotations']
-                text = f'{text}\n\nCurrent setting: <b>{"Yes" if include else "No"}</b>'
-                update.callback_query.answer()
-                update.callback_query.edit_message_text(text=text, parse_mode='HTML')
-                return END
-    include = ud['include_annotations']
-    text = f'{text}\n\nCurrent setting: <b>{"Yes" if include else "No"}</b>'
-
-    try:
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=text,
-            reply_markup=keyboard,
-            parse_mode='HTML')
-    except BadRequest:
-        pass
-    return ANNOTATIONS
-
-
-@run_async
-def save_input(update, context):
+def send_feedback(update, context):
     """send user feedback to developers"""
     if update.effective_chat.username:
-        text = f'User: @{update.effective_chat.username}\n'
+        text = (f'User: @{update.effective_chat.username}\n'
+                f'Chat ID: {update.message.chat.id}')
     else:
         text = ('User: '
                 f'<a href={update.effective_user.id}>'
-                f'{update.effective_user.first_name}</a>\n')
+                f'{update.effective_user.first_name}</a>\n'
+                f'Chat ID: {update.message.chat.id}')
     text += update.message.text
     for developer in DEVELOPERS:
         context.bot.send_message(
@@ -865,63 +153,37 @@ def save_input(update, context):
     return END
 
 
-@run_async
 def end_describing(update, context):
     """End conversation altogether or return to upper level"""
-    ud = context.user_data
-    qd = update.callback_query
-    if ud.get(CURRENT_LEVEL) and not update.message:
-        level = ud[CURRENT_LEVEL]
-    else:
-        if qd:
-            context.bot.edit_message_text(text='Canceled.')
-        else:
-            update.message.reply_text('Canceled.')
+    if update.message:
+        update.message.reply_text('canceled.')
         return END
 
-    # if the user entered the conversation using any command except /start
-    if ud.get('command'):
-        if ud['command']:
-            return END
-    # main menu
-    if level == SELF:
-        # if the 'Done' button was clicked, delete the main menu, otherwise
-        # return to main menu
-        keyboards = update.callback_query.message['reply_markup']['inline_keyboard']
-        keyboards = [y['text'] for x in keyboards for y in x]
-        if keyboards[-1] == 'Done':
-            context.bot.delete_message(
-                chat_id=qd.message.chat.id,
-                message_id=qd.message.message_id)
-            return END
-        genius(update, context)
-    # genius main menu
-    elif level == GENIUS:
-        genius(update, context)
+    assert False, "Shouldn't be here"
+    level = context.user_data.get('level', MAIN_MENU + 1)
+
+    if level - 1 == MAIN_MENU:
+        main_menu(update, context)
     # customize genius menu
-    elif level == CUSTOMIZE_GENIUS:
-        customize_genius(update, context)
+    elif level - 1 == 1:
+        customize.customize_menu(update, context)
     return SELECT_ACTION
 
 
-@run_async
 def help_message(update, context):
     """send the /help text to the user"""
-    with open('help.txt', 'r') as f:
+    with open(os.path.join('text', 'help.txt'), 'r') as f:
         text = f.read()
     update.message.reply_html(text)
     return END
 
 
-@run_async
 def contact_us(update, context):
     """prompt the user to send a message"""
-    print(update.message.chat.id)
     update.message.reply_text("Send us what's on your mind :)")
-    return TYPING
+    return TYPING_FEEDBACK
 
 
-@run_async
 def error(update, context):
     """handle errors and alert the developers"""
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
@@ -960,81 +222,122 @@ def error(update, context):
 
 def main():
     """Main function that holds the conversation handlers, and starts the bot"""
-    updater = Updater(BOT_TOKEN, workers=100, use_context=True)
+    updater = Updater(
+        Bot(BOT_TOKEN, defaults=Defaults(parse_mode='html')),
+        workers=20
+    )
+
+    global username
+    logger.debug(username)
+    username = updater.bot.get_me().username
+    from constants import username as un
+    logger.debug(un)
+
     dp = updater.dispatcher
     my_states = [
         CallbackQueryHandler(
-            genius,
-            pattern='^' + str(GENIUS) + '$'),
+            main_menu,
+            pattern='^' + str(MAIN_MENU) + '$'),
         CallbackQueryHandler(
-            check_album_link,
-            pattern='^' + str(CHECK_GENIUS_ALBUM) + '$'),
+            album.display_album,
+            pattern=r'^album_[0-9]+$'),
 
         CallbackQueryHandler(
-            check_song,
-            pattern='^' + str(CHECK_GENIUS_SONG) + '$'),
+            album.display_album_songs,
+            pattern=r'^album_[0-9]+_songs$'),
 
         CallbackQueryHandler(
-            customize_genius,
-            pattern='^' + str(CUSTOMIZE_GENIUS) + '$'),
+            album.display_album_formats,
+            pattern=r'^album_[0-9]+_aio$'),
 
         CallbackQueryHandler(
-            set_lyrics_language,
+            album.thread_get_album,
+            pattern=r'^album_[0-9]+_aio_(pdf|tgf|zip)$'),
+
+        CallbackQueryHandler(
+            artist.display_artist,
+            pattern=r'^artist_[0-9]+$'),
+
+        CallbackQueryHandler(
+            artist.display_artist_albums,
+            pattern=r'^artist_[0-9]+_albums$'),
+
+        CallbackQueryHandler(
+            artist.display_artist_songs,
+            pattern=r'^artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+
+        CallbackQueryHandler(
+            song.display_song,
+            pattern=r'^song_[0-9]+$'),
+
+        CallbackQueryHandler(
+            song.thread_display_lyrics,
+            pattern=r'^song_[0-9]+_lyrics$'),
+
+        CallbackQueryHandler(
+            customize.lyrics_language,
             pattern='^' + str(LYRICS_LANG) + '$'),
 
         CallbackQueryHandler(
-            choose_include_annotations,
+            customize.include_annotations,
             pattern='^' + str(INCLUDE) + '$'),
+
+        CallbackQueryHandler(
+            customize.bot_language,
+            pattern='^' + str(BOT_LANG) + '$'),
     ]
     user_input = {
         TYPING_ALBUM: [MessageHandler(
             Filters.text & (~Filters.command),
-            check_album_link)],
+            album.search_albums)],
+
+        TYPING_ARTIST: [MessageHandler(
+            Filters.text & (~Filters.command),
+            artist.search_artists)],
 
         TYPING_SONG: [MessageHandler(
             Filters.text & (~Filters.command),
-            check_song)],
+            song.search_songs)],
 
-        TYPING: [MessageHandler(
+        TYPING_FEEDBACK: [MessageHandler(
             Filters.text & (~Filters.command),
-            save_input)],
+            send_feedback)],
 
-        ANNOTATIONS: [CallbackQueryHandler(
-            choose_include_annotations,
+        INCLUDE: [CallbackQueryHandler(
+            customize.include_annotations,
             pattern='^(?!' + str(END) + ').*$')],
 
         LYRICS_LANG: [CallbackQueryHandler(
-            set_lyrics_language,
+            customize.lyrics_language,
             pattern='^(?!' + str(END) + ').*$')],
 
-        CHECK_GENIUS_SONG: [CallbackQueryHandler(
-            check_song,
+        BOT_LANG: [CallbackQueryHandler(
+            customize.bot_language,
             pattern='^(?!' + str(END) + ').*$')],
 
-        CHECK_GENIUS_ALBUM: [CallbackQueryHandler(
-            check_album_link,
+        TYPING_ALBUM: [CallbackQueryHandler(
+            album.type_album,
             pattern='^(?!' + str(END) + ').*$')],
 
-        DOWNLOAD_ALBUM: [CallbackQueryHandler(
-            get_album_format,
-            pattern='^(?!' + str(END) + ').*$')]
+        TYPING_ARTIST: [CallbackQueryHandler(
+            artist.type_artist,
+            pattern='^(?!' + str(END) + ').*$')],
+
+        TYPING_SONG: [CallbackQueryHandler(
+            song.type_song,
+            pattern='^(?!' + str(END) + ').*$')],
+
     }
-    # main conversation handler
+
+    # ----------------- MAIN MENU -----------------
+
     main_menu_conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler(
-                'start',
-                genius,
-                Filters.regex(r'^\D*$')),
-
-            CommandHandler(
-                "start",
-                inline_query,
-                Filters.regex(r'[\d]+'), pass_args=True)
+            CommandHandler('start', main_menu, Filters.regex(r'^$')),
+            *my_states,
         ],
 
         states={
-            SELECT_ACTION: my_states,
             **user_input
 
         },
@@ -1049,27 +352,23 @@ def main():
     )
     dp.add_handler(main_menu_conv_handler)
 
-    # commands handler
-    commands = [CommandHandler('song_lyrics', check_song),
-                CommandHandler('album_lyrics', check_album_link),
-                CommandHandler('lyrics_language', set_lyrics_language),
-                CommandHandler('include_annotations', choose_include_annotations),
-                CommandHandler('help', help_message),
-                CommandHandler('contact_us', contact_us)
-                ]
+    # ----------------- COMMANDS -----------------
+
+    commands = [
+        CommandHandler('album', album.type_album),
+        CommandHandler('artist', artist.type_artist),
+        CommandHandler('song', song.type_song),
+        CommandHandler('lyrics_language', customize.lyrics_language),
+        CommandHandler('bot_language', customize.bot_language),
+        CommandHandler('include_annotations', customize.include_annotations),
+        CommandHandler('help', help_message),
+        CommandHandler('contact_us', contact_us)
+    ]
+
     commands_conv_handler = ConversationHandler(
         entry_points=commands,
 
         states={
-            SELECT_ACTION: [
-                CallbackQueryHandler(
-                    check_album_link,
-                    pattern='^' + str(CHECK_GENIUS_ALBUM) + '$'),
-
-                CallbackQueryHandler(
-                    check_song,
-                    pattern='^' + str(CHECK_GENIUS_SONG) + '$')
-            ],
             **user_input
         },
 
@@ -1081,16 +380,89 @@ def main():
             CommandHandler('stop', stop)
         ],
     )
+    dp.add_handler(commands_conv_handler)
+
+    # ----------------- INLINE QUERIES -----------------
+
+    inline_query_handlers = [
+
+        InlineQueryHandler(
+            inline_query.menu,
+            pattern=r'^(?!\.(album|artist|song)\s)'
+        ),
+
+        InlineQueryHandler(
+            inline_query.search_albums,
+            pattern=r'^\.album\s'
+        ),
+
+        InlineQueryHandler(
+            inline_query.search_artists,
+            pattern=r'^\.artist\s'
+        ),
+
+        InlineQueryHandler(
+            inline_query.search_songs,
+            pattern=r'^\.song\s'
+        ),
+
+    ]
+
+    for handler in inline_query_handlers:
+        dp.add_handler(handler)
+
+    # ----------------- ARGUMENTED START -----------------
+
+    argumented_start_handlers = [
+
+        CommandHandler(
+            'start',
+            album.display_album,
+            Filters.regex(r'^album_[0-9]+$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            album.display_album_songs,
+            Filters.regex(r'^album_[0-9]+_songs$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            album.display_album_formats,
+            Filters.regex(r'^album_[0-9]+_aio$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            artist.display_artist_songs,
+            Filters.regex(r'^artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            artist.display_artist_albums,
+            Filters.regex(r'^artist_[0-9]+_albums$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            song.display_song,
+            Filters.regex(r'^song_[0-9]+$'),
+            pass_args=True
+        ),
+    ]
+
+    for handler in argumented_start_handlers:
+        dp.add_handler(handler)
+
     # log all errors
     dp.add_error_handler(error)
-    dp.add_handler(commands_conv_handler)
-    # inline query handlers
-    dp.add_handler(InlineQueryHandler(inline_query))
-    dp.add_handler(CommandHandler(
-        "start",
-        inline_query,
-        Filters.regex(r'[\d]+'), pass_args=True)
-    )
 
     # web hook server to respond to GET cron jobs at /notify
     # if SERVER_PORT:

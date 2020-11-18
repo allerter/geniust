@@ -1,21 +1,16 @@
 """gets album or song lyrics from Genius"""
 import logging
 import re
+import os
 import asyncio
 import queue
-from socket import timeout
-from urllib.request import Request, urlopen, quote
-from urllib.parse import urlencode
-from urllib.error import HTTPError, URLError
 
-import requests
 from bs4 import BeautifulSoup
-from lyricsgenius.song import Song
+from lyricsgenius import Genius
 from concurrent.futures import ThreadPoolExecutor
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-import string_funcs
 from constants import (
     TELETHON_API_ID,
     TELETHON_API_HASH,
@@ -23,500 +18,359 @@ from constants import (
     ANNOTATIONS_TELEGRAM_CHANNEL,
     GENIUS_TOKEN
 )
-try:
-    import ujson as json
-except ImportError:
-    import json
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.CRITICAL)
 try:
     from bot import logger
 except ImportError:
     logger = logging.getLogger(__file__)
 
 
-class Artist(object):
-    """An artist from the Genius.com database."""
+def telegram_annotation(a):
+    annotation = BeautifulSoup(a, 'html.parser')
 
-    def __init__(self, json_dict):
-        """Populate the Artist object with the data from *json_dict*"""
-        self._body = json_dict['artist']
-        self._url = self._body['url']
-        self._api_path = self._body['api_path']
-        self._id = self._body['id']
-        self._songs = []
-        self._num_songs = len(self._songs)
-        self._album_description = ''
-        self._songs_urls = []
-        self._annotations = {}
+    # if the annotations has only one image in it,
+    # include it using link preview
+    if (images := annotation.find_all('img')) and len(images) == 1:
+        img = images[0]
+        # Invisible <a> tag
+        image_a = annotation.new_tag('a', href=img.attrs['src'])
+        image_a.string = '&#8204;'
+        annotation.append(image_a)
+        preview = True
+    else:
+        preview = False
 
-    def __len__(self):
-        return 1
+    # remove extra tags and format the annotations to look better
+    valid_tags = ('br', 'strong​', '​b​', 'em​',
+                  '​i​', 'a', 'li', 'blockquote')
+    for tag in annotation.find_all():
+        if tag.name not in valid_tags:
+            tag.unwrap()
 
-    @property
-    def name(self):
-        return self._body['name']
+    annotation = (
+        str(annotation)
+        .replace('<li>', '▪️ ')
+        .replace('</li>', '\n')
+        .replace('</blockquote>', '\n')
+    )
+    annotation = re.sub(r'<blockquote>[\n]*', '\n💬 ', annotation)
 
-    @property
-    def songs(self):
-        return self._songs
+    return annotation[:4096], preview
 
-    @property
-    def num_songs(self):
-        return self._num_songs
 
-    @property
-    def songs_urls(self):
-        return self._songs_urls
+def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
+    # annotation IDs are formatted in two ways in the lyrics:
+    # the old lyrics page: somethings#note-12345
+    # the new lyrics page: /12345/somethings
+    get_id = re.compile(r'(?<=#note-)[0-9]+|(?<=^/)[0-9]+(?=/)')
 
-    @property
-    def album_description(self):
-        return self._album_description
-
-    @property
-    def annotations(self):
-        return self._annotations
-
-    def add_song(self, newsong):
-        """Add a Song object to the Artist object"""
-
-        self._songs.append(newsong)
-        self._num_songs += 1
-        logger.info(f"Song by {newsong.artist} was added to {self.name}.")
-
-    def save_lyrics(self):
-        lyrics_to_write = {'songs': [{} for song in self.songs],
-                           'artist': self.name,
-                           'album_title': self.songs[0].album,
-                           'album_art': self.songs[0]._body['album']['cover_art_url'],
-                           'album_description': self.album_description}
-        # put songs in lyrics_to_write in the right order
-        for song in self.songs:
-            i = 0
-            for num, url in enumerate(self.songs_urls):
-                if song.url == url:
-                    i = num
-                    break
+    # remove extra tags and attributes from the lyrics
+    # any tag attribute except href is redundant
+    for tag in lyrics.find_all('a'):
+        for attribute, value in list(tag.attrs.items()):
+            if attribute != 'href':
+                tag.attrs.pop(attribute, None)
             else:
-                msg = f'Something went wrong here\nsong.url: {song.url}\nurl: {url}'
-                logger.critical(msg)
-            lyrics_to_write['songs'][i]['title'] = song.title
-            lyrics_to_write['songs'][i]['album'] = song.album
-            lyrics_to_write['songs'][i]['artist'] = self.name
-            lyrics_to_write['songs'][i]['lyrics'] = song.lyrics
-            lyrics_to_write['songs'][i]['image'] = song.song_art_image_url
-            lyrics_to_write['songs'][i]['annotations'] = self.annotations[song.url]
-            text = ('' if song._body['description']['plain'] == '?'
-                    else song._body['description']['plain'])
-            lyrics_to_write['songs'][i]['description'] = text
-
-        if logger.getEffectiveLevel() == 10:  # DEBUG
-            filename = string_funcs.format_title(
-                lyrics_to_write['artist'],
-                lyrics_to_write['album_title']
-            )
-            filename = re.sub(r'[\\/:*?\"<>|]', '', filename)
-            filename = filename + '.json'
-            with open(filename, 'w') as lyrics_file:
-                json.dump(lyrics_to_write, lyrics_file)
-            logger.debug(f'Wrote {self.num_songs} songs to {filename}.')
-        return lyrics_to_write
-
-    def __str__(self):
-        """Return a string representation of the Artist object."""
-        if self._num_songs >= 1:
-            return (f'{self.name},{self._num_songs} '
-                    f'song{"s" if self._num_songs != 1 else ""}')
-
-    def __repr__(self):
-        return repr((self.name, f'{self._num_songs} songs'))
-
-
-class _API(object):
-    """Interface with the Genius.com API
-    Attributes:
-        _API_URL: (str) Top-most URL to access the Genius.com API
-        _API_REQUEST_TYPES: (dict) Refers each request to its own API endpoint
-        _CLIENT_ACCESS_TOKEN: (str) Client access token
-        _HEADER_AUTHORIZATION: (str) Authorization for API requests
-
-    Args:
-        client_access_token (str): Genius client access token used to make API requests
-    """
-
-    # Genius API constants
-    _API_URL = 'https://api.genius.com/'
-    _API_REQUEST_TYPES =\
-        {'song': 'songs/',
-            'artist': 'artists/',
-            'artist-songs': 'artists/songs/',
-            'search': 'search?q=',
-            'referents': 'referents?song_id='}
-    _PUBLIC_API_URL = 'https://genius.com/api/'
-
-    def __init__(self, client_access_token, client_secret='', client_id=''):
-        self._CLIENT_ACCESS_TOKEN = client_access_token
-        self._HEADER_AUTHORIZATION = 'Bearer ' + self._CLIENT_ACCESS_TOKEN
-
-    def _make_api_request(self, request_term_and_type, page=1):
-        # The API request URL must be formatted according to the desired
-        # request type"""
-        api_request = self._format_api_request(request_term_and_type, page=page)
-
-        # Add the necessary headers to the request
-        request = Request(api_request)
-        request.add_header("Authorization", self._HEADER_AUTHORIZATION)
-        request.add_header("User-Agent", "LyricsGenius")
-        while True:
-            try:
-                # timeout set to 7 seconds; automatically retries if times out
-                response = urlopen(request, timeout=7)
-                raw = response.read().decode()
-            except timeout:
-                print(f'Timeout raised and caught')
-                continue
-            except (HTTPError, URLError) as e:
-                logger.critical(f'Error raised and caught: {e}')
-                continue
-            break
-
-        return json.loads(raw)['response']
-
-    def _make_public_request(self, path, page=None):
-        """Make a request to the public API
-        :rtype: dict
-        """
-        # Since these requests don't need any credentials,
-        # ExelFabu made this method and every other method that
-        # uses this public requests static to facilitate the use on the outside
-        uri = (f'{self._PUBLIC_API_URL}{path}'
-               f'{f"?page={page}" if page is not None else ""}')
-
-        response = None
-        while True:
-            try:
-                response = requests.get(uri)
-            except requests.exceptions.Timeout:
-                print(f'Timeout raised and caught')
-                continue
-            except requests.exceptions.RequestException as e:
-                logger.critical(f'Error raised and caught: {e}')
-                continue
-            break
-
-        return response.json()['response'] if response.status_code == 200 else None
-
-    def _format_api_request(self, term_and_type, page=1):
-        """Format the request URL depending on the type of request"""
-
-        request_term, request_type = str(term_and_type[0]), term_and_type[1]
-        assert request_type in self._API_REQUEST_TYPES, "Unknown API request type"
-
-        # TODO - Clean this up (might not need separate returns)
-        if request_type == 'artist-songs':
-            q = f'{quote(request_term)}/songs?per_page=50&page={str(page)}'
-            return f'{self._API_URL}artists/{q}'
-        elif request_type == 'song':
-            q = f'{quote(request_term)}?text_format=plain'
-            return f'{self._API_URL}{self._API_REQUEST_TYPES[request_type]}{q}'
-        elif request_type == 'referents':
-            q = f'&text_format={term_and_type[2]}&per_page=50'
-            type = {str(term_and_type[0])}
-            return f'{self._API_URL}{self._API_REQUEST_TYPES[request_type]}{type}{q}'
-        else:
-            q = f'{quote(request_term)}'
-            return f'{self._API_URL}{self._API_REQUEST_TYPES[request_type]}{q}'
-
-    def get_song_annotations(self, song_id, text_format='plain'):
-        """Return song's annotations with associated fragment in list of tuple."""
-        referents = self._make_api_request(
-            (song_id, 'referents', text_format))['referents']
-        all_annotations = []  # list of tuples(fragment, annotations[])
-        for r in referents:
-            # r['id'] isn't always the one ued in href attributes
-            annotation_id = r['api_path']
-            annotation_id = int(annotation_id[annotation_id.rfind('/') + 1:])
-            annotations = []
-            for a in r["annotations"]:
-                if text_format == 'plain':
-                    annotations.append(a["body"]["plain"])
+                # there might be other links in the text except annotations
+                # in that case, their href attribute is
+                # set to 0 so as not to skip them later
+                # in string_funcs.format_annotations()
+                if tag.get('class'):
+                    class_ = tag['class'][0]
+                    if ('referent' not in class_
+                            and 'ReferentFragment' not in class_):
+                        tag[attribute] = 0
+                        continue
                 else:
-                    annotations.append(a["body"]["html"])
-            all_annotations.append((annotation_id, annotations))
-        return all_annotations
+                    tag[attribute] = 0
+                    continue
 
-    def _scrape_song_lyrics_from_url(self,
-                                     URL=None,
-                                     song_id=None,
-                                     remove_section_headers=False,
-                                     include_annotations=False,
-                                     telegram_song=False,
-                                     lyrics_language=None,
-                                     artist=None):
-        """Use BeautifulSoup to scrape song info off of a Genius song URL"""
+                # replace the href attribute with either the link to the
+                # annotation on telegram or the annotation ID
+                if telegram_song:
+                    url = None
+                    for a in posted_annotations:
+                        a_id = a[0]
+                        a_url = a[1]
+                        if a_id == int(get_id.search(value)[0]):
+                            url = a_url
+                            break
+                    tag['href'] = url
+                else:
+                    tag['href'] = get_id.search(value)[0]
 
-        if isinstance(URL, BeautifulSoup):
-            html = URL
-        else:
-            page = requests.get(URL, timeout=10)
-            html = BeautifulSoup(page.text, "html.parser")
+
+class GeniusT(Genius):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(GENIUS_TOKEN, *args, **kwargs)
+
+        self.response_format = 'html'
+        self.retries = 3
+        self.timeout = 5
+
+    def lyrics(self,
+               song_id,
+               song_url,
+               include_annotations=False,
+               remove_section_headers=False,
+               telegram_song=False,
+               ):
+        """Uses BeautifulSoup to scrape song info off of a Genius song URL
+
+        Args:
+            urlthing (:obj:`str` | :obj:`int`):
+                Song ID or song URL.
+            remove_section_headers (:obj:`bool`, optional):
+                If `True`, removes [Chorus], [Bridge], etc. headers from lyrics.
+
+        Returns:
+            :obj:`str` \\|‌ :obj:`None`:
+                :obj:`str` If it can find the lyrics, otherwise `None`
+
+        Note:
+            If you pass a song ID, the method will have to make an extra request
+            to obtain the song's URL and scrape the lyrics off of it. So it's best
+            to pass the method the song's URL if it's available.
+
+            If you want to get a song's lyrics by searching for it,
+            use :meth:`Genius.search_song` instead.
+
+        Note:
+            This method removes the song headers based on the value of the
+            :attr:`Genius.remove_section_headers` attribute.
+
+        """
+        annotations = []
+        path = song_url.replace("https://genius.com/", "")
 
         # Scrape the song lyrics from the HTML
-        old_div = html.find("div", class_="lyrics")
-        new_div = html.find("div", class_=re.compile("Lyrics__Root"))
+        html = BeautifulSoup(
+            self._make_request(path, web=True).replace('<br/>', '\n'),
+            "html.parser"
+        )
 
-        if old_div:
-            lyrics = old_div
-        elif new_div:
-            lyrics = new_div
-        else:
-            return "", 0
-
-        # Get song_id
-        if song_id is None:
-            meta_tag = str(html.find_all("meta"))
-            m = re.search(r'{"name":"song_id","values":\["([0-9]+)', meta_tag)
-            song_id = m.group(1)
-
-        if remove_section_headers:
-            # Remove [Verse] and [Bridge] stuff
-            lyrics = re.sub(r'(\[.*?\])*', '', lyrics)
-            # Remove gaps between verses
-            lyrics = re.sub('\n{2}', '\n', lyrics)
+        # Determine the class of the div
+        lyrics = html.find("div", class_=re.compile("^lyrics$|Lyrics__Root"))
+        if lyrics is None:
+            if self.verbose:
+                print("Couldn't find the lyrics section. "
+                      "Please report this if the song has lyrics.\n"
+                      "Song URL: https://genius.com/{}".format(path))
+            return None
 
         if include_annotations and not telegram_song:
-            artist._annotations.update({URL: self.get_song_annotations(song_id)})
+            annotations = self.song_annotations(song_id)
         elif include_annotations and telegram_song:
-            song_annotations = self.get_song_annotations(song_id, text_format='html')
+            annotations = self.song_annotations(song_id)
 
-            newline_pattern = re.compile(r'(\n){2,}')  # Extra newlines
-            # remove Genius HTML tags that aren't supported by Telegram HTML Markdown
-            # TODO maybe I should switch to BeautifulSoup
-            # for annotations too like the lyrics
-            exp = (r'<[/]*p>|<hr>|<[/]*small>|<img .*?>|'
-                   r'<[/]*su[bp]>|<[/]*h[1-3]>|<[/]*ul>|<[/]*ol>|</li>')
-            remove_tags = re.compile(exp)
-            search_images = re.compile(r'<img src="(.*?)"')
             posted_annotations = []
 
             loop = asyncio.new_event_loop()
-            client = TelegramClient(StringSession(
-                TELETHON_SESSION_STRING), TELETHON_API_ID, TELETHON_API_HASH, loop=loop)
+            client = TelegramClient(
+                StringSession(TELETHON_SESSION_STRING),
+                TELETHON_API_ID,
+                TELETHON_API_HASH,
+                loop=loop
+            )
             client.start()
-            for a in reversed(song_annotations):
-                annotation = newline_pattern.sub('\n', a[1][0])
-                images = search_images.findall(annotation)
-                # if the annotations has only one image in it,
-                # include it using link preview
-                if len(images) == 1:
-                    annotation += f'<a href="{images[0]}">&#8204;</a>'
-                    preview = True
-                else:
-                    preview = False
+            for annotation_id, annotation_body in annotations.items():
+                annotation, preview = telegram_annotation(annotation_body)
 
-                # remove extra tags and format the annotations to look better
-                annotation = remove_tags.sub('', annotation).replace(
-                    '<li>', '▪️ ').replace('</blockquote>', '\n')
-                annotation = re.sub(r'<blockquote>[\n]*', '\n💬 ', annotation)
-
-                # send the first 4096 chars of the annotation to the telegram channel
+                # send the annotation to the telegram channel
                 msg = client.loop.run_until_complete(
                     client.send_message(
                         entity=ANNOTATIONS_TELEGRAM_CHANNEL,
-                        message=annotation[:4096],
+                        message=annotation,
                         link_preview=preview,
                         parse_mode='HTML')
                 )
                 # used to replace href attributes of <a> tags
                 # in the lyrics with links to the annotations
-                posted_annotations.append(
-                    (a[0], f'https://t.me/{ANNOTATIONS_TELEGRAM_CHANNEL}/{msg.id}'))
+                url = f'https://t.me/{ANNOTATIONS_TELEGRAM_CHANNEL}/{msg.id}'
+                posted_annotations.append((annotation_id, url))
 
             client.disconnect()
 
-        # annotation IDs are formatted in two ways in the lyrics:
-        # the old lyrics page: somethings#note-12345
-        # the new lyrics page: /12345/somethings
-        get_id = re.compile(r'(?<=#note-)[0-9]+|(?<=^/)[0-9]+(?=/)')
-        # remove extra tags and attributes from the lyrics
-        # any tag attribute except href is redundant
-        for tag in lyrics.find_all('a'):
-            for attribute, value in list(tag.attrs.items()):
-                if attribute != 'href':
-                    tag.attrs.pop(attribute, None)
-                else:
-                    # there might be other links in the text except annotations
-                    # in that case, their href attribute is
-                    # set to 0 so as not to skip them later
-                    # in string_funcs.format_annotations()
-                    if tag.get('class'):
-                        if tag['class'][0] not in ['referent', 'ReferentFragment']:
-                            tag[attribute] = 0
-                            continue
-                    else:
-                        tag[attribute] = 0
-                        continue
-                    # replace the href attribute with either the link to the
-                    # annotation on telegram or the annotation ID
-                    if telegram_song:
-                        tag[attribute] = [x[1] for x in posted_annotations if x[0]
-                                          == int(get_id.search(value)[0])][0]
-                    else:
-                        tag[attribute] = get_id.search(value)[0]
+        if telegram_song:
+            replace_hrefs(lyrics, posted_annotations, telegram_song)
+        else:
+            replace_hrefs(lyrics)
+
         # remove redundant tags that neither Telegram
         # nor the other formats (PDF and Telegra.ph) support
         for tag in lyrics.find_all():
-            if tag.name not in ['br', 'strong​', '​b​', 'em​', '​i​', 'a']:
+            if tag.name not in ('br', 'strong​', '​b​', 'em​', '​i​', 'a'):
                 tag.unwrap()
-        lyrics = re.sub(r'<br[/]*>', '\n', str(lyrics))
-        logger.debug('finished scraping lyrics')
-        return lyrics.strip('\n'), song_id
 
+        if remove_section_headers:
+            assert telegram_song, False
+            # Remove [Verse] and [Bridge] stuff
+            lyrics = re.sub(r'(\[.*?\])*', '', lyrics)
+            # Remove gaps between verses
+            lyrics = re.sub('\n{2}', '\n', lyrics)
 
-class Genius(_API):
+        if telegram_song:
+            return lyrics
+        else:
+            return lyrics
+            # return str(lyrics).strip('\n'), annotations
 
-    def search_genius_web(self, search_term, per_page=5):
-        """Use the web-version of Genius search"""
-        endpoint = "search/multi?"
-        params = {'per_page': per_page, 'q': search_term}
+    def song_annotations(self, song_id, text_format=None):
+        """Return song's annotations with associated fragment in list of tuple.
 
-        # This endpoint is not part of the API, requires different formatting
-        url = "https://genius.com/api/" + endpoint + urlencode(params)
-        response = requests.get(url, timeout=5)
-        return json.loads(response.text)['response'] if response else None
+        Args:
+            song_id (:obj:`int`): song ID
+            text_format (:obj:`str`, optional): Text format of the results
+                ('dom', 'html', 'markdown' or 'plain').
 
-    def search_song(self, song_url, artist_name="",
-                    remove_section_headers=False, include_annotations=False):
-        """Scrapes the song lyrics and ID from Genius and returns the Song object
-         containing the lyrics, and other info provided by the API
+        Returns:
+            :obj:`list`: list of tuples(fragment, [annotations])
+
+        Note:
+            This method uses :meth:`Genius.referents`, but provides convenient
+            access to fragments (annotated text) and the corresponding
+            annotations (Some fragments may have more than one annotation,
+            because sometimes both artists and Genius users annotate them).
+
         """
-        logger.debug(f'Searching for "{song_url}" by {artist_name}...')
-        lyrics, song_id = self._scrape_song_lyrics_from_url(
-            URL=song_url,
-            remove_section_headers=remove_section_headers,
-            include_annotations=include_annotations,
-            artist=self.artist
-        )
-        json_song = self._make_api_request((song_id, 'song'))
+        text_format = text_format or self.response_format
+        assert len(text_format.split(',')), 1
 
-        # clean song description
-        json_song['song']['description']['plain'] = re.sub(
-            r'(\n){2,}', '\n', json_song['song']['description']['plain'])
-        json_song['song']['description']['plain'] = re.sub(
-            r'\nhttp[s]*.*', '', json_song['song']['description']['plain'])
-        # Create the Song object
-        song = Song(json_song, lyrics)
+        referents = self.referents(song_id=song_id,
+                                   text_format=text_format,
+                                   per_page=50)
 
-        return song
+        all_annotations = {}
+        for r in referents['referents']:
+            # r['id'] isn't always the one ued in href attributes
+            api_path = r['api_path']
+            annotation_id = int(api_path[api_path.rfind('/') + 1:])
+            annotation = r['annotations'][0]['body'][text_format]
 
-    def search_artist(self, album_link):
-        """Creates the artist object by scraping the artist page on Genius"""
-        artist_link = album_link[:album_link.rfind('/')].replace('albums', 'artists')
-        page = requests.get(artist_link)
-        html = BeautifulSoup(page.text, "html.parser")
-        meta_tag = str(html.find_all("meta"))
-        m = re.search(r'{"name":"artist_id","values":\["([0-9]+)', meta_tag)
-        artist_id = m.group(1)
-        logger.debug(f'Searching for songs by {artist_id}...')
+            if annotation_id not in all_annotations.keys():
+                all_annotations[annotation_id] = annotation
+        return all_annotations
 
-        # Make Genius API request for the determined artist ID
-        json_artist = self._make_api_request((artist_id, 'artist'))
-        # Create the Artist object
-        return Artist(json_artist)
-
-    def fetch(self, track, artist, include_annotations):
+    def fetch(self, track, include_annotations):
         """fetches song from Genius adds it to the artist object"""
-        song = self.search_song(
-            track,
-            artist.name,
-            include_annotations=include_annotations
+        song = track['song']
+
+        annotations = []
+
+        if song['lyrics_state'] == 'complete' and not song['instrumental']:
+            lyrics, annotations = self.lyrics(
+                song_id=song['id'],
+                song_url=song['url'],
+                include_annotations=include_annotations
+            )
+        elif song['instrumental']:
+            lyrics = "[Instrumental]"
+        else:
+            lyrics = ""
+
+        song.update(
+            self.song(song['id'])['song']
         )
-        artist.add_song(song)
 
-    async def search_album(self, album_link, include_annotations, q):
-        """Get all lyrics from an album and return the album dict"""
-        self.artist = self.search_artist(album_link)
-        # create index
-        index = []
-        # get the album page on Genius.com
-        r = requests.get(album_link)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        # get the html section indicating if the album isn't found
-        not_found = soup.find('h1', attrs={'class': 'render_404-headline'})
-        if not_found is not None and "Page not found" in not_found.text:
-            return "Album not found."
-        # get the html section indicating if the song is missing lyrics
-        class_val = 'chart_row-metadata_element chart_row-metadata_element--large'
-        missing = soup.find_all('div', attrs={'class': class_val})
-        # get album description
-        album_description = soup.find("div", class_="rich_text_formatting").get_text()
-        album_description = re.sub(r'(\n){2,}', '\n', album_description)
-        album_description = re.sub(r'\nhttp[s]*.*', '', album_description)
-        self.artist._album_description = album_description
-        miss_nb = 0
-        # count the number of songs without lyrics
-        for miss in missing:
-            if ((miss.text.find("(Missing Lyrics)") >= 0)
-                    or (miss.text.find("(Unreleased)") >= 0)):
-                miss_nb += 1
-        val = 'column_layout-column_span column_layout-column_span--primary'
-        divi = soup.find_all('div', attrs={'class': val})
-        for div in divi:
-            var = 0
-            # get the html section indicating the track numbers
-            # (this will be to eliminate sections similar to those of
-            # songs but are actually of tracklist or credits of the album)
-            val = ('chart_row-number_container-number'
-                   ' chart_row-number_container-number--gray')
-            mdiv = div.find_all('span', attrs={'class': val})
-            for mindiv in mdiv:
+        song['lyrics'] = lyrics
+        song['annotations'] = annotations
 
-                nb = mindiv.text.replace("\n", "")
-                if nb != "":
-                    index.append(nb)
-            # create a list holding the tracks' titles
-            df = []
-            ndiv = div.find_all(
-                'div', attrs={'class': 'chart_row-content'})
-            for mindiv in ndiv:
-                link = mindiv.find('a').get('href')
-                df.append(link)
-                var += 1
-                if var == len(index):
-                    break
-        self.artist._songs_urls = df
+    async def search_album(
+        self,
+        album_id,
+        include_annotations,
+        queue,
+        text_format=None,
+    ):
+        """Searches for a specific album and gets its songs.
+
+        You must pass either a :obj:`name` or an :obj:`album_id`.
+
+        Args:
+            album_id (:obj:`int`, optional): Album ID.
+            include_annotations (:obj:`bool`): Download annotations or not.
+            queue(:obj:`queue.Queue`): A :obj:`Queue` object to put the album in.
+            text_format (:obj:`bool`, optional): Text format of the response.
+
+        Returns:
+            :obj:`dict`
+
+        """
+        album = self.album(album_id, text_format)['album']
+
+        album['songs'] = self.album_tracks(
+            album_id,
+            per_page=50,
+            text_format=text_format
+        )['tracks']
+
         # loop to add song with title from the list
-        with ThreadPoolExecutor(20) as executor:
+        try:
+            threads = len(os.sched_getaffinity(0))
+        except AttributeError:  # isn't available in non-Unix systems
+            threads = os.cpu_count()
+        with ThreadPoolExecutor(threads * 2) as executor:
             loop = asyncio.get_event_loop()
             tasks = [
                 loop.run_in_executor(
                     executor,
                     self.fetch,
-                    *(track, self.artist, include_annotations)
+                    *(track, include_annotations)
                 )
-                for track in df
+                for track in album['songs']
             ]
             await asyncio.gather(*tasks)
 
-        # save the lyrics
-        album_file = self.artist.save_lyrics()
-        q.put(album_file)
+        # return the album by putting it in the queue
+        queue.put(album)
+
+    def async_album_search(self, album_id, include_annotations=False):
+        """gets the album from Genius and returns a dictionary"""
+        q = queue.Queue(1)
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        future = asyncio.ensure_future(
+            self.search_album(album_id, include_annotations, q)
+        )
+        new_loop.run_until_complete(future)
+        return q.get()
 
 
-def async_album_search(api, link, include_annotations=False):
-    """gets the album from Genius and returns a dictionary"""
-    q = queue.Queue(1)
-    new_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(new_loop)
-    future = asyncio.ensure_future(
-        Genius.search_album(api, link, include_annotations, q))
-    new_loop.run_until_complete(future)
-    return q.get()
-
-
-def test(album_link, include_annotations):
+def test(album_id, include_annotations=False):
     logger.setLevel(logging.DEBUG)
-    genius_api = Genius(GENIUS_TOKEN)
-    async_album_search(api=genius_api, link=album_link,
-                       include_annotations=include_annotations)
+    genius = GeniusT(GENIUS_TOKEN)
+    return genius.async_album_search(album_id, include_annotations)
+
+
+genius = GeniusT(GENIUS_TOKEN)
+a = genius.lyrics(
+    4558484,
+    'https://genius.com/Machine-gun-kelly-hollywood-whore-lyrics')
+
+from bs4 import NavigableString, CData
+
+types = (NavigableString, CData)
+
+strings = []
+
+for descendant in a.descendants:
+    if (
+        (types is None and not isinstance(descendant, NavigableString))
+        or (types is not None and type(descendant) not in types)
+    ):
+        continue
+    if len(descendant.strip()) == 0:
+        continue
+    strings.append(descendant)
+
+for t in strings:
+    t.replace_with(t + '$$$')
+
+print(a)
+exit()
+import pyperclip
+import json
+a = test(104614, True)
+
+pyperclip.copy(json.dumps(a))

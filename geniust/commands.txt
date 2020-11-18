@@ -1,9 +1,0 @@
-start - start the bot
-song_lyrics - get song lyrics
-album_lyrics - get album lyrics
-lyrics_language - set lyrics language
-include_annotations - include annotations
-cancel - cancel current task
-stop - stop and end the conversation
-help - more info about the bot
-contact_us - send us a message
