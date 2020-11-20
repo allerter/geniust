@@ -243,8 +243,8 @@ def main():
             pattern=r'^album_[0-9]+$'),
 
         CallbackQueryHandler(
-            album.display_album_songs,
-            pattern=r'^album_[0-9]+_songs$'),
+            album.display_album_tracks,
+            pattern=r'^album_[0-9]+_tracks$'),
 
         CallbackQueryHandler(
             album.display_album_formats,
@@ -424,8 +424,8 @@ def main():
 
         CommandHandler(
             'start',
-            album.display_album_songs,
-            Filters.regex(r'^album_[0-9]+_songs$'),
+            album.display_album_tracks,
+            Filters.regex(r'^album_[0-9]+_tracks$'),
             pass_args=True
         ),
 

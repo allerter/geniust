@@ -68,7 +68,7 @@ def display_album(update, context):
     caption = album_caption(album, language)
 
     buttons = [
-        [IButton("List Songs", f"album_{album['id']}_songs")],
+        [IButton("List Tracks", f"album_{album['id']}_tracks")],
         [IButton("All-In-One Lyrics (PDF, ...)", f"album_{album['id']}_aio")]
     ]
 
@@ -79,7 +79,7 @@ def display_album(update, context):
         reply_markup=IBKeyboard(buttons))
 
 
-def display_album_songs(update, context):
+def display_album_tracks(update, context):
     if update.callback_query:
         chat_id = update.callback_query.message.chat.id
         album_id = int(update.callback_query.data.split('_')[1])

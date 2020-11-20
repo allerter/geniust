@@ -4,6 +4,7 @@ from io import BytesIO
 
 import requests
 import reportlab
+from reportlab.platypus.paraparser import _paraAttrMap as valid_attributes
 from reportlab.platypus import Paragraph, Spacer, Image, PageBreak
 from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
@@ -14,6 +15,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from rtl import reshaper
 from bidi.algorithm import get_display
+from bs4 import BeautifulSoup
 
 import utils
 
@@ -44,6 +46,7 @@ styles = getSampleStyleSheet()
 styles.add(ParagraphStyle(name='Song Lyrics',
                           fontSize=14,
                           alignment=1,
+                          textColor='black',
                           fontName=font_regular,
                           leading=20))
 
@@ -52,6 +55,13 @@ styles.add(ParagraphStyle(name='Song Annotations',
                           textColor='grey',
                           fontName=font_regular,
                           alignment=1))
+
+styles.add(ParagraphStyle(name='Song Annotated',
+                          fontSize=14,
+                          alignment=1,
+                          fontName=font_regular,
+                          textColor='blue',
+                          leading=20))
 
 styles.add(ParagraphStyle(name='Titles',
                           fontSize=20,
@@ -92,7 +102,9 @@ class MyDocTemplate(BaseDocTemplate):
 
 def get_farsi_text(text, long_text=False):
     """reshapes arabic/farsi words to be showed properly in the PDF"""
+    arabic = False
     if reshaper.has_arabic_letters(text):
+        arabic = True
         if long_text:
             words = text.split()
         else:
@@ -109,7 +121,22 @@ def get_farsi_text(text, long_text=False):
                 reshaped_words.append(word)
         reshaped_words.reverse()
         return ' '.join(reshaped_words)
-    return text
+    return text, arabic
+
+
+valid = list(valid_attributes.keys())
+valid.append('href')
+
+
+def remove_invalid_tags(soup, keep_href=False):
+    if hasattr(soup, 'find_all'):
+        for tag in soup.find_all('a'):
+            for attribute, value in list(tag.attrs.items()):
+                if attribute not in valid or not keep_href:
+                    tag.attrs.pop(attribute)
+
+        for tag in soup.find_all('img'):
+            tag.decompose()
 
 
 def create_pdf(data, user_data):
@@ -123,16 +150,21 @@ def create_pdf(data, user_data):
         bottomMargin=18
     )
     Story = []
-    check_char = re.compile(r'[^\x00-\x7F]')  # Check for Non-English chars
+    # check_char = re.compile(r'[^\x00-\x7F]')  # Check for Non-English chars
     # Title
     page_break = PageBreak()
     artist = data['artist']['name']
     name = data['name']
     persian = False
+    translation = False
 
     bio.name = f'{utils.format_title(artist, name)}.pdf'
     if 'ترجمه' in name:
         persian = True
+        translation = True
+    elif 'Genius' in name:
+        translation = True
+
         # The artist is "Genius Farsi Translations"
         # so we need to replace it with the actual artist name
         artist = name[:name.find('-')].strip()
@@ -158,7 +190,7 @@ def create_pdf(data, user_data):
     Story.append(Spacer(1, 50))
 
     # Image
-    album_art = requests.get(data['cover_art_image_url']).content
+    album_art = requests.get(data['cover_art_url']).content
     im = Image(BytesIO(album_art), width=A4[0], height=A4[0])
     Story.append(im)
     Story.append(page_break)
@@ -166,25 +198,36 @@ def create_pdf(data, user_data):
     # -------------- Biography Page --------------
 
     # Bio
-    if not persian:
-        ptext = f'<font name={font_bold} size="25">Biography</font>'
-        Story.append(Paragraph(ptext, styles['Titles']))
-        Story.append(Spacer(1, 20))
-        biography = get_farsi_text(data['album_description'])
-        font = font_persian if check_char.search(biography) else font_regular
-        Story.append(Paragraph(
-            biography,
-            ParagraphStyle(
-                name='Biography',
-                fontName=font,
-                leading=15,
-                embeddedHyphenation=1,
-                alignment=4,
-                fontSize=14,))
-        )
-        Story.append(page_break)
+    ptext = f'<font name={font_bold} size="25">Biography</font>'
+    Story.append(Paragraph(ptext, styles['Titles']))
+    Story.append(Spacer(1, 20))
+    biography = BeautifulSoup(
+        data['description_annotation']['annotations'][0]['body']['html'],
+        'html.parser'
+    )
 
-    # Tracklist TODO
+    remove_invalid_tags(biography, keep_href=True)
+
+    for a in biography.find_all('a'):
+        a.attrs['color'] = 'blue'
+        a.attrs['underline'] = True
+
+    biography, persian_char = get_farsi_text(str(biography))
+    font = font_persian if persian_char else font_regular
+    Story.append(Paragraph(
+        biography,
+        ParagraphStyle(
+            name='Biography',
+            fontName=font,
+            leading=15,
+            embeddedHyphenation=1,
+            alignment=4,
+            fontSize=14,))
+    )
+    Story.append(page_break)
+
+    # -------------- Tracklist Page --------------
+
     ptext = f'<font name="{font_bold}" size="25">Tracklist</font>'
     Story.append(Paragraph(ptext, styles['Titles']))
     Story.append(Spacer(1, 12))
@@ -198,21 +241,28 @@ def create_pdf(data, user_data):
     Story.append(toc)
     Story.append(page_break)
 
-    # Songs
+    # -------------- Songs --------------
+    def check_persian(line):
+        line, persian_char = get_farsi_text(str(tag))
+        if persian_char:
+            line = f'<font color="blue" name={font_persian}>{line}</font>'
+        return line
+
     format_title = re.compile(r'^[\S\s]*-\s|\([^\x00-\x7F][\s\S]*')
     lyrics_language = user_data['lyrics_lang']
     include_annotations = user_data['include_annotations']
-    for song in data['songs']:
+
+    for track in data['tracks']:
+        song = track['song']
         lyrics = song['lyrics']
         title = song['title']
         if translation:
             sep = title.find('-')
-            if title[sep + 1] == ' ':
-                sep += 1
-            title = format_title.sub('', title[sep + 1:])
-            title = get_farsi_text(title)
+            title = format_title.sub('', title[sep:]).strip()
+            title = get_farsi_text(title)[0]
         Story.append(Paragraph(title, styles['Songs']))
         Story.append(Spacer(1, 50))
+
         # format annotations
         lyrics = utils.format_annotations(
             lyrics,
@@ -221,22 +271,24 @@ def create_pdf(data, user_data):
             format_type='pdf',
             lyrics_language=lyrics_language
         )
-        # lyrics
         lyrics = utils.format_language(lyrics, lyrics_language)
-        lyrics = get_farsi_text(lyrics).replace('\n', '<br/>')
-        for line in lyrics.split('<br/>'):
-            if not len(line):
-                Story.append(Spacer(1, 12))
-            elif '!--!' in line:
-                line = line.replace('!--!', '')
-                if check_char.search(line):
-                    line = f'<font name={font_persian}>{line}</font>'
+        if lyrics.find('div'):
+            lyrics.find('div').unwrap()
+        for tag in lyrics:
+            remove_invalid_tags(tag)
+            if tag.name == 'a':
+                line = check_persian(str(tag)).strip().replace('\n', '<br/>')
+                Story.append(Paragraph(line, styles['Song Annotated']))
+            elif tag.name == 'annotation' or tag.parent.name == 'annotation':
+                line = check_persian(str(tag)).strip().replace('\n', '<br/>')
+                Story.append(Spacer(1, 6))
                 Story.append(Paragraph(line, styles['Song Annotations']))
+                Story.append(Spacer(1, 12))
             else:
-                if check_char.search(line):
-                    line = f'<font size="12" name={font_persian}>{line}</font>'
+                line = check_persian(str(tag)).strip().replace('\n', '<br/>')
                 Story.append(Paragraph(line, styles['Song Lyrics']))
         Story.append(page_break)
+
     doc.multiBuild(Story)
     bio.seek(0)
     return bio

@@ -1,7 +1,7 @@
+# import queue
 import re
 import logging
 import asyncio
-import queue
 import json
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -10,8 +10,16 @@ from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 
 import telegraph
+from bs4 import BeautifulSoup
 
-import string_funcs
+from pathlib import Path
+import os
+import sys
+
+_root = Path(os.path.realpath(__file__)).parent.parent.parent
+sys.path.insert(0, str(_root))
+
+import utils
 from constants import TELEGRAPH_TOKEN
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -28,7 +36,8 @@ def fetch(img):
     while True:
         try:
             webpage = urlopen(req)
-            cover_art = 'https://telegra.ph' + telegraph.upload.upload_file(webpage)[0]
+            path = telegraph.upload.upload_file(webpage)[0]
+            cover_art = 'https://telegra.ph' + path
         except timeout:
             print('Timeout raised and caught')
             continue
@@ -43,15 +52,16 @@ async def download_cover_arts(data, q):
     Avoids uploading the same pic more than once.
     """
     all_pics = []
-    for song in data['songs']:
-        img = song['image']
+    for track in data['tracks']:
+        song = track['song']
+        img = song['song_art_image_url']
         for i, uploaded_img in enumerate(all_pics):
             if img == uploaded_img:
                 all_pics.append(i)
                 break
         else:
             all_pics.append(img)
-    all_pics.append(data['album_art'])
+    all_pics.append(data['cover_art_url'])
     with ThreadPoolExecutor(5) as executor:
         loop = asyncio.get_event_loop()
         tasks = [
@@ -67,58 +77,94 @@ async def download_cover_arts(data, q):
     q.put(all_pics)
 
 
-def create_album_songs(account, data, cover_arts, user_data):
-    ''' create telegraph pages for songs of the album.'''
+def create_album_songs(account, album, user_data):
+    """create telegraph pages for songs of the album."""
     # lyrics customizations
     include_annotations = user_data['include_annotations']
     lyrics_language = user_data['lyrics_lang']
     identifiers = ['!--!', '!__!']
     song_links = []
-    artist = data['artist']
+
+    artist = album['artist']['name']
     translation = True if 'Genius' in artist else False
 
     # create pages
-    for i, song in enumerate(data['songs']):
+    for track in album['tracks']:
+        song = track['song']
         lyrics = song['lyrics']
         title = song['title']
 
         # format annotations
-        lyrics = string_funcs.format_annotations(lyrics, song['annotations'],
-                                                 include_annotations, identifiers,
-                                                 format_type='telegraph')
+        lyrics = utils.format_annotations(
+            lyrics,
+            song['annotations'],
+            include_annotations,
+            identifiers,
+            format_type='telegraph'
+        )
 
         # formatting language
-        lyrics = string_funcs.format_language(lyrics, lyrics_language)
+        lyrics = utils.format_language(lyrics, lyrics_language)
+
         # convert annotation text style to quotes
-        lyrics = lyrics.replace('!--!', '<blockquote>').replace('!__!', '</blockquote>')
-        # styling lyrics
-        lyrics = f'<aside>{lyrics}</aside>'
+        for tag in lyrics.find_all('annotation'):
+            tag.name = 'blockquote'
+
         # include song description
-        if song['description']:
-            lyrics = f'{song["description"]}\n\n{lyrics}'
-        # place covert art in page
-        # TODO: compare images to avoid placing pics
-        # that have a higher resolution available
-        cover_art = cover_arts[i]
-        cover_art = cover_art if type(cover_art) is str else cover_arts[cover_art]
+        description = ''
+        if song['description']['html']:
+            description = BeautifulSoup(song["description"]["html"], 'html.parser')
+            for tag in description:
+                if tag.name in ('div', 'script'):
+                    tag.decompose()
+            description = str(description) + '<br><br>'
+
+        cover_art = song['song_art_image_url']
         caption = f'<figcaption>{title}</figcaption>'
-        lyrics = f'<figure><img src="{cover_art}">{caption}</figure><br>{lyrics}'
+        cover_art = f'<figure><img src="{cover_art}">{caption}</figure><br>'
 
-        # set line breaks for HTML
-        lyrics = lyrics.replace('\n', '<br>')
+        if lyrics.find('div'):
+            lyrics.find('div').unwrap()
 
-        page_title = string_funcs.format_title(song['artist'], song['title'])
+        for a in lyrics.find_all('a'):
+            if a.get('href') is None:
+                a.name = 'u'
 
+        for p in lyrics.find_all('p'):
+            p.unwrap()
+
+        for div in lyrics.find_all('div'):
+            div.unwrap()
+            div.decompose()
+
+        for img in lyrics.find_all('img'):
+            img.decompose()
+
+        # lyrics = re.sub(r'<br\s*[/]*>', '\n', str(lyrics))
+        lyrics = str(lyrics)
+        lyrics = utils.remove_extra_newlines(lyrics)
+        lyrics = lyrics.replace('\n', '<br>').replace('</u>', '</u><br>')
+
+        lyrics = (f'{cover_art}'
+                  f'{description}'
+                  f'<aside>{lyrics}</aside>'
+                  )
+
+        page_title = utils.format_title(artist, title)
         # create telegraph page
         j = 0.2
         while True:
             try:
-                response = account.create_page(title=page_title, html_content=lyrics)
+                response = account.create_page(
+                    title=page_title,
+                    html_content=lyrics
+                )
                 break
             except telegraph.TelegraphException:
                 sleep(j)
                 j += 0.2
                 continue
+
         # store song page link
         respone_link = f'https://telegra.ph/{response["path"]}'
 
@@ -138,49 +184,53 @@ def create_album_songs(account, data, cover_arts, user_data):
     return song_links
 
 
-def create_pages(user_data, data):
+def create_pages(user_data, album):
     """creates telegraph page of an album
     Returns the link to the final page.
     """
     # download cover arts async
-    q = queue.Queue()
-    new_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(new_loop)
-    future = asyncio.ensure_future(download_cover_arts(data, q))
-    new_loop.run_until_complete(future)
-    cover_arts = q.get()
-    logger.debug(f'Uploaded cover arts')
+    # q = queue.Queue()
+    # new_loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(new_loop)
+    # future = asyncio.ensure_future(download_cover_arts(album, q))
+    # new_loop.run_until_complete(future)
+    # cover_arts = q.get()
+    # logger.debug(f'Uploaded cover arts')
+
     # connect to Telegraph account
     account = telegraph.api.Telegraph(access_token=TELEGRAPH_TOKEN)
 
     # create song pages
-    song_links = create_album_songs(account, data, cover_arts[:-1], user_data)
-    page_text = ''
+    song_links = create_album_songs(account, album, user_data)
+
     # include album description
-    if data['album_description']:
-        page_text = f'{data["album_description"]}\n\nSongs:\n'
+    description = album['description_annotation']['annotations'][0]['body']['html']
+    if description:
+        description = f'<br>{description}<br><br>'
+
     # put the links in an HTML list
     links = ''.join(
         [f'<li><a href="{song_link.encode().decode()}">{song_title}</a></li>'
-        for song_link, song_title in song_links]
+         for song_link, song_title in song_links]
     )
-
-    page_text = f'{page_text}<ol>{links}</ol>'
+    songs = f'<ol>{links}</ol>'
 
     # add album cover art to the album post
-    album_art = cover_arts[-1]
-    caption = f'<figcaption>{data["album_title"]}</figcaption>'
-    page_text = f'<figure><img src="{album_art}">{caption}</figure>{page_text}'
+    album_art = album['cover_art_url']
+    caption = f'<figcaption>{album["name"]}</figcaption>'
+    album_art = f'<figure><img src="{album_art}">{caption}</figure>'
 
-    # set line breaks for HTML
-    page_text = page_text.replace('\n', '<br>')
+    page_text = (f'{album_art}'
+                 f'{description}'
+                 f'Songs:<br>{songs}'
+                 )
 
-    title = string_funcs.format_title(data['artist'], data['album_title'])
+    title = utils.format_title(album['artist']['name'], album['name'])
 
     # create the album post
     response = account.create_page(title=title, html_content=page_text)
     response_link = f'https://telegra.ph/{response["path"]}'
-    # TODO shortening the link via a link-shortener service text
+
     return response_link
 
 
@@ -191,5 +241,8 @@ def test(json_file, lyrics_language, include_annotations):
         'include_annotations': include_annotations
     }
     with open(json_file, 'r') as f:
-        data = json.loads(f.read())
-    print(create_pages(user_data=user_data, data=data))
+        data = json.load(f)
+    print(create_pages(user_data=user_data, album=data))
+
+
+# test('hotel diablo.json', 'English + Non-English', True)

@@ -69,7 +69,7 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
     for tag in lyrics.find_all('a'):
         for attribute, value in list(tag.attrs.items()):
             if attribute != 'href':
-                tag.attrs.pop(attribute, None)
+                tag.attrs.pop(attribute)
             else:
                 # there might be other links in the text except annotations
                 # in that case, their href attribute is
@@ -109,6 +109,15 @@ class GeniusT(Genius):
         self.retries = 3
         self.timeout = 5
 
+    def song_page_data(self, path):
+        endpoint = 'page_data/song'
+
+        params = {'page_path': '/songs/' + path}
+
+        res = self._make_request(endpoint, params_=params, public_api=True)
+
+        return res['page_data']
+
     def lyrics(self,
                song_id,
                song_url,
@@ -142,6 +151,7 @@ class GeniusT(Genius):
 
         """
         annotations = []
+
         path = song_url.replace("https://genius.com/", "")
 
         # Scrape the song lyrics from the HTML
@@ -151,13 +161,21 @@ class GeniusT(Genius):
         )
 
         # Determine the class of the div
-        lyrics = html.find("div", class_=re.compile("^lyrics$|Lyrics__Root"))
+        lyrics = html.find_all("div", class_=re.compile("^lyrics$|Lyrics__Container"))
         if lyrics is None:
             if self.verbose:
                 print("Couldn't find the lyrics section. "
                       "Please report this if the song has lyrics.\n"
                       "Song URL: https://genius.com/{}".format(path))
             return None
+
+        if 'lyrics' in lyrics[0].get('class')[0]:
+            lyrics = lyrics[0]
+            lyrics = lyrics.find('p') if lyrics.find('p') else lyrics
+        else:
+            for div in lyrics[1:]:
+                lyrics[0].append(div)
+            lyrics = lyrics[0]
 
         if include_annotations and not telegram_song:
             annotations = self.song_annotations(song_id)
@@ -213,8 +231,7 @@ class GeniusT(Genius):
         if telegram_song:
             return lyrics
         else:
-            return lyrics
-            # return str(lyrics).strip('\n'), annotations
+            return str(lyrics).strip('\n'), annotations
 
     def song_annotations(self, song_id, text_format=None):
         """Return song's annotations with associated fragment in list of tuple.
@@ -260,8 +277,8 @@ class GeniusT(Genius):
 
         if song['lyrics_state'] == 'complete' and not song['instrumental']:
             lyrics, annotations = self.lyrics(
-                song_id=song['id'],
-                song_url=song['url'],
+                song['id'],
+                song['url'],
                 include_annotations=include_annotations
             )
         elif song['instrumental']:
@@ -299,13 +316,13 @@ class GeniusT(Genius):
         """
         album = self.album(album_id, text_format)['album']
 
-        album['songs'] = self.album_tracks(
+        album['tracks'] = self.album_tracks(
             album_id,
             per_page=50,
             text_format=text_format
         )['tracks']
 
-        # loop to add song with title from the list
+        # Get number of available cores
         try:
             threads = len(os.sched_getaffinity(0))
         except AttributeError:  # isn't available in non-Unix systems
@@ -318,7 +335,7 @@ class GeniusT(Genius):
                     self.fetch,
                     *(track, include_annotations)
                 )
-                for track in album['songs']
+                for track in album['tracks']
             ]
             await asyncio.gather(*tasks)
 
@@ -341,36 +358,3 @@ def test(album_id, include_annotations=False):
     logger.setLevel(logging.DEBUG)
     genius = GeniusT(GENIUS_TOKEN)
     return genius.async_album_search(album_id, include_annotations)
-
-
-genius = GeniusT(GENIUS_TOKEN)
-a = genius.lyrics(
-    4558484,
-    'https://genius.com/Machine-gun-kelly-hollywood-whore-lyrics')
-
-from bs4 import NavigableString, CData
-
-types = (NavigableString, CData)
-
-strings = []
-
-for descendant in a.descendants:
-    if (
-        (types is None and not isinstance(descendant, NavigableString))
-        or (types is not None and type(descendant) not in types)
-    ):
-        continue
-    if len(descendant.strip()) == 0:
-        continue
-    strings.append(descendant)
-
-for t in strings:
-    t.replace_with(t + '$$$')
-
-print(a)
-exit()
-import pyperclip
-import json
-a = test(104614, True)
-
-pyperclip.copy(json.dumps(a))

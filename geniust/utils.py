@@ -3,6 +3,8 @@ Some regular expressions, and methods used throughout the code.
 Kept here in case improvements are added.
 """
 import re
+from bs4 import BeautifulSoup, NavigableString, Comment
+
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
 remove_non_english = re.compile(
     r"""(\[[^\]\n]+\] # ignore headers
@@ -25,20 +27,40 @@ remove_english = re.compile(
 )
 
 # remove extra newlines except the ones before headers
-newline_pattern = re.compile(r'(\n){2,}(?!\[)')
+newline_pattern = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
 
 # header_pattern = re.compile(r'') add newline before headers where
 # there is only one newline before them TODO
 links_pattern = re.compile(r'\nhttp[s].*')  # remove links from annotations
 
 
+def remove_extra_newlines(s):
+    return newline_pattern.sub('\n', s)
+
+
 def format_language(lyrics, lyrics_language):
     """removes English/Non-English characters or returns the unchanged lyrics"""
-    if lyrics_language == 'English':
-        lyrics = remove_non_english.sub("\\1", lyrics, 0)
-    elif lyrics_language == 'Non-English':
-        lyrics = remove_english.sub("\\1", lyrics, 0)
-    lyrics = newline_pattern.sub('\n', lyrics)
+    def string_formatter(s):
+        if lyrics_language == 'English':
+            s = remove_non_english.sub("\\1", s, 0)
+        elif lyrics_language == 'Non-English':
+            s = remove_english.sub("\\1", s, 0)
+        s = remove_extra_newlines(s)
+        return s
+
+    if isinstance(lyrics, BeautifulSoup):
+        strings = [x for x in lyrics.descendants
+                   if (isinstance(x, NavigableString)
+                       and len(x.strip()) != 0
+                       and not isinstance(x, Comment))
+                   ]
+
+        for string in strings:
+            formatted = string_formatter(string)
+            string.replace_with(formatted)
+    else:
+        lyrics = string_formatter(lyrics)
+
     return lyrics
 
 
@@ -54,47 +76,37 @@ def format_annotations(
     then remove the unnecessary HTML tags
     in the end.
     """
+    lyrics = BeautifulSoup(lyrics, 'html.parser')
     if include_annotations and annotations:
-        used = [0]
-        for a in re.finditer(r'<a href="(.*?)">(.*?)</a>', lyrics, re.DOTALL):
-            a_tag = a.group(0)
-            annotated_text = a.group(2)
-            annotation_id = int(a.group(1))
-            if annotation_id in used:
-                continue
+        for a in lyrics.find_all('a'):
+            annotation_id = a.attrs['href']
 
-            annotation = [x[1][0] for x in annotations if int(x[0]) == annotation_id]
-            if annotation:
-                annotation = annotation[0]
+            if format_type == 'zip':
+                annotation = (f'<annotation>'
+                              f'\n{identifiers[0]}\n'
+                              f'{annotations[annotation_id]}'
+                              f'\n{identifiers[1]}\n'
+                              '</annotation>')
             else:
-                print('annotation not found: ', annotation)
-                print(annotation_id)
-                print(a_tag[:10])
-                continue
-            annotation = newline_pattern.sub('\n', annotation)
-            annotation = links_pattern.sub('', annotation)
+                annotation = f'<annotation>{annotations[annotation_id]}</annotation>'
+            annotation = BeautifulSoup(annotation, 'html.parser')
+            # annotation = newline_pattern.sub('\n', annotation)
+            # annotation = links_pattern.sub('', annotation)
 
-            if format_type == 'telegraph':
-                f = f'{annotated_text}\n{identifiers[0]}{annotation}{identifiers[1]}'
-            elif format_type == 'pdf':
-                annotation = identifiers[0].join(annotation.splitlines(True))
-                language = format_language(annotated_text, lyrics_language)
-                f = f'{language}\n{identifiers[0]}{annotation}\n'
-            elif format_type == 'zip':
-                f = (f'{annotated_text}\n'
-                    f'{identifiers[0]}\n'
-                    f'{annotation}\n'
-                    f'{identifiers[1]}\n')
+            for tag in annotation.descendants:
+                if hasattr(tag, 'attrs'):
+                    for attribute, value in list(tag.attrs.items()):
+                        if attribute != 'href':
+                            tag.attrs.pop(attribute)
+                if tag.name in ('div', 'script', 'iframe'):
+                    tag.decompose()
+                if tag.name == 'blockquote':
+                    tag.unwrap()
 
-            lyrics = lyrics.replace(a_tag, f, 1)
-            used.append(annotation_id)
-    if format_type in ['telegraph', 'pdf']:
-        # remove all tags except b, br, strong, em and i
-        exp = (r'<(?:\/(?!(?:b|br|strong|em|i)>)[^>]*|'
-               r'(?!\/)(?!(?:b|br|strong|em|i)>)[^>]*)>')
-        lyrics = re.sub(exp, '', lyrics)
-    elif format_type == 'zip':
-        lyrics = re.sub(r'<.*?>', '', lyrics)
+            a.attrs.clear()
+
+            a.insert_after(annotation)
+
     return lyrics
 
 

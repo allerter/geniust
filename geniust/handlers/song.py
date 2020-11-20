@@ -1,6 +1,5 @@
 import threading
 
-from bs4 import NavigableString
 from telegram.constants import MAX_MESSAGE_LENGTH
 
 from .. import (utils, genius, database, END, TYPING_SONG)
@@ -60,16 +59,7 @@ def display_lyrics(bot, user_data, song_id):
     # formatting lyrics language
     strings = []
 
-    for descendant in lyrics.descendants:
-        if not isinstance(descendant, NavigableString):
-            continue
-        if len(descendant.strip()) == 0:
-            continue
-        strings.append(descendant)
-
-    for string in strings:
-        formatted = utils.format_language(string, lyrics_language)
-        string.replace_with(formatted)
+    lyrics = utils.format_language(lyrics, lyrics_language)
 
     # edit the message for callback query users
     bot.delete_message(chat_id=user_data['chat_id'],
