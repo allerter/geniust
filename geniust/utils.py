@@ -3,43 +3,45 @@ Some regular expressions, and methods used throughout the code.
 Kept here in case improvements are added.
 """
 import re
+
 from bs4 import BeautifulSoup, NavigableString, Comment
 
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
-remove_non_english = re.compile(
-    r"""(\[[^\]\n]+\] # ignore headers
-    |\\n  # ignore newlines in English lines
-    |!--![\S\s]*?!__!  # ignore annotations and HTML tags inside !--! and !__!
-    |<.*?>) # ignore HTML tags
-    |.*  # capture the beginning of sentence
-    [^\x00-\x7F]  # but must be followed by a non-ASCII character
-    .*  # get the rest of the sentence
-    """, re.MULTILINE | re.VERBOSE
+regex = (
+    r'(\[[^\]\n]+\]'  # ignore headers like [Chorus]
+    r'|\\n'  # ignore newlines in English lines
+    r'|!--![\S\s]*?!__!'  # ignore annotations inside !--! and !__!
+    r'|<.*?>)'  # ignore HTML tags
+    r'|.*'  # capture the beginning of a sentence that
+    r'[^\x00-\x7F]'  # is followed by a non-ASCII character
+    r'.*'  # get the rest of the sentence
 )
+remove_non_english = re.compile(regex, re.MULTILINE)
 
-# the two expressions below are fairly like
-# the ones below except they capture English lines.
-# the only noticeable difference is
-# ignoring \u2005 or \u200c characters usually used in Persian
+# The two expressions are fairly like
+# the one below captures lines in English.
+# The only noticeable difference is
+# ignoring \u2005 or \u200c characters usually used in Persian.
 remove_english = re.compile(
     r"(\[[^\]\n]+\]|\\n|\\u200[5c]|!--![\S\s]*?!__!|<.*?>)|^.*[a-zA-Z]+.*",
     re.MULTILINE
 )
 
-# remove extra newlines except the ones before headers
+# remove extra newlines except the ones before headers.
+# Removes instances of two or more newlines (either \n or <br>)
 newline_pattern = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
 
-# header_pattern = re.compile(r'') add newline before headers where
-# there is only one newline before them TODO
-links_pattern = re.compile(r'\nhttp[s].*')  # remove links from annotations
+# remove links from annotations
+links_pattern = re.compile(r'\nhttp[s].*')
 
 
-def remove_extra_newlines(s):
+def remove_extra_newlines(s: str) -> str:
     return newline_pattern.sub('\n', s)
 
 
-def format_language(lyrics, lyrics_language):
-    """removes English/Non-English characters or returns the unchanged lyrics"""
+def format_language(lyrics: [BeautifulSoup, str],
+                    lyrics_language: [BeautifulSoup, str]):
+    """removes (non-)ASCII characters"""
     def string_formatter(s):
         if lyrics_language == 'English':
             s = remove_non_english.sub("\\1", s, 0)

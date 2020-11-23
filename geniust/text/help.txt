@@ -6,7 +6,7 @@ Genius T offers the following services:
 
 🔶 You can search for song lyrics using inline search too! Genius T will automatically apply your customizations.
 
-The bot has a menu with an InlineKeyboard that can be accessed using /start. But the commands below are there for convenience.
+The bot has a menu with an InlineKeyboardMarkup that can be accessed using /start. But the commands below are there for convenience.
 ➖➖ Available commands ➖➖
 /song_lyrics - search for song lyrics
 /album_lyrics use - get album lyrics

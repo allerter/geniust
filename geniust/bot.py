@@ -17,7 +17,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler
 )
-
 from telegram import Bot
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -27,7 +26,7 @@ from telegram.utils.webhookhandler import WebhookServer
 import tornado.ioloop
 import tornado.web
 
-from handlers import (
+from functions import (
     album,
     artist,
     song,
@@ -35,21 +34,17 @@ from handlers import (
     inline_query
 )
 from constants import (
-    DEVELOPERS,
+    BOT_TOKEN, DEVELOPERS,
     END, LYRICS_LANG, BOT_LANG, INCLUDE, MAIN_MENU, SELECT_ACTION,
-    BOT_TOKEN,
-    SERVER_PORT,
-    SERVER_ADDRESS,
     TYPING_ALBUM, TYPING_ARTIST, TYPING_SONG, TYPING_FEEDBACK,
+    SERVER_PORT, SERVER_ADDRESS,
 )
-from constants import username
-
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
-logging.getLogger('telethon').setLevel(logging.ERROR)
-logger = logging.getLogger('geniust')
+                    level=logging.NOTSET)
+# logging.getLogger('telethon').setLevel(logging.ERROR)
+# logger = logging.getLogger('geniust')
 
 
 class PostHandler(RequestHandler):
@@ -85,6 +80,7 @@ def main_menu(update, context):
     Displays song lyrics, album lyrics, and customize output.
 
     """
+    print('here')
     context.user_data['command'] = False
     if update.message:
         chat_id = update.message.chat.id
@@ -97,15 +93,25 @@ def main_menu(update, context):
 
     buttons = [
         [
-            IButton('Album', str(TYPING_ALBUM)),
-            IButton('Artist', str(TYPING_ARTIST)),
-            IButton('Song', str(TYPING_SONG)),
+            IButton(
+                'Album',
+                callback_data=str(TYPING_ALBUM)),
+            IButton(
+                'Artist',
+                callback_data=str(TYPING_ARTIST)),
+            IButton(
+                'Song',
+                callback_data=str(TYPING_SONG)),
 
         ],
 
         [
-            IButton('Customize Lyrics', str(LYRICS_LANG)),
-            IButton('Change Language', str(BOT_LANG))
+            IButton(
+                'Customize Lyrics',
+                callback_data=str(LYRICS_LANG)),
+            IButton(
+                'Change Language',
+                callback_data=str(BOT_LANG))
         ],
 
     ]
@@ -223,24 +229,28 @@ def error(update, context):
 def main():
     """Main function that holds the conversation handlers, and starts the bot"""
     updater = Updater(
-        Bot(BOT_TOKEN, defaults=Defaults(parse_mode='html')),
-        workers=20
+        bot=Bot(BOT_TOKEN, defaults=Defaults(parse_mode='html')),
+        workers=5,
     )
-
-    global username
-    logger.debug(username)
-    username = updater.bot.get_me().username
-    from constants import username as un
-    logger.debug(un)
 
     dp = updater.dispatcher
     my_states = [
+
         CallbackQueryHandler(
             main_menu,
             pattern='^' + str(MAIN_MENU) + '$'),
+
+        CallbackQueryHandler(
+            album.type_album,
+            pattern='^' + str(TYPING_ALBUM) + '$'),
+
         CallbackQueryHandler(
             album.display_album,
             pattern=r'^album_[0-9]+$'),
+
+        CallbackQueryHandler(
+            album.display_album_covers,
+            pattern=r'^album_[0-9]+_covers$'),
 
         CallbackQueryHandler(
             album.display_album_tracks,
@@ -255,6 +265,10 @@ def main():
             pattern=r'^album_[0-9]+_aio_(pdf|tgf|zip)$'),
 
         CallbackQueryHandler(
+            artist.type_artist,
+            pattern=f'^{TYPING_ARTIST}$'),
+
+        CallbackQueryHandler(
             artist.display_artist,
             pattern=r'^artist_[0-9]+$'),
 
@@ -265,6 +279,10 @@ def main():
         CallbackQueryHandler(
             artist.display_artist_songs,
             pattern=r'^artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+
+        CallbackQueryHandler(
+            song.type_song,
+            pattern=f'^{TYPING_SONG}$'),
 
         CallbackQueryHandler(
             song.display_song,
@@ -286,18 +304,34 @@ def main():
             customize.bot_language,
             pattern='^' + str(BOT_LANG) + '$'),
     ]
+
     user_input = {
-        TYPING_ALBUM: [MessageHandler(
-            Filters.text & (~Filters.command),
-            album.search_albums)],
+        TYPING_ALBUM: [
+            MessageHandler(
+                Filters.text & (~Filters.command),
+                album.search_albums),
+            CallbackQueryHandler(
+                album.type_album,
+                pattern='^(?!' + str(END) + ').*$'),
+        ],
 
-        TYPING_ARTIST: [MessageHandler(
-            Filters.text & (~Filters.command),
-            artist.search_artists)],
+        TYPING_ARTIST: [
+            MessageHandler(
+                Filters.text & (~Filters.command),
+                artist.search_artists),
+            CallbackQueryHandler(
+                artist.type_artist,
+                pattern='^(?!' + str(END) + ').*$')
+        ],
 
-        TYPING_SONG: [MessageHandler(
-            Filters.text & (~Filters.command),
-            song.search_songs)],
+        TYPING_SONG: [
+            MessageHandler(
+                Filters.text & (~Filters.command),
+                song.search_songs),
+            CallbackQueryHandler(
+                song.type_song,
+                pattern='^(?!' + str(END) + ').*$')
+        ],
 
         TYPING_FEEDBACK: [MessageHandler(
             Filters.text & (~Filters.command),
@@ -315,29 +349,18 @@ def main():
             customize.bot_language,
             pattern='^(?!' + str(END) + ').*$')],
 
-        TYPING_ALBUM: [CallbackQueryHandler(
-            album.type_album,
-            pattern='^(?!' + str(END) + ').*$')],
-
-        TYPING_ARTIST: [CallbackQueryHandler(
-            artist.type_artist,
-            pattern='^(?!' + str(END) + ').*$')],
-
-        TYPING_SONG: [CallbackQueryHandler(
-            song.type_song,
-            pattern='^(?!' + str(END) + ').*$')],
-
     }
 
     # ----------------- MAIN MENU -----------------
 
     main_menu_conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler('start', main_menu, Filters.regex(r'^$')),
+            CommandHandler('start', main_menu),
             *my_states,
         ],
 
         states={
+            SELECT_ACTION: my_states,
             **user_input
 
         },
@@ -424,6 +447,13 @@ def main():
 
         CommandHandler(
             'start',
+            album.display_album_covers,
+            Filters.regex(r'^album_[0-9]+_covers$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
             album.display_album_tracks,
             Filters.regex(r'^album_[0-9]+_tracks$'),
             pass_args=True
@@ -468,10 +498,12 @@ def main():
     # if SERVER_PORT:
     #     webhook_thread = WebhookThread()
     #     webhook_thread.start()
-    # start polling
-    # updater.start_polling()
-    updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
-    updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
+    if SERVER_PORT:
+        updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
+        updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
+    else:
+        updater.start_polling()
+
     updater.idle()
 
 

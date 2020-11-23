@@ -11,18 +11,37 @@ from concurrent.futures import ThreadPoolExecutor
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-from constants import (
+from geniust.constants import (
     TELETHON_API_ID,
     TELETHON_API_HASH,
     TELETHON_SESSION_STRING,
-    ANNOTATIONS_TELEGRAM_CHANNEL,
+    ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN
 )
 
 try:
-    from bot import logger
+    from .bot import logger
 except ImportError:
     logger = logging.getLogger(__file__)
+
+
+def get_channel():
+
+    client = TelegramClient(
+        StringSession(TELETHON_SESSION_STRING),
+        TELETHON_API_ID,
+        TELETHON_API_HASH
+    )
+    client.start()
+
+    channel = client.loop.run_until_complete(
+        client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
+    )
+    client.disconnect()
+    return channel
+
+
+ANNOTATIONS_CHANNEL = get_channel()
 
 
 def telegram_annotation(a):
@@ -198,14 +217,14 @@ class GeniusT(Genius):
                 # send the annotation to the telegram channel
                 msg = client.loop.run_until_complete(
                     client.send_message(
-                        entity=ANNOTATIONS_TELEGRAM_CHANNEL,
+                        entity=ANNOTATIONS_CHANNEL,
                         message=annotation,
                         link_preview=preview,
                         parse_mode='HTML')
                 )
                 # used to replace href attributes of <a> tags
                 # in the lyrics with links to the annotations
-                url = f'https://t.me/{ANNOTATIONS_TELEGRAM_CHANNEL}/{msg.id}'
+                url = f'https://t.me/{ANNOTATIONS_CHANNEL_HANDLE}/{msg.id}'
                 posted_annotations.append((annotation_id, url))
 
             client.disconnect()

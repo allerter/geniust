@@ -1,15 +1,12 @@
-from telegram.ext import ConversationHandler
+"""Some constants e.g. the bot token"""
+from telegram import Bot
 
-from database import Database
-# State definitions for conversation
-(SELECT_ACTION, GENIUS, TELEGRAPH, CHECK_GENIUS_ALBUM, CUSTOMIZE_GENIUS, TYPING,
- OPTION1, OPTION2, OPTION3, OPTION4, IDENTIFIER, AUTHOR_NAME, AUTHOR_URL, ANNOTATIONS,
- LYRICS_LANG, START_OVER, INCLUDE, TYPING_ALBUM, STATISTICS, CURRENT_LEVEL,
- CREATE_ACCOUNT, CREATE_PAGES, CUSTOMIZE_TELEGRAPH, LOGIN, DESCRIPTION, SELF,
- CHECK_GENIUS_SONG, TYPING_SONG, TYPING_ACCOUNT, DOWNLOAD_ALBUM) = range(30)
+from geniust.db import Database
+from geniust.api import GeniusT
+from geniust.constants import BOT_TOKEN
 
-END = ConversationHandler.END
-
-username = ''
+username = Bot(BOT_TOKEN).get_me().username
 
 database = Database(table='data')
+
+genius = GeniusT()
