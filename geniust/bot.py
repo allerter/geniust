@@ -41,8 +41,10 @@ from constants import (
 )
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.NOTSET)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+logging.getLogger('telegram').setLevel(logging.INFO)
 # logging.getLogger('telethon').setLevel(logging.ERROR)
 # logger = logging.getLogger('geniust')
 
@@ -80,6 +82,7 @@ def main_menu(update, context):
     Displays song lyrics, album lyrics, and customize output.
 
     """
+    print(context.args)
     print('here')
     context.user_data['command'] = False
     if update.message:
@@ -209,16 +212,18 @@ def error(update, context):
             payload += f' within the chat <i>{update.effective_chat.title}</i>'
             if update.effective_chat.username:
                 payload += f' (@{update.effective_chat.username})'
+            chat_id = update.effective_chat.id
+            msg = f'An error occurred: {context.error}\nStart again by clicking /start'
+            context.bot.send_message(chat_id=chat_id,
+                                     text=msg)
         # lets put this in a "well" formatted text
         text = (f"Hey.\n The error <code>{context.error}</code> happened{payload}."
                 f"The full traceback:\n\n<code>{trace}</code>")
-        chat_id = update.effective_chat.chat.id
-        msg = f'An error occurred: {context.error}\nStart again by clicking /start'
-        context.bot.send_message(chat_id=chat_id,
-                                 text=msg)
-    # and send it to the dev(s)
+
     if text == '':
         text = 'Empty Error\n' + payload + trace
+
+    # and send it to the dev(s)
     for dev_id in DEVELOPERS:
         context.bot.send_message(dev_id, text, parse_mode='HTML')
     # we raise the error again, so the logger module catches it.
@@ -228,9 +233,11 @@ def error(update, context):
 
 def main():
     """Main function that holds the conversation handlers, and starts the bot"""
+
     updater = Updater(
-        bot=Bot(BOT_TOKEN, defaults=Defaults(parse_mode='html')),
-        workers=5,
+        bot=Bot(BOT_TOKEN,
+                defaults=Defaults(parse_mode='html',
+                                  disable_web_page_preview=True)),
     )
 
     dp = updater.dispatcher
@@ -355,7 +362,9 @@ def main():
 
     main_menu_conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler('start', main_menu),
+            CommandHandler('start',
+                           main_menu,
+                           Filters.regex(r'^\D*$')),
             *my_states,
         ],
 
@@ -410,24 +419,24 @@ def main():
     inline_query_handlers = [
 
         InlineQueryHandler(
-            inline_query.menu,
-            pattern=r'^(?!\.(album|artist|song)\s)'
-        ),
-
-        InlineQueryHandler(
             inline_query.search_albums,
-            pattern=r'^\.album\s'
+            pattern=r'^\.album\s.{1,}'
         ),
 
         InlineQueryHandler(
             inline_query.search_artists,
-            pattern=r'^\.artist\s'
+            pattern=r'^\.artist\s.{1,}'
         ),
 
         InlineQueryHandler(
             inline_query.search_songs,
-            pattern=r'^\.song\s'
+            pattern=r'^\.song\s.{1,}'
         ),
+
+        InlineQueryHandler(
+            inline_query.menu,
+        ),
+
 
     ]
 
@@ -441,55 +450,56 @@ def main():
         CommandHandler(
             'start',
             album.display_album,
-            Filters.regex(r'^album_[0-9]+$'),
+            Filters.regex(r'^/start album_[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_covers,
-            Filters.regex(r'^album_[0-9]+_covers$'),
+            Filters.regex(r'^/start album_[0-9]+_covers$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_tracks,
-            Filters.regex(r'^album_[0-9]+_tracks$'),
+            Filters.regex(r'^/start album_[0-9]+_tracks$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_formats,
-            Filters.regex(r'^album_[0-9]+_aio$'),
+            Filters.regex(r'^/start album_[0-9]+_aio$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_songs,
-            Filters.regex(r'^artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+            Filters.regex(r'^/start artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_albums,
-            Filters.regex(r'^artist_[0-9]+_albums$'),
+            Filters.regex(r'^/start artist_[0-9]+_albums$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             song.display_song,
-            Filters.regex(r'^song_[0-9]+$'),
+            Filters.regex(r'^/start song_[0-9]+$'),
             pass_args=True
         ),
     ]
 
     for handler in argumented_start_handlers:
         dp.add_handler(handler)
+
 
     # log all errors
     dp.add_error_handler(error)

@@ -83,6 +83,11 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
     # the new lyrics page: /12345/somethings
     get_id = re.compile(r'(?<=#note-)[0-9]+|(?<=^/)[0-9]+(?=/)')
 
+    if posted_annotations == []:
+        unwrap = True
+    else:
+        unwrap = False
+
     # remove extra tags and attributes from the lyrics
     # any tag attribute except href is redundant
     for tag in lyrics.find_all('a'):
@@ -106,7 +111,7 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
 
                 # replace the href attribute with either the link to the
                 # annotation on telegram or the annotation ID
-                if telegram_song:
+                if telegram_song and not unwrap:
                     url = None
                     for a in posted_annotations:
                         a_id = a[0]
@@ -115,6 +120,8 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
                             url = a_url
                             break
                     tag['href'] = url
+                elif unwrap:
+                    tag.attrs.pop('href')
                 else:
                     tag['href'] = get_id.search(value)[0]
 
@@ -124,7 +131,7 @@ class GeniusT(Genius):
     def __init__(self, *args, **kwargs):
         super().__init__(GENIUS_TOKEN, *args, **kwargs)
 
-        self.response_format = 'html'
+        self.response_format = 'html,plain'
         self.retries = 3
         self.timeout = 5
 
@@ -170,6 +177,7 @@ class GeniusT(Genius):
 
         """
         annotations = []
+        posted_annotations = []
 
         path = song_url.replace("https://genius.com/", "")
 
@@ -192,16 +200,15 @@ class GeniusT(Genius):
             lyrics = lyrics[0]
             lyrics = lyrics.find('p') if lyrics.find('p') else lyrics
         else:
+            br = html.new_tag('br')
             for div in lyrics[1:]:
-                lyrics[0].append(div)
+                lyrics[0].append(div).append(br)
             lyrics = lyrics[0]
 
         if include_annotations and not telegram_song:
             annotations = self.song_annotations(song_id)
         elif include_annotations and telegram_song:
             annotations = self.song_annotations(song_id)
-
-            posted_annotations = []
 
             loop = asyncio.new_event_loop()
             client = TelegramClient(

@@ -5,6 +5,11 @@ Kept here in case improvements are added.
 import re
 
 from bs4 import BeautifulSoup, NavigableString, Comment
+from bs4.element import Tag
+from telegram.utils.helpers import create_deep_linked_url
+
+from geniust.constants import TELEGRAM_HTML_TAGS
+from geniust import username
 
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
 regex = (
@@ -35,8 +40,46 @@ newline_pattern = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
 links_pattern = re.compile(r'\nhttp[s].*')
 
 
+def deep_link(entity):
+    name = entity.get('name', entity.get('title'))
+    id_ = entity['id']
+    if 'album' in entity['api_path']:
+        type_ = 'album'
+    elif 'song' in entity['api_path']:
+        type_ = 'song'
+    elif 'artist' in entity['api_path']:
+        type_ = 'artist'
+
+    url = create_deep_linked_url(username, f"{type_}_{id_}")
+
+    return f"""<a href="{url}">{name}</a>"""
+
+
+def remove_unsupported_tags(soup, supported=None):
+    if supported is None:
+        supported = TELEGRAM_HTML_TAGS
+
+    restart = True
+    while restart:
+        restart = False
+        for tag in soup:
+            name = tag.name
+            if name is not None and name not in supported:
+                if tag.text:
+                    tag.unwrap()
+                tag.decompose()
+                restart = True
+                break
+
+    return soup
+
+
 def remove_extra_newlines(s: str) -> str:
     return newline_pattern.sub('\n', s)
+
+
+def remove_links(s: str) -> str:
+    return links_pattern.sub('', s)
 
 
 def format_language(lyrics: [BeautifulSoup, str],
@@ -50,7 +93,7 @@ def format_language(lyrics: [BeautifulSoup, str],
         s = remove_extra_newlines(s)
         return s
 
-    if isinstance(lyrics, BeautifulSoup):
+    if isinstance(lyrics, Tag):
         strings = [x for x in lyrics.descendants
                    if (isinstance(x, NavigableString)
                        and len(x.strip()) != 0
@@ -58,7 +101,7 @@ def format_language(lyrics: [BeautifulSoup, str],
                    ]
 
         for string in strings:
-            formatted = string_formatter(string)
+            formatted = string_formatter(str(string))
             string.replace_with(formatted)
     else:
         lyrics = string_formatter(lyrics)
@@ -124,6 +167,21 @@ def format_title(artist, title):
 def format_filename(string):
     """removes invalid characters in file name"""
     return re.sub(r'[\\/:*?\"<>|]', '', string)
+
+
+def get_description(entity: str) -> str:
+    if not entity.get('description_annotation'):
+        return ''
+
+    description = entity['description_annotation']['annotations'][0]['body']['plain']
+
+    if not description:
+        return ''
+
+    description = remove_links(description)
+    description = remove_extra_newlines(description)
+
+    return description.strip()
 
 
 def human_format(num):

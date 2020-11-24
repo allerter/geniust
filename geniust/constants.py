@@ -17,6 +17,14 @@ TELETHON_API_ID = os.environ['TELETHON_API_ID']
 TELETHON_API_HASH = os.environ['TELETHON_API_HASH']
 TELETHON_SESSION_STRING = os.environ['TELETHON_SESSION_STRING']
 
+TELEGRAM_HTML_TAGS = [
+    'b', 'strong',
+    'i', 'em',
+    'u', 'ins',
+    's', 'strike', 'del',
+    'a',
+    'code', 'pre'
+]
 
 # State definitions for conversation
 class AutoRange:

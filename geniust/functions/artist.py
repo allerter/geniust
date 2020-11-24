@@ -1,6 +1,5 @@
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
-from telegram.utils.helpers import create_deep_linked_url
 
 from geniust.constants import (
     TYPING_ARTIST, END,
@@ -36,9 +35,9 @@ def search_artists(update, context):
         artist = hit['result']
         artist_id = artist['id']
         text = artist['name']
-        callback = f"artist_{artist_id}"
+        callback_data = f"artist_{artist_id}"
 
-        buttons.append([IBKeyboard(text, callback)])
+        buttons.append([IButton(text, callback_data=callback_data)])
 
     update.message.reply_text(
         text='Choose an artist',
@@ -49,28 +48,31 @@ def search_artists(update, context):
 
 def display_artist(update, context):
     bot = context.bot
-    chat_id = update.callback_query.message.chat.id
-    artist_id = int(update.callback_query.data.split('_')[1])
-    language = context.user_data['menu_lang']
-
-    update.callback_query.edit_message_reply_markup()
+    if update.callback_query:
+        chat_id = update.callback_query.message.chat.id
+        artist_id = int(update.callback_query.data.split('_')[1])
+        update.callback_query.answer()
+        update.callback_query.edit_message_reply_markup(None)
+    else:
+        chat_id = update.message.chat.id
+        artist_id = int(context.args[0].split('_')[1])
 
     artist = genius.artist(artist_id)['artist']
     cover_art = artist['image_url']
-    caption = artist_caption(artist, language)
+    caption = artist_caption(artist)
 
     buttons = [
         [IButton(
-            "List Songs (By Popularity)",
+            "Songs (By Popularity)",
             callback_data=f"artist_{artist['id']}_songs_ppl")],
         [IButton(
-            "List Songs (By Release Date)",
+            "Songs (By Release Date)",
             callback_data=f"artist_{artist['id']}_songs_rdt")],
         [IButton(
-            "List Songs (By Title)",
+            "Songs (By Title)",
             callback_data=f"artist_{artist['id']}_songs_ttl")],
         [IButton(
-            "List Albums",
+            "Albums",
             callback_data=f"artist_{artist['id']}_albums")],
     ]
 
@@ -82,32 +84,36 @@ def display_artist(update, context):
 
 
 def display_artist_albums(update, context):
-    artist_id = int(update.callback_query.data.split('_')[1])
-    message = update.callback_query.message
-    chat_id = update.callback_query.message.chat.id
+    if update.callback_query:
+        update.callback_query.answer()
+        artist_id = int(update.callback_query.data.split('_')[1])
+        message = update.callback_query.message
+        chat_id = update.callback_query.message.chat.id
+    else:
+        chat_id = update.message.chat.id
+        artist_id = int(context.args[0].split('_')[1])
+        message = None
+        chat_id = update.message.chat.id
+
     albums = []
-    username = context.bot.get_me().username
 
     albums_list = genius.artist_albums(artist_id, per_page=50)
     for album in albums_list['albums']:
-        album_id = album['id']
-        album_name = album['name']
-        url = create_deep_linked_url(username, f'album_{album_id}')
-        text = f"""\n• <a href="{url}">{album_name}"""
+        text = f"""\n• {utils.deep_link(album)}</a>"""
 
         albums.append(text)
 
     if albums:
-        artist = albums_list[0]['artist']['name']
-        albums = f"\n<b>{artist}'s Albums</b>\n{''.join(albums)}"
+        artist = albums_list['albums'][0]['artist']['name']
+        albums = f"\n<b>{artist}</b>'s Albums:\n{''.join(albums)}"
     else:
         artist = genius.artist(artist_id)['artist']['name']
         text = f'{artist} has no albums.'
         context.bot.send_message(chat_id, text)
         return END
 
-    if len(message.text) + len(albums) < 1024:
-        update.callback_query.edit_message_caption(message.text + albums)
+    if message and len(message.caption) + len(albums) < 1024:
+        update.callback_query.edit_message_caption(message.caption + albums)
     else:
         context.bot.send_message(chat_id, albums)
 
@@ -115,12 +121,18 @@ def display_artist_albums(update, context):
 
 
 def display_artist_songs(update, context):
-    data = update.callback_query.data.split('_')
-    artist_id, sort = int(data[1]), data[3]
-    message = update.callback_query.message
-    chat_id = update.callback_query.message.chat.id
+    if update.callback_query:
+        update.callback_query.answer()
+        data = update.callback_query.data.split('_')
+        artist_id, sort = int(data[1]), data[3]
+        message = update.callback_query.message
+        chat_id = update.callback_query.message.chat.id
+    else:
+        artist_id = int(context.args[0].split('_')[1])
+        message = None
+        chat_id = update.message.chat.id
+
     songs = []
-    username = context.bot.get_me().username
 
     if sort == 'ppl':
         sort = 'popularity'
@@ -131,16 +143,13 @@ def display_artist_songs(update, context):
 
     songs_list = genius.artist_songs(artist_id, per_page=50, sort=sort)
     for song in songs_list['songs']:
-        song_id = song['id']
-        song_name = song['name']
-        url = create_deep_linked_url(username, f'song_{song_id}')
-        text = f"""\n• <a href="{url}">{song_name}"""
+        text = f"""\n• {utils.deep_link(song)}"""
 
         songs.append(text)
 
     if songs:
-        artist = songs_list[0]['primary_artist']['name']
-        songs = (f"\n<b>{artist}'s Songs Sorted By {sort.capitilize()}:"
+        artist = songs_list['songs'][0]['primary_artist']['name']
+        songs = (f"\n<b>{artist}</b>'s Songs Sorted By {sort.capitalize()}:"
                  f"</b>\n{''.join(songs)}")
     else:
         artist = genius.artist(artist_id)['artist']['name']
@@ -148,8 +157,8 @@ def display_artist_songs(update, context):
         context.bot.send_message(chat_id, text)
         return END
 
-    if len(message.text) + len(songs) < 1024:
-        update.callback_query.edit_message_caption(message.text + songs)
+    if message and len(message.caption) + len(songs) < 1024:
+        update.callback_query.edit_message_caption(message.caption + songs)
     else:
         context.bot.send_message(chat_id, songs)
 
@@ -159,44 +168,47 @@ def display_artist_songs(update, context):
 def artist_caption(artist, length_limit=1024):
     alternate_names = ''
     social_media = ''
+    followers_count = ''
     social_media_links = []
 
-    if artist['alternate_names']:
+    if artist.get('alternate_names'):
         alternate_names = (f"\n<b>Alternate Names</b>"
                            f"\n{', '.join(artist['alternate_names'])}")
 
-    if artist['facebook_name']:
+    if artist.get('facebook_name'):
         url = f"https://www.facebook.com/{artist['facebook_name']}"
         social_media_links.append(f"""<a href="{url}">Facebook</a>""")
-    if artist['instagram_name']:
+    if artist.get('instagram_name'):
         url = f"https://www.instagram.com/{artist['instagram_name']}"
         social_media_links.append(f"""<a href="{url}">Instagram</a>""")
-    if artist['twitter_name']:
+    if artist.get('twitter_name'):
         url = f"https://www.twitter.com/{artist['twitter_name']}"
         social_media_links.append(f"""<a href="{url}">Twitter</a>""")
     if social_media_links:
         social_media = f'\n<b>Social Media:</b>\n{" | ".join(social_media_links)}'
 
-    followers_count = utils.human_format(artist['followers_count'])
+    if artist.get('followers_count'):
+        followers_count = utils.human_format(artist['followers_count'])
+        followers_count = f"\n<b>Followers Count:</b>\n{followers_count}"
 
-    description = artist['description_annotation']['annotations'][0]['body']['html']
+    description = utils.get_description(artist)
 
     string = (
         f"{artist['name']}\n"
         f"\n<b>Name:</b>\n{artist['name']}"
         f"{alternate_names}"
-        f"\n<b>Followers Count:</b>\n{followers_count}"
+        f"{followers_count}"
         f"{social_media}"
         f"\n\n{description}"
     )
     string = string.strip()
 
     if length_limit == 1024 and len(string) > 1024:
-        return f'{string[:1021]}...'
+        return string[:1021] + '...'
     elif length_limit == 4096:
-        img = f"""<a href="{artist['image_url']}">&#8709</a>"""
-        if len(string) > 4096:
-            string = img + string
-            return f'{string[:4093]}...'
-        else:
-            return string + img
+        img = f"""<a href="{artist['image_url']}">&nbsp;</a>"""
+        if len(img) + len(string) > 4096:
+            string = string[:4096 - len(img) - 3]
+        return img + string + '...'
+    else:
+        return string

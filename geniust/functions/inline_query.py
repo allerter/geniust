@@ -50,7 +50,9 @@ def menu(update, context):
 
 
 def search_albums(update, context):
-    text = update.inline_query.query
+    text = update.inline_query.query.split('.album ')[1].strip()
+    if not text:
+        return
 
     search_more = [IButton(
         text='Search Albums...',
@@ -62,20 +64,22 @@ def search_albums(update, context):
     for i, hit in enumerate(res['sections'][0]['hits']):
         album = hit['result']
         name = album['name']
-        artist = album['primary_artist']['name']
+        artist = album['artist']['name']
         text = utils.format_title(artist, name)
         album_id = album['id']
 
         description = 'Translation' if 'Genius' in artist else ''
         answer_text = album_caption(album, 4096)
+        album_url = create_deep_linked_url(username, f"album_{album_id}")
         coverlist_url = create_deep_linked_url(username, f"album_{album_id}_covers")
         songlist_url = create_deep_linked_url(username, f"album_{album_id}_songs")
         aio_url = create_deep_linked_url(username, f"album_{album_id}_aio")
 
         buttons = [
+            [IButton("Full Details", url=album_url)],
             [IButton("Cover Arts", url=coverlist_url)],
-            [IButton("List Songs", url=songlist_url)],
-            [IButton("All-In-One Lyrics (PDF, ...)", url=aio_url)],
+            [IButton("Tracks", url=songlist_url)],
+            [IButton("Lyrics (PDF, ...)", url=aio_url)],
             search_more
         ]
         keyboard = IBKeyboard(buttons)
@@ -83,7 +87,9 @@ def search_albums(update, context):
             id=uuid4(),
             title=text,
             thumb_url=album['cover_art_thumbnail_url'],
-            input_message_content=InputTextMessageContent(answer_text),
+            input_message_content=InputTextMessageContent(
+                answer_text,
+                disable_web_page_preview=False),
             reply_markup=keyboard,
             description=description
         )
@@ -104,7 +110,9 @@ def search_albums(update, context):
 
 
 def search_artists(update, context):
-    text = update.inline_query.query
+    text = update.inline_query.query.split('.artist ')[1].strip()
+    if not text:
+        return
 
     search_more = [IButton(
         text='Search artists...',
@@ -118,8 +126,11 @@ def search_artists(update, context):
         text = artist['name']
         artist_id = artist['id']
 
-        description = f"AKA {', '.join(artist['alternate_names'])}"
+        # description = f"AKA {', '.join(artist['alternate_names'])}"
         answer_text = artist_caption(artist, 4096)
+        artist_url = create_deep_linked_url(
+            username,
+            f"artist_{artist_id}")
         songlist_ppl = create_deep_linked_url(
             username,
             f"artist_{artist_id}_songs_ppl")
@@ -134,10 +145,11 @@ def search_artists(update, context):
             f"artist_{artist_id}_albums")
 
         buttons = [
-            [IButton("List Songs (By Popularity)", url=songlist_ppl)],
-            [IButton("List Songs (By Release Date)", url=songlist_rdt)],
-            [IButton("List Songs (By Title)", url=songlist_ttl)],
-            [IButton("List Albums", url=albumlist)],
+            [IButton("Full Details", url=artist_url)],
+            [IButton("Songs (By Popularity)", url=songlist_ppl)],
+            [IButton("Songs (By Release Date)", url=songlist_rdt)],
+            [IButton("Songs (By Title)", url=songlist_ttl)],
+            [IButton("Albums", url=albumlist)],
             search_more
         ]
         keyboard = IBKeyboard(buttons)
@@ -145,9 +157,11 @@ def search_artists(update, context):
             id=uuid4(),
             title=text,
             thumb_url=artist['image_url'],
-            input_message_content=InputTextMessageContent(answer_text),
+            input_message_content=InputTextMessageContent(
+                answer_text,
+                disable_web_page_preview=False),
             reply_markup=keyboard,
-            description=description
+            # description=description
         )
         # It's possible to provide results that are captioned photos
         # of the song cover art, but that requires using InlineQueryResultPhoto
@@ -166,7 +180,9 @@ def search_artists(update, context):
 
 
 def search_songs(update, context):
-    text = update.inline_query.query
+    text = update.inline_query.query.split('.song ')[1].strip()
+    if not text:
+        return
 
     search_more = [IButton(
         text='Search Songs...',
@@ -184,14 +200,21 @@ def search_songs(update, context):
 
         description = 'Translation' if 'Genius' in artist else ''
         answer_text = song_caption(song, 4096)
-        button_url = create_deep_linked_url(username, f'song_{song_id}')
-        lyrics = [IButton(text='Lyrics', url=button_url)]
-        keyboard = IBKeyboard([lyrics, search_more])
+        song_url = create_deep_linked_url(username, f'song_{song_id}')
+        lyrics_url = create_deep_linked_url(username, f'song_{song_id}_lyrics')
+        buttons = [
+            [IButton(text='Full Details', url=song_url)],
+            [IButton(text='Lyrics', url=lyrics_url)],
+            search_more
+        ]
+        keyboard = IBKeyboard(buttons)
         answer = InlineQueryResultArticle(
             id=uuid4(),
             title=text,
             thumb_url=song['song_art_image_thumbnail_url'],
-            input_message_content=InputTextMessageContent(answer_text),
+            input_message_content=InputTextMessageContent(
+                answer_text,
+                disable_web_page_preview=False),
             reply_markup=keyboard,
             description=description
         )
