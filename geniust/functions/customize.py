@@ -9,35 +9,47 @@ from geniust.constants import (
     END, LYRICS_LANG, SELECT_ACTION, BOT_LANG,
     OPTION1, OPTION2, OPTION3,
 )
-from geniust import database
+from geniust import database, get_user, texts
+from geniust.utils import log
 
-logger = logging.getLogger('geniust')
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
+@log
+@get_user
 def customize_menu(update, context):
     """main menu for lyrics customizations"""
+    language = context.user_data['bot_lang']
+    text = texts[language]['customize_menu']
     context.user_data['level'] = CUSTOMIZE_MENU
     chat_id = update.callback_query.message.chat.id
 
     include = context.user_data['include_annotations']
     lyrics_lang = context.user_data['lyrics_lang']
-    text = (f'What would you like to customize?'
-            f'\nYour customizations will be used for all lyrics requests'
-            f' (songs, albums, and inline searches).'
-            f'\nCurrent settings:'
-            f'\nLyrics Language: <b>{lyrics_lang}</b>'
-            f'\nInclude Annotations: <b>{"Yes" if include else "No"}</b>'
-            )
+    if lyrics_lang == 'English':
+        lyrics_lang = 'only_english'
+    elif lyrics_lang == 'Non-English':
+        lyrics_lang = 'only_non_english'
+    else:
+        lyrics_lang = 'enligh_and_non_english'
+
+    msg = (
+        text['body']
+        .replace('{language}', texts[language]['lyrics_language'][lyrics_lang])
+        .replace('{include}', texts[language][include])
+    )
 
     buttons = [
         [IButton(
-            'Lyrics Language',
+            text['lyrics_language'],
             callback_data=str(LYRICS_LANG))],
         [IButton(
-            'Annotations',
+            text['annotations'],
             callback_data=str(INCLUDE))],
         [IButton(
-            'Back',
+            texts[language]['back'],
             callback_data=str(END))],
     ]
     keyboard = IBKeyboard(buttons)
@@ -45,51 +57,53 @@ def customize_menu(update, context):
     try:
         update.callback_query.answer()
         update.callback_query.edit_message_text(
-            text=text,
+            text=msg,
             reply_markup=keyboard)
     except (AttributeError, BadRequest) as e:
         logger.info(f'{customize_menu}: {e}')
         context.bot.send_message(
             chat_id=chat_id,
-            text=text,
+            text=msg,
             reply_markup=keyboard)
 
     return SELECT_ACTION
 
 
+@log
+@get_user
 def lyrics_language(update, context):
     """Set lyrics language from one of three options."""
+    language = context.user_data['bot_lang']
+    text = texts[language]['lyrics_language']
     ud = context.user_data
     ud['level'] = CUSTOMIZE_MENU + 1
-
-    text = ('What characters would you like to be in the lyrics?'
-            '\nNote that by English I mean ASCII characters. This option is'
-            'useful for languages with non-ASCII alphabet (like Persian and Arabic).')
 
     # command
     if update.message or int(update.callback_query.data) == LYRICS_LANG:
 
         buttons = [
             [IButton(
-                'Only English (ASCII)',
+                text['only_english'],
                 callback_data=str(OPTION1))],
             [IButton(
-                'Only non-English (non-ASCII)',
+                text['only_non_english'],
                 callback_data=str(OPTION2))],
             [IButton(
-                'English + non-English',
+                text['enligh_and_non_english'],
                 callback_data=str(OPTION3))],
             [IButton(
-                'Back',
+                texts[language]['back'],
                 callback_data=str(END))]
         ]
         keyboard = IBKeyboard(buttons)
 
+        msg = text['body']
+
         if update.message:
             ud['command_entry'] = True
-            update.message.reply_text(text, reply_markup=keyboard)
+            update.message.reply_text(msg, reply_markup=keyboard)
         else:
-            context.bot.edit_message_text(text, reply_markup=keyboard)
+            update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
         return LYRICS_LANG
 
@@ -104,8 +118,7 @@ def lyrics_language(update, context):
 
     database.update_lyrics_language(chat_id, ud['lyrics_lang'])
 
-    text = ('Updated your preferences.\n\nCurrent language:'
-            f'<b>{context.user_data["lyrics_lang"]}</b>')
+    text = text['updated'].replace('{language}', ud['lyrics_lang'])
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
@@ -113,46 +126,45 @@ def lyrics_language(update, context):
     return END
 
 
+@log
+@get_user
 def bot_language(update, context):
     """Set bot language from one of two options."""
     ud = context.user_data
+    language = ud['bot_lang']
+    text = texts[language]['bot_language']
     ud['level'] = CUSTOMIZE_MENU + 1
 
-    text = 'Choose a language.'
-
     # command
-    if update.message or int(update.callback_query.data) == BOT_LANG:
+    if update.message or update.callback_query.data == str(BOT_LANG):
 
-        buttons = [
-            [IButton(
-                'English',
-                callback_data=str(OPTION1))],
-            [IButton(
-                'Persian',
-                callback_data=str(OPTION2))],
-        ]
+        buttons = []
+        for key in texts.keys():
+            buttons.append([IButton(text[key], callback_data=key)])
         keyboard = IBKeyboard(buttons)
+
+        msg = text['body']
 
         if update.message:
             ud['command_entry'] = True
-            update.message.reply_text(text, reply_markup=keyboard)
+            update.message.reply_text(msg, reply_markup=keyboard)
         else:
-            context.bot.edit_message_text(text, reply_markup=keyboard)
+            update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
         return BOT_LANG
 
     chat_id = update.callback_query.message.chat.id
-    data = int(update.callback_query.data)
-    if data == OPTION1:
-        ud['bot_language'] = 'English'
-    elif data == OPTION2:
-        update.callback_query.asnwer('Soon!')
+    data = update.callback_query.data
+    for key in texts.keys():
+        if data == key:
+            ud['bot_lang'] = data
+            break
+    else:
         return END
 
-    database.update_lyrics_language(chat_id, ud['lyrics_lang'])
+    database.update_bot_language(chat_id, ud['bot_lang'])
 
-    text = ('Updated your preferences.\n\nCurrent language:'
-            f'<b>{context.user_data["lyrics_lang"]}</b>')
+    text = text['updated'].replace('{language}', text[ud['bot_lang']])
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
@@ -160,26 +172,30 @@ def bot_language(update, context):
     return END
 
 
+@log
+@get_user
 def include_annotations(update, context):
     """Set whether to include annotations or not"""
     ud = context.user_data
+    language = ud['bot_lang']
+    text = texts[language]['include_annotations']
 
     # command
     if update.message or int(update.callback_query.data) == INCLUDE:
         buttons = [
-            [IButton('Yes', str(OPTION1))],
-            [IButton('No', str(OPTION2))],
-            [IButton('Back', str(END))]
+            [IButton(texts[language][True], str(OPTION1))],
+            [IButton(texts[language][False], str(OPTION2))],
+            [IButton(texts[language]['back'], str(END))]
         ]
         keyboard = IBKeyboard(buttons)
 
-        text = 'Would you like to include the annotations in the lyrics?'
+        msg = text['body']
 
         if update.message:
             ud['command_entry'] = True
-            update.message.reply_text(text, reply_markup=keyboard)
+            update.message.reply_text(msg, reply_markup=keyboard)
         else:
-            context.bot.edit_message_text(text, reply_markup=keyboard)
+            update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
         return INCLUDE
 
@@ -190,8 +206,7 @@ def include_annotations(update, context):
     database.update_include_annotations(chat_id, ud['include_annotations'])
 
     include = ud['include_annotations']
-    text = (f'Updated your preferences.'
-            f'{text}\n\nCurrent setting: <b>{"Yes" if include else "No"}</b>')
+    text = text['updated'].replace('{include}', texts[language][include])
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)

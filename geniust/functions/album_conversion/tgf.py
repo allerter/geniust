@@ -15,12 +15,7 @@ from bs4 import BeautifulSoup
 from geniust import utils
 from geniust.constants import TELEGRAPH_TOKEN
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.CRITICAL)
-try:
-    from bot import logger
-except ImportError:
-    logger = logging.getLogger(__file__)
+logger = logging.getLogger()
 
 
 def fetch(img):
@@ -228,7 +223,7 @@ def create_pages(user_data, album):
 
 
 def test(json_file, lyrics_language, include_annotations):
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
     user_data = {
         'lyrics_lang': lyrics_language,
         'include_annotations': include_annotations

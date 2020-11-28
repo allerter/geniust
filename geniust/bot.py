@@ -1,12 +1,25 @@
 """
 Main script of the bot which contains most of the functions.
 """
-import os
 import logging
-import traceback
 import sys
 import threading
+import traceback
+from typing import Optional, Awaitable
 
+import tornado.ioloop
+import tornado.web
+from geniust.functions import (
+    album,
+    artist,
+    song,
+    customize,
+    inline_query,
+    multi
+)
+from telegram import Bot
+from telegram import InlineKeyboardButton as IButton
+from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram.ext import (
     Defaults,
     Updater,
@@ -17,39 +30,29 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler
 )
-from telegram import Bot
-from telegram import InlineKeyboardButton as IButton
-from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram.utils.helpers import mention_html
-from tornado.web import url, RequestHandler
 from telegram.utils.webhookhandler import WebhookServer
-import tornado.ioloop
-import tornado.web
+from tornado.web import url, RequestHandler
 
-from functions import (
-    album,
-    artist,
-    song,
-    customize,
-    inline_query
-)
-from constants import (
-    BOT_TOKEN, DEVELOPERS,
-    END, LYRICS_LANG, BOT_LANG, INCLUDE, MAIN_MENU, SELECT_ACTION,
-    TYPING_ALBUM, TYPING_ARTIST, TYPING_SONG, TYPING_FEEDBACK,
-    SERVER_PORT, SERVER_ADDRESS,
-)
-
+from geniust import get_user, texts
+from geniust.utils import log
 # Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
+from geniust.constants import (TYPING_ALBUM, TYPING_SONG,
+    SERVER_PORT, BOT_TOKEN, SERVER_ADDRESS, SELECT_ACTION,
+    BOT_LANG, LYRICS_LANG, INCLUDE, TYPING_FEEDBACK,
+    TYPING_ARTIST, MAIN_MENU, DEVELOPERS, CUSTOMIZE_MENU, END)
+
+
 logging.getLogger('telegram').setLevel(logging.INFO)
-# logging.getLogger('telethon').setLevel(logging.ERROR)
-# logger = logging.getLogger('geniust')
+logging.basicConfig(format='%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 class PostHandler(RequestHandler):
+    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+        pass
+
     def get(self):
         """respond to GET request to make cron job successful"""
         self.write('OK')
@@ -66,6 +69,7 @@ class WebhookThread(threading.Thread):
         app = tornado.web.Application([
             url(r"/notify", PostHandler),
         ])
+        # noinspection PyTypeChecker
         self.webhooks = WebhookServer("0.0.0.0", SERVER_PORT, app, None)
 
     def run(self):
@@ -77,43 +81,43 @@ class WebhookThread(threading.Thread):
         self.webhooks.shutdown()
 
 
+@log
+@get_user
 def main_menu(update, context):
     """Genius main menu.
     Displays song lyrics, album lyrics, and customize output.
 
     """
-    print(context.args)
-    print('here')
-    context.user_data['command'] = False
-    if update.message:
-        chat_id = update.message.chat.id
-        context.user_data['chat_id'] = chat_id
-    else:
-        chat_id = update.callback_query.message.chat.id
-        context.user_data['chat_id'] = chat_id
+    ud = context.user_data
+    chat_id = update.effective_chat.id
 
-    text = 'What would you like to do?'
+    context.user_data['command'] = False
+    language = ud['bot_lang']
+    text = texts[language]['main_menu']
+
+    logger.debug('ID: %s, INCLUDE: %s, LLANG: %s, BOTLANG: %s',
+                 chat_id, ud['include_annotations'], ud['lyrics_lang'], language)
 
     buttons = [
         [
             IButton(
-                'Album',
+                text['album'],
                 callback_data=str(TYPING_ALBUM)),
             IButton(
-                'Artist',
+                text['artist'],
                 callback_data=str(TYPING_ARTIST)),
             IButton(
-                'Song',
+                text['song'],
                 callback_data=str(TYPING_SONG)),
 
         ],
 
         [
             IButton(
-                'Customize Lyrics',
-                callback_data=str(LYRICS_LANG)),
+                text['customize_lyrics'],
+                callback_data=str(CUSTOMIZE_MENU)),
             IButton(
-                'Change Language',
+                text['change_language'],
                 callback_data=str(BOT_LANG))
         ],
 
@@ -123,25 +127,35 @@ def main_menu(update, context):
     if update.callback_query:
         update.callback_query.answer()
         update.callback_query.edit_message_text(
-            text=text,
+            text=text['body'],
             reply_markup=keyboard)
     else:
         context.bot.send_message(
             chat_id=chat_id,
-            text=text,
+            text=text['body'],
             reply_markup=keyboard)
 
     return SELECT_ACTION
 
 
+@log
+@get_user
 def stop(update, context):
     """End Conversation by command"""
-    update.message.reply_text('Stopped.')
+    language = context.user_data['bot_lang']
+    text = texts[language]['stop']
+
+    update.message.reply_text(text)
     return END
 
 
+@log
+@get_user
 def send_feedback(update, context):
     """send user feedback to developers"""
+    language = context.user_data['bot_lang']
+    reply_text = texts[language]['send_feedback']
+
     if update.effective_chat.username:
         text = (f'User: @{update.effective_chat.username}\n'
                 f'Chat ID: {update.message.chat.id}')
@@ -158,38 +172,51 @@ def send_feedback(update, context):
             parse_mode='HTML')
     context.bot.send_message(
         chat_id=update.message.chat.id,
-        text='Thanks for the feedback!')
+        text=reply_text)
     return END
 
 
+@log
+@get_user
 def end_describing(update, context):
     """End conversation altogether or return to upper level"""
+    language = context.user_data['bot_lang']
+    text = texts[language]['end_describing']
+
     if update.message:
-        update.message.reply_text('canceled.')
+        update.message.reply_text(text)
         return END
 
-    assert False, "Shouldn't be here"
+    # noinspection PyUnreachableCode
     level = context.user_data.get('level', MAIN_MENU + 1)
 
     if level - 1 == MAIN_MENU:
         main_menu(update, context)
     # customize genius menu
-    elif level - 1 == 1:
+    elif level - 1 == CUSTOMIZE_MENU:
         customize.customize_menu(update, context)
     return SELECT_ACTION
 
 
+@log
+@get_user
 def help_message(update, context):
     """send the /help text to the user"""
-    with open(os.path.join('text', 'help.txt'), 'r') as f:
-        text = f.read()
+    language = context.user_data['bot_lang']
+    text = texts[language]['help_message']
+
     update.message.reply_html(text)
     return END
 
 
+@log
+@get_user
 def contact_us(update, context):
     """prompt the user to send a message"""
-    update.message.reply_text("Send us what's on your mind :)")
+    language = context.user_data['bot_lang']
+    text = texts[language]['contact_us']
+
+    update.message.reply_text(text)
     return TYPING_FEEDBACK
 
 
@@ -253,23 +280,23 @@ def main():
 
         CallbackQueryHandler(
             album.display_album,
-            pattern=r'^album_[0-9]+$'),
+            pattern=r'^al[0-9]+$'),
 
         CallbackQueryHandler(
             album.display_album_covers,
-            pattern=r'^album_[0-9]+_covers$'),
+            pattern=r'^al[0-9]+c$'),
 
         CallbackQueryHandler(
             album.display_album_tracks,
-            pattern=r'^album_[0-9]+_tracks$'),
+            pattern=r'^al[0-9]+t$'),
 
         CallbackQueryHandler(
             album.display_album_formats,
-            pattern=r'^album_[0-9]+_aio$'),
+            pattern=r'^al[0-9]+l$'),
 
         CallbackQueryHandler(
             album.thread_get_album,
-            pattern=r'^album_[0-9]+_aio_(pdf|tgf|zip)$'),
+            pattern=r'^al[0-9]+l(p|t|z)$'),
 
         CallbackQueryHandler(
             artist.type_artist,
@@ -277,15 +304,15 @@ def main():
 
         CallbackQueryHandler(
             artist.display_artist,
-            pattern=r'^artist_[0-9]+$'),
+            pattern=r'^ar[0-9]+$'),
 
         CallbackQueryHandler(
             artist.display_artist_albums,
-            pattern=r'^artist_[0-9]+_albums$'),
+            pattern=r'^ar[0-9]+a$'),
 
         CallbackQueryHandler(
             artist.display_artist_songs,
-            pattern=r'^artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+            pattern=r'^ar[0-9]+s(p|r|t)[0-9]+$'),
 
         CallbackQueryHandler(
             song.type_song,
@@ -293,11 +320,15 @@ def main():
 
         CallbackQueryHandler(
             song.display_song,
-            pattern=r'^song_[0-9]+$'),
+            pattern=r'^s[0-9]+$'),
 
         CallbackQueryHandler(
             song.thread_display_lyrics,
-            pattern=r'^song_[0-9]+_lyrics$'),
+            pattern=r'^s[0-9]+l$'),
+
+        CallbackQueryHandler(
+            customize.customize_menu,
+            pattern='^' + str(CUSTOMIZE_MENU) + '$'),
 
         CallbackQueryHandler(
             customize.lyrics_language,
@@ -310,6 +341,10 @@ def main():
         CallbackQueryHandler(
             customize.bot_language,
             pattern='^' + str(BOT_LANG) + '$'),
+
+        CallbackQueryHandler(
+            multi.display_annotation,
+            pattern=r'^an[0-9]+$'),
     ]
 
     user_input = {
@@ -420,21 +455,21 @@ def main():
 
         InlineQueryHandler(
             inline_query.search_albums,
-            pattern=r'^\.album\s.{1,}'
+            pattern=r'^\.album'
         ),
 
         InlineQueryHandler(
             inline_query.search_artists,
-            pattern=r'^\.artist\s.{1,}'
+            pattern=r'^\.artist'
         ),
 
         InlineQueryHandler(
             inline_query.search_songs,
-            pattern=r'^\.song\s.{1,}'
+            pattern=r'^\.song'
         ),
 
         InlineQueryHandler(
-            inline_query.menu,
+            inline_query.inline_menu,
         ),
 
 
@@ -450,56 +485,76 @@ def main():
         CommandHandler(
             'start',
             album.display_album,
-            Filters.regex(r'^/start album_[0-9]+$'),
+            Filters.regex(r'^/start al[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_covers,
-            Filters.regex(r'^/start album_[0-9]+_covers$'),
+            Filters.regex(r'^/start al[0-9]+c$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_tracks,
-            Filters.regex(r'^/start album_[0-9]+_tracks$'),
+            Filters.regex(r'^/start al[0-9]+t$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_formats,
-            Filters.regex(r'^/start album_[0-9]+_aio$'),
+            Filters.regex(r'^/start al[0-9]+l$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            artist.display_artist,
+            Filters.regex(r'^/start ar[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_songs,
-            Filters.regex(r'^/start artist_[0-9]+_songs_(ppl|rdt|ttl)$'),
+            Filters.regex(r'^/start ar[0-9]+s(p|r|t)[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_albums,
-            Filters.regex(r'^/start artist_[0-9]+_albums$'),
+            Filters.regex(r'^/start ar[0-9]+a$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             song.display_song,
-            Filters.regex(r'^/start song_[0-9]+$'),
+            Filters.regex(r'^/start s[0-9]+$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            song.thread_display_lyrics,
+            Filters.regex(r'^/start s[0-9]+l$'),
+            pass_args=True
+        ),
+
+        CommandHandler(
+            'start',
+            multi.display_annotation,
+            Filters.regex(r'^/start an[0-9]+$'),
             pass_args=True
         ),
     ]
 
     for handler in argumented_start_handlers:
         dp.add_handler(handler)
-
 
     # log all errors
     dp.add_error_handler(error)

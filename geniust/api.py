@@ -6,11 +6,12 @@ import asyncio
 import queue
 
 from bs4 import BeautifulSoup
-from lyricsgenius import Genius
+from lyricsgenius import Genius, PublicAPI
 from concurrent.futures import ThreadPoolExecutor
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
+# from geniust import annotations_channel
 from geniust.constants import (
     TELETHON_API_ID,
     TELETHON_API_HASH,
@@ -19,18 +20,15 @@ from geniust.constants import (
     GENIUS_TOKEN
 )
 
-try:
-    from .bot import logger
-except ImportError:
-    logger = logging.getLogger(__file__)
+logger = logging.getLogger()
 
 
 def get_channel():
-
     client = TelegramClient(
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
-        TELETHON_API_HASH
+        TELETHON_API_HASH,
+        loop=asyncio.new_event_loop()
     )
     client.start()
 
@@ -41,7 +39,7 @@ def get_channel():
     return channel
 
 
-ANNOTATIONS_CHANNEL = get_channel()
+annotations_channel = None # get_channel()
 
 
 def telegram_annotation(a):
@@ -68,6 +66,7 @@ def telegram_annotation(a):
 
     annotation = (
         str(annotation)
+        .replace('&amp;', '&')  # bs4 escapes the '&' in '&#8204;'
         .replace('<li>', '▪️ ')
         .replace('</li>', '\n')
         .replace('</blockquote>', '\n')
@@ -134,6 +133,77 @@ class GeniusT(Genius):
         self.response_format = 'html,plain'
         self.retries = 3
         self.timeout = 5
+        self.public_api = True
+
+    def artist(self, artist_id, text_format=None, public_api=False):
+        """Gets data for a specific artist.
+        Args:
+            artist_id (:obj:`int`): Genius artist ID
+            text_format (:obj:`str`, optional): Text format of the results
+                ('dom', 'html', 'markdown' or 'plain').
+            public_api (:obj:`bool`, optional): If `True`, performs the search
+                using the public API endpoint.
+        Returns:
+            :obj:`dict`
+        Note:
+            Using the public API will return the same artist but with more fields:
+            - API: Result will have 19 fields.
+            - Public API: Result will have 24 fields.
+        """
+        if public_api or self.public_api:
+            return super(PublicAPI, self).artist(artist_id, text_format)
+        else:
+            if self.access_token is None:
+                raise ValueError('You need an access token for the developers API.')
+            return super().artist(artist_id, text_format)
+
+    def song(self, song_id, text_format=None, public_api=False):
+        """Gets data for a specific song.
+        Args:
+            song_id (:obj:`int`): Genius song ID
+            text_format (:obj:`str`, optional): Text format of the results
+                ('dom', 'html', 'markdown' or 'plain').
+            public_api (:obj:`bool`, optional): If `True`, performs the search
+                using the public API endpoint.
+        Returns:
+            :obj:`dict`
+        Note:
+            Using the public API will return the same song but with more fields:
+            - API: Song will have 39 fields.
+            - Public API: Song will have 68 fields.
+        """
+        if public_api or self.public_api:
+            return super(PublicAPI, self).song(song_id, text_format)
+        else:
+            if self.access_token is None:
+                raise ValueError('You need an access token for the developers API.')
+            return super().song(song_id, text_format)
+
+    def search_songs(self, search_term, per_page=None, page=None, public_api=False):
+        """Searches songs hosted on Genius.
+        Args:
+            search_term (:obj:`str`): A term to search on Genius.
+            per_page (:obj:`int`, optional): Number of results to
+                return per page. It can't be more than 5 for this method.
+            page (:obj:`int`, optional): Number of the page.
+            public_api (:obj:`bool`, optional): If `True`, performs the search
+                using the public API endpoint.
+        Returns:
+            :obj:`dict`
+        Note:
+            Using the API or the public API returns the same results. The only
+            difference is in the number of values each API returns.
+            - API: Each song has 17 fields and songs are
+              accessable through ``response['hits']``
+            - Public API: Each song has 21 fields and songs are accessible
+              through ``response['sections'][0]['hits']``
+        """
+        if public_api or self.public_api:
+            return super(PublicAPI, self).search_songs(search_term, per_page, page)
+        else:
+            if self.access_token is None:
+                raise ValueError('You need an access token for the developers API.')
+            return super().search_songs(search_term, per_page, page)
 
     def song_page_data(self, path):
         endpoint = 'page_data/song'
@@ -196,21 +266,26 @@ class GeniusT(Genius):
                       "Song URL: https://genius.com/{}".format(path))
             return None
 
-        if 'lyrics' in lyrics[0].get('class')[0]:
+        if lyrics[0].get('class')[0] == 'lyrics':
             lyrics = lyrics[0]
             lyrics = lyrics.find('p') if lyrics.find('p') else lyrics
         else:
             br = html.new_tag('br')
-            for div in lyrics[1:]:
-                lyrics[0].append(div).append(br)
+            try:
+                for div in lyrics[1:]:
+                    lyrics[0].append(div).append(br)
+            except Exception as e:
+                msg = f'{str(e)} for {song_id} with {div.attrs}'
+                logger.error(msg)
             lyrics = lyrics[0]
 
         if include_annotations and not telegram_song:
-            annotations = self.song_annotations(song_id)
+            annotations = self.song_annotations(song_id, 'html')
         elif include_annotations and telegram_song:
-            annotations = self.song_annotations(song_id)
+            annotations = self.song_annotations(song_id, 'html')
 
             loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             client = TelegramClient(
                 StringSession(TELETHON_SESSION_STRING),
                 TELETHON_API_ID,
@@ -224,7 +299,7 @@ class GeniusT(Genius):
                 # send the annotation to the telegram channel
                 msg = client.loop.run_until_complete(
                     client.send_message(
-                        entity=ANNOTATIONS_CHANNEL,
+                        entity=annotations_channel,
                         message=annotation,
                         link_preview=preview,
                         parse_mode='HTML')

@@ -10,8 +10,9 @@ from geniust.constants import (
     TYPING_ALBUM, END,
 )
 from geniust import (
-    utils, genius,
+    utils, genius, get_user, texts
 )
+from geniust.utils import log
 
 from .album_conversion import (
     create_pdf, create_zip, create_pages
@@ -19,66 +20,91 @@ from .album_conversion import (
 from geniust.api import GeniusT
 
 
+logger = logging.getLogger()
+
+
+@log
+@get_user
 def type_album(update, context):
     # user has entered the function through the main menu
-    msg = 'Enter album name.'
+    language = context.user_data['bot_lang']
+    text = texts[language]['type_album']
+
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
+        update.callback_query.edit_message_text(text)
     else:
-        update.message.reply_text(msg)
+        update.message.reply_text(text)
 
     return TYPING_ALBUM
 
 
+@log
+@get_user
 def search_albums(update, context):
     """Checks album link or return search results, or prompt user for format"""
-    text = update.message.text
+    input_text = update.message.text
+    language = context.user_data['bot_lang']
+    text = texts[language]['search_albums']
 
-    res = genius.search_albums(text)
+    res = genius.search_albums(input_text)
     buttons = []
-    for i, hit in enumerate(res['sections'][0]['hits']):
+    for hit in res['sections'][0]['hits'][:10]:
         album = hit['result']
         album_id = album['id']
-        text = utils.format_title(album['artist']['name'],
+        title = utils.format_title(album['artist']['name'],
                                   album['name'])
-        callback = f"album_{album_id}"
+        callback = f"al{album_id}"
 
-        buttons.append([IButton(text, callback_data=callback)])
+        buttons.append([IButton(title, callback_data=callback)])
 
-    update.message.reply_text(
-        text='Choose an album',
-        reply_markup=IBKeyboard(buttons))
+    if buttons:
+        update.message.reply_text(text['choose'], reply_markup=IBKeyboard(buttons))
+    else:
+        update.message.reply_text(text['no_albums'])
 
     return END
 
 
+@log
+@get_user
 def display_album(update, context):
+    language = context.user_data['bot_lang']
+    text = texts[language]['display_album']
     bot = context.bot
+
     if update.callback_query:
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data.split('_')[1])
+        album_id = int(update.callback_query.data[2:])
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0].split('_')[1])
+        album_id = int(context.args[0][2:])
+
+    logger.debug('album %s', album_id)
 
     album = genius.album(album_id)['album']
     cover_art = album['cover_art_url']
-    caption = album_caption(album)
+    caption = album_caption(album, text['caption'])
 
     buttons = [
         [IButton(
-            "Cover Arts",
-            callback_data=f"album_{album['id']}_covers")],
+            text['cover_arts'],
+            callback_data=f"al{album['id']}c")],
         [IButton(
-            "Tracks",
-            callback_data=f"album_{album['id']}_tracks")],
+            text['tracks'],
+            callback_data=f"al{album['id']}t")],
         [IButton(
-            "Lyrics (PDF, ...)",
-            callback_data=f"album_{album['id']}_aio")]
+            text['lyrics'],
+            callback_data=f"al{album['id']}l")]
     ]
+
+    if album['description_annotation']['annotations'][0]['body']['plain']:
+        annotation_id = album['description_annotation']['id']
+        button = IButton(text['description'],
+                         callback_data=f"an{annotation_id}")
+        buttons[0].append(button)
 
     bot.send_photo(
         chat_id,
@@ -87,14 +113,19 @@ def display_album(update, context):
         reply_markup=IBKeyboard(buttons))
 
 
+@log
+@get_user
 def display_album_covers(update, context):
+    language = context.user_data['bot_lang']
+    text = texts[language]['display_album_covers']
+
     if update.callback_query:
         update.callback_query.answer()
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data.split('_')[1])
+        album_id = int(update.callback_query.data[2:-1])
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0].split('_')[1])
+        album_id = int(context.args[0][2:-1])
 
     covers = [x['image_url']
               for x in genius.album_cover_arts(album_id)['cover_arts']
@@ -103,24 +134,29 @@ def display_album_covers(update, context):
     album = genius.album(album_id)['album']['name']
 
     if len(covers) == 1:
-        text = f"{album} Cover Art"
+        text = text[1].replace('{}', album)
         context.bot.send_photo(chat_id, covers[0], text)
     else:
         media = [InputMediaPhoto(x) for x in covers]
-        media[0].caption = f"{album} Cover Arts"
+        media[0].caption = text[2].replace('{}', album)
         context.bot.send_media_group(chat_id, media)
 
     return END
 
 
+@log
+@get_user
 def display_album_tracks(update, context):
+    language = context.user_data['bot_lang']
+    msg = texts[language]['display_album_tracks']
+
     if update.callback_query:
         update.callback_query.answer()
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data.split('_')[1])
+        album_id = int(update.callback_query.data[2:-1])
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0].split('_')[1])
+        album_id = int(context.args[0][2:-1])
 
     songs = []
     for track in genius.album_tracks(album_id, per_page=50)['tracks']:
@@ -133,30 +169,32 @@ def display_album_tracks(update, context):
 
     album = genius.album(album_id)['album']['name']
 
-    text = f"{album} Tracks:{''.join(songs)}"
+    text = f"{msg.replace('{}', album)}{''.join(songs)}"
 
     context.bot.send_message(chat_id, text)
 
     return END
 
 
+@log
 def display_album_formats(update, context):
+
     if update.callback_query:
         update.callback_query.answer()
-        album_id = int(update.callback_query.data.split('_')[1])
+        album_id = int(update.callback_query.data[2:-1])
     else:
-        album_id = int(context.args[0].split('_')[1])
+        album_id = int(context.args[0][2:-1])
 
     buttons = [
         [IButton(
             "PDF",
-            callback_data=f"album_{album_id}_aio_pdf")],
+            callback_data=f"al{album_id}lp")],
         [IButton(
             "TELEGRA.PH",
-            callback_data=f"album_{album_id}_aio_tgf")],
+            callback_data=f"al{album_id}lt")],
         [IButton(
             "ZIP",
-            callback_data=f"album_{album_id}_aio_zip")],
+            callback_data=f"al{album_id}lz")],
     ]
 
     update.callback_query.edit_message_reply_markup(IBKeyboard(buttons))
@@ -164,25 +202,40 @@ def display_album_formats(update, context):
     return END
 
 
+@log
+@get_user
 def thread_get_album(update, context):
     """Create a thread and download the album"""
+    language = context.user_data['bot_lang']
+    text = texts[language]['get_album']
 
     update.callback_query.answer()
-    data = update.callback_query.data.split('_')
+    data = update.callback_query.data
 
-    album_id, album_format = int(data[1]), data[3]
+    album_id = int(data[2:-2])
+    album_format = data[-1]
+    if album_format == 'p':
+        album_format = 'pdf'
+    if album_format == 't':
+        album_format = 'tgf'
+    else:
+        album_format = 'zip'
 
     p = threading.Thread(
         target=get_album,
-        args=(update, context, album_id, album_format,))
+        args=(update, context, album_id, album_format, text,))
     p.start()
     p.join()
     return END
 
 
-def get_album(update, context, album_id, album_format):
+@log
+def get_album(update, context, album_id, album_format, text):
     """Download and send the album to the user in the selected format"""
-    text = 'Downloading album...'
+    ud = context.user_data
+    include_annotations = ud['include_annotations']
+
+    msg = text['downloading']
 
     genius_t = GeniusT()
 
@@ -192,23 +245,23 @@ def get_album(update, context, album_id, album_format):
         chat_id = update.callback_query.message.chat.id
         progress = context.bot.edit_message_text(
             chat_id=chat_id,
-            text=text,
+            text=msg,
             message_id=update.callback_query.message.message_id)
     else:
         chat_id = update.message.chat.id
         progress = context.bot.send_message(
             chat_id=chat_id,
-            text=text)
+            text=msg)
 
     # get album
     album = genius_t.async_album_search(
         album_id=album_id,
-        include_annotations=context.user_data['include_annotations']
+        include_annotations=include_annotations
     )
 
     # result should be a dict if the operation was successful
     if not isinstance(album, dict):
-        text = "Couldn't get the album :("
+        text = text['failed']
         context.bot.send_message(chat_id=chat_id, text=text)
         logging.error(
             f"Couldn't get album:\n"
@@ -217,10 +270,10 @@ def get_album(update, context, album_id, album_format):
         return END
 
     # convert
-    text = 'Converting to specified format...'
+    msg = text['converting']
     context.bot.edit_message_text(
         chat_id=progress.chat.id,
-        text=text,
+        text=msg,
         message_id=progress.message_id
     )
 
@@ -237,35 +290,38 @@ def get_album(update, context, album_id, album_format):
         logging.error(f'Unrecognized album format: {album_format}')
         return END
 
-    progress.delete_message()
+    context.bot.edit_message_text(
+        chat_id=progress.chat.id,
+        text=text['uploading'],
+        message_id=progress.message_id
+    )
 
     # send the file
-    if album_format != 'tgf':
-        i = 1
-        while True:
-            if i != 0 and i < 6:
-                try:
-                    context.bot.send_document(
-                        chat_id=chat_id,
-                        document=file,
-                        caption=file.name[:-4],
-                        timeout=20,)
-                    break
-                except (TimedOut, NetworkError):
-                    i += 1
+    i = 1
+    while True:
+        if i != 0 and i < 6:
+            try:
+                context.bot.send_document(
+                    chat_id=chat_id,
+                    document=file,
+                    caption=file.name[:-4],
+                    timeout=20,)
+                break
+            except (TimedOut, NetworkError):
+                i += 1
+
+    progress.delete_message()
 
 
-def album_caption(album, length_limit=None):
-    if length_limit is None:
-        length_limit = 1024
+@log
+def album_caption(album, caption):
 
     release_date = ''
     features = ''
     labels = ''
-    total_views = ''
 
     if album.get('release_date'):
-        release_date = f"\n<b>Release Date:</b>\n{album['release_date']}"
+        release_date = album['release_date']
     elif album.get('release_date_components'):
         release_date = album['release_date_components']
         year = release_date.get('year')
@@ -274,42 +330,26 @@ def album_caption(album, length_limit=None):
         components = [year, month, day]
         release_date = '-'.join(str(x) for x in components if x is not None)
 
-        if release_date:
-            release_date = f"\n<b>Release Date:</b>\n{release_date}"
-
-    if album.get('song_pageviews'):
-        total_views = (f"\n<b>Total Views:</b>\n"
-                       f"{utils.human_format(album['song_pageviews'])}")
+    total_views = utils.human_format(album['song_pageviews'])
 
     for x in album.get('song_performances', []):
         if x['label'] == 'Featuring':
-            features = ', '.join([x['name'] for x in x['artists']])
-            features = f"\n<b>Features:</b>\n{features}"
+            features = ', '.join([utils.deep_link(x) for x in x['artists']])
+            features = caption['features'].replace('{}', features)
         elif x['label'] == 'Label':
-            labels = ', '.join([x['name'] for x in x['artists']])
-            labels = f"\n<b>Labels:</b>\n{labels}"
-
-    description = utils.get_description(album)
+            labels = ', '.join([utils.deep_link(x) for x in x['artists']])
+            labels = caption['labels'].replace('{}', labels)
 
     string = (
-        f"{album['full_title']}\n"
-        f"\n<b>Name:</b>\n{album['name']}"
-        f"\n<b>Artist:</b>\n{utils.deep_link(album)}"
-        f"{features}"
-        f"{release_date}"
-        f"{total_views}"
-        f"{labels}"
-        f"\n\n{description}"
-
+        caption['body']
+        .replace('{name}', album['name'])
+        .replace('{artist_name}', album['artist']['name'])
+        .replace('{artist}', utils.deep_link(album['artist']))
+        .replace('{release_date}', release_date)
+        .replace('{url}', album['url'])
+        .replace('{views}', total_views)
+        + features
+        + labels
     )
-    string = string.strip()
 
-    if length_limit == 1024 and len(string) > 1024:
-        return string[:1021] + '...'
-    elif length_limit == 4096:
-        img = f"""<a href="{album['cover_art_url']}">&#8204;</a>"""
-        if len(img) + len(string) > 4096:
-            string = string[:4096 - len(img) - 3] + '...'
-        return img + string
-    else:
-        return string
+    return string.strip()

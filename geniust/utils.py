@@ -3,13 +3,15 @@ Some regular expressions, and methods used throughout the code.
 Kept here in case improvements are added.
 """
 import re
+import logging
+from functools import wraps
 
 from bs4 import BeautifulSoup, NavigableString, Comment
 from bs4.element import Tag
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust.constants import TELEGRAM_HTML_TAGS
-from geniust import username
+import geniust
 
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
 regex = (
@@ -44,13 +46,13 @@ def deep_link(entity):
     name = entity.get('name', entity.get('title'))
     id_ = entity['id']
     if 'album' in entity['api_path']:
-        type_ = 'album'
-    elif 'song' in entity['api_path']:
-        type_ = 'song'
+        type_ = 'al'
     elif 'artist' in entity['api_path']:
-        type_ = 'artist'
+        type_ = 'ar'
+    elif 'song' in entity['api_path']:
+        type_ = 's'
 
-    url = create_deep_linked_url(username, f"{type_}_{id_}")
+    url = create_deep_linked_url(geniust.username, f"{type_}{id_}")
 
     return f"""<a href="{url}">{name}</a>"""
 
@@ -184,11 +186,11 @@ def get_description(entity: str) -> str:
     return description.strip()
 
 
-def human_format(num):
+def human_format(num: int) -> str:
     # from https://stackoverflow.com/a/579376
 
     if num < 10000:
-        return num
+        return str(num)
 
     magnitude = 0
     while abs(num) >= 1000:
@@ -197,3 +199,17 @@ def human_format(num):
     # add more suffixes if you need them
 
     return '%.1f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+
+
+def log(func):
+    logger = logging.getLogger(func.__module__)
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        logger.debug('Entering: %s', func.__name__)
+        result = func(*args, **kwargs)
+        logger.debug('Exiting: %s (return value: %s)',
+                     func.__name__,
+                     repr(result) if repr else result)
+        return result
+    return wrapper
