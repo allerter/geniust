@@ -10,7 +10,7 @@ from geniust.constants import (
     TYPING_ALBUM, END,
 )
 from geniust import (
-    utils, genius, get_user, texts
+    utils, genius, get_user
 )
 from geniust.utils import log
 
@@ -28,7 +28,7 @@ logger = logging.getLogger()
 def type_album(update, context):
     # user has entered the function through the main menu
     language = context.user_data['bot_lang']
-    text = texts[language]['type_album']
+    text = context.bot_data['texts'][language]['type_album']
 
     if update.callback_query:
         update.callback_query.answer()
@@ -45,7 +45,7 @@ def search_albums(update, context):
     """Checks album link or return search results, or prompt user for format"""
     input_text = update.message.text
     language = context.user_data['bot_lang']
-    text = texts[language]['search_albums']
+    text = context.bot_data['texts'][language]['search_albums']
 
     res = genius.search_albums(input_text)
     buttons = []
@@ -54,7 +54,7 @@ def search_albums(update, context):
         album_id = album['id']
         title = utils.format_title(album['artist']['name'],
                                   album['name'])
-        callback = f"al{album_id}"
+        callback = f"album_{album_id}"
 
         buttons.append([IButton(title, callback_data=callback)])
 
@@ -70,40 +70,40 @@ def search_albums(update, context):
 @get_user
 def display_album(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['display_album']
+    text = context.bot_data['texts'][language]['display_album']
     bot = context.bot
 
     if update.callback_query:
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data[2:])
+        album_id = int(update.callback_query.data.split('_')[1])
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0][2:])
+        album_id = int(context.args[0].split('_')[1])
 
     logger.debug('album %s', album_id)
 
     album = genius.album(album_id)['album']
     cover_art = album['cover_art_url']
-    caption = album_caption(album, text['caption'])
+    caption = album_caption(update, context, album, text['caption'])
 
     buttons = [
         [IButton(
             text['cover_arts'],
-            callback_data=f"al{album['id']}c")],
+            callback_data=f"album_{album['id']}_covers")],
         [IButton(
             text['tracks'],
-            callback_data=f"al{album['id']}t")],
+            callback_data=f"album_{album['id']}_tracks")],
         [IButton(
             text['lyrics'],
-            callback_data=f"al{album['id']}l")]
+            callback_data=f"album_{album['id']}_lyrics")]
     ]
 
     if album['description_annotation']['annotations'][0]['body']['plain']:
         annotation_id = album['description_annotation']['id']
         button = IButton(text['description'],
-                         callback_data=f"an{annotation_id}")
+                         callback_data=f"annotation_{annotation_id}")
         buttons[0].append(button)
 
     bot.send_photo(
@@ -117,15 +117,15 @@ def display_album(update, context):
 @get_user
 def display_album_covers(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['display_album_covers']
+    text = context.bot_data['texts'][language]['display_album_covers']
 
     if update.callback_query:
         update.callback_query.answer()
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data[2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0][2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
 
     covers = [x['image_url']
               for x in genius.album_cover_arts(album_id)['cover_arts']
@@ -148,15 +148,15 @@ def display_album_covers(update, context):
 @get_user
 def display_album_tracks(update, context):
     language = context.user_data['bot_lang']
-    msg = texts[language]['display_album_tracks']
+    msg = context.bot_data['texts'][language]['display_album_tracks']
 
     if update.callback_query:
         update.callback_query.answer()
         chat_id = update.callback_query.message.chat.id
-        album_id = int(update.callback_query.data[2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
     else:
         chat_id = update.message.chat.id
-        album_id = int(context.args[0][2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
 
     songs = []
     for track in genius.album_tracks(album_id, per_page=50)['tracks']:
@@ -181,20 +181,20 @@ def display_album_formats(update, context):
 
     if update.callback_query:
         update.callback_query.answer()
-        album_id = int(update.callback_query.data[2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
     else:
-        album_id = int(context.args[0][2:-1])
+        album_id = int(update.callback_query.data.split('_')[1])
 
     buttons = [
         [IButton(
             "PDF",
-            callback_data=f"al{album_id}lp")],
+            callback_data=f"album_{album_id}lyrics_pdf")],
         [IButton(
             "TELEGRA.PH",
-            callback_data=f"al{album_id}lt")],
+            callback_data=f"album_{album_id}_lyrics_tgf")],
         [IButton(
             "ZIP",
-            callback_data=f"al{album_id}lz")],
+            callback_data=f"album_{album_id}_lyrics_zip")],
     ]
 
     update.callback_query.edit_message_reply_markup(IBKeyboard(buttons))
@@ -207,19 +207,11 @@ def display_album_formats(update, context):
 def thread_get_album(update, context):
     """Create a thread and download the album"""
     language = context.user_data['bot_lang']
-    text = texts[language]['get_album']
+    text = context.bot_data['texts'][language]['get_album']
 
     update.callback_query.answer()
-    data = update.callback_query.data
-
-    album_id = int(data[2:-2])
-    album_format = data[-1]
-    if album_format == 'p':
-        album_format = 'pdf'
-    if album_format == 't':
-        album_format = 'tgf'
-    else:
-        album_format = 'zip'
+    _, album_id, _, album_format = update.callback_query.data
+    album_id = int(album_id)
 
     p = threading.Thread(
         target=get_album,
@@ -314,7 +306,7 @@ def get_album(update, context, album_id, album_format, text):
 
 
 @log
-def album_caption(album, caption):
+def album_caption(update, context, album, caption):
 
     release_date = ''
     features = ''

@@ -39,11 +39,14 @@ def get_channel():
     return channel
 
 
-annotations_channel = None # get_channel()
+annotations_channel = get_channel()
 
 
 def telegram_annotation(a):
     annotation = BeautifulSoup(a, 'html.parser')
+
+    if annotation.find('p'):
+        annotation.find('p').unwrap()
 
     # if the annotations has only one image in it,
     # include it using link preview
@@ -52,7 +55,7 @@ def telegram_annotation(a):
         # Invisible <a> tag
         image_a = annotation.new_tag('a', href=img.attrs['src'])
         image_a.string = '&#8204;'
-        annotation.append(image_a)
+        annotation.body.insert(0, image_a)
         preview = True
     else:
         preview = False
@@ -63,6 +66,13 @@ def telegram_annotation(a):
     for tag in annotation.find_all():
         if tag.name not in valid_tags:
             tag.unwrap()
+
+    # remove unnecessary attributes (all except href)
+    for tag in annotation:
+        if hasattr(tag, 'attrs'):
+            for attr in list(tag.attrs.keys()):
+                if attr != 'href':
+                    tag.attrs.pop(attr)
 
     annotation = (
         str(annotation)
@@ -252,8 +262,9 @@ class GeniusT(Genius):
         path = song_url.replace("https://genius.com/", "")
 
         # Scrape the song lyrics from the HTML
+        page = self._make_request(path, web=True)
         html = BeautifulSoup(
-            self._make_request(path, web=True).replace('<br/>', '\n'),
+            page.replace('<br/>', '\n'),
             "html.parser"
         )
 

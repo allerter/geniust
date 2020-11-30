@@ -6,6 +6,10 @@ main_menu:
   song: Song
   customize_lyrics: Customize Lyrics
   change_language: Change Language
+  login: Log into Genius
+  logged_in: My Genius Account
+
+error: "Sorry. Something went wrong :(\nStart again by clicking /start"
 
 stop: Stopped.
 
@@ -13,6 +17,63 @@ back: 🔙 Back
 
 yes: "Yes"
 no: "No"
+
+login:
+  body: 
+    "You can log into your Genius account here and view details about your account,
+    see if you have any unread notifications, and vote on some of the annotations
+    you see here.\nTo do so, you'd have to give Genius T access to your accounts so
+    that it can view your account (called the 'me' scope) and vote on your behalf
+    (the 'vote' scope).
+    \nThe bot won't have access to other parts of your account and when you click on
+    the link below, Genius will show you what permissions we ask for.
+    \nYou can also log out any time you want."
+  button: Click Here to Log In
+  successful: Login successful!
+
+logged_in:
+  body: Welcome to your account dashboard.
+  view_account: View Account Details
+  log_out: Log Out
+
+logout: "Successfully logged out.\nYou can log back in anytime you want."
+
+display_account:
+  caption:
+    body: |-
+      {name}
+
+      <b>Unread Group Inbox</b>:
+      {unread_group}
+      <b>Unread Main Activity Inbox</b>:
+      {unread_main}
+      <b>Unread Messages:</b>:
+      {unread_messages}
+      <b>Unread Newsfeed Inbox</b>:
+      {unread_newsfeed}
+      <b>IQ on <a href="{url}">Genius</a>:</b>
+      {iq}
+      <b>Followers:</b>
+      {followers}
+      <b>Following:</b>
+      {following}
+      <b>Role:</b>
+      {role}
+      <b>Annotations:</b>
+      {annotations}
+      <b>Answers:</b>
+      {answers}
+      <b>Comments:</b>
+      {comments}
+      <b>Forum Posts:</b>
+      {forum_posts}
+      <b>Pyongs:</b>
+      {pyongs}
+      <b>Questions:</b>
+      {questions}
+      <b>Transcriptions:</b>
+      {transcriptions}
+    artist: "\n<b>Artist:</b> {}"
 
 send_feedback: Thanks for the feedback!
 
@@ -49,8 +110,6 @@ help_message: |-
     ▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
 
 contact_us: Send us what's on your mind :)
-
-display_annotation: Found nothing :(
 
 # ----------- Customize Menu -----------
 
@@ -171,6 +230,21 @@ inline_menu:
   full_details: Full Details
   button: Click Here
   translation: Translation
+
+# ----------- Annotation -----------
+
+display_annotation: Found nothing :(
+
+upvote_annotation:
+  login_necessary: You need to log in before voting. Log in using /account
+  voted: 👍 Upvoted
+  unvoted: Unvoted!
+
+downvoted_annotation:
+  login_necessary: You need to log in before voting. Log in using /account
+  voted: 👎 Downvoted
+  unvoted: Unvoted!
+
 
 # ----------- Album -----------
 type_album: Enter album name.

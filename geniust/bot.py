@@ -10,6 +10,7 @@ from typing import Optional, Awaitable
 import tornado.ioloop
 import tornado.web
 from geniust.functions import (
+    account,
     album,
     artist,
     song,
@@ -34,22 +35,24 @@ from telegram.utils.helpers import mention_html
 from telegram.utils.webhookhandler import WebhookServer
 from tornado.web import url, RequestHandler
 
-from geniust import get_user, texts
+from geniust import get_user, texts, auth, database, username
 from geniust.utils import log
+# from geniust.constants import SERVER_ADDRESS
+from geniust.constants import (
+    TYPING_ALBUM, TYPING_SONG,
+    SERVER_PORT, BOT_TOKEN, SELECT_ACTION,
+    BOT_LANG, LYRICS_LANG, INCLUDE, TYPING_FEEDBACK, LOGIN,
+    TYPING_ARTIST, MAIN_MENU, DEVELOPERS, CUSTOMIZE_MENU,
+    LOGGED_IN, LOGOUT, ACCOUNT_MENU, END)
+
 # Enable logging
-from geniust.constants import (TYPING_ALBUM, TYPING_SONG,
-    SERVER_PORT, BOT_TOKEN, SERVER_ADDRESS, SELECT_ACTION,
-    BOT_LANG, LYRICS_LANG, INCLUDE, TYPING_FEEDBACK,
-    TYPING_ARTIST, MAIN_MENU, DEVELOPERS, CUSTOMIZE_MENU, END)
-
-
 logging.getLogger('telegram').setLevel(logging.INFO)
 logging.basicConfig(format='%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-class PostHandler(RequestHandler):
+class CronHandler(RequestHandler):
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
@@ -58,16 +61,48 @@ class PostHandler(RequestHandler):
         self.write('OK')
 
 
+class TokenHandler(RequestHandler):
+    def initialize(self, auth, database, bot, texts):
+        self.auth = auth
+        self.database = database
+        self.bot = bot
+        self.texts = texts
+
+    def get(self):
+        """receive and process callback data from Genius"""
+        redirected_url = '{}://{}{}'.format(self.request.protocol,
+                                            self.request.host,
+                                            self.request.uri)
+        token = self.auth.get_user_token(redirected_url)
+        chat_id = self.get_argument('state')
+
+        self.database.update_token(chat_id, token)
+
+        # redirect user to bot
+        self.redirect(f'https://t.me/{username}')
+
+        language = self.database.get_language(chat_id)
+
+        text = self.texts[language]['login']['successful']
+
+        self.bot.send_message(chat_id, text)
+
+
 class WebhookThread(threading.Thread):
     """start a web hook server
     This webhook is to respond to cron jobs that keep the bot from
-    going to sleep in Heroku's free plan.
+    going to sleep in Heroku's free plan and receive tokens from Genius.
     """
 
     def __init__(self):
         super().__init__()
         app = tornado.web.Application([
-            url(r"/notify", PostHandler),
+            url(r"/notify", CronHandler),
+            url(r"/callback.*", TokenHandler, dict(auth=auth,
+                                                   database=database,
+                                                   bot=Bot(BOT_TOKEN),
+                                                   texts=texts)
+                ),
         ])
         # noinspection PyTypeChecker
         self.webhooks = WebhookServer("0.0.0.0", SERVER_PORT, app, None)
@@ -93,10 +128,12 @@ def main_menu(update, context):
 
     context.user_data['command'] = False
     language = ud['bot_lang']
-    text = texts[language]['main_menu']
+    text = context.bot_data['texts'][language]['main_menu']
 
     logger.debug('ID: %s, INCLUDE: %s, LLANG: %s, BOTLANG: %s',
-                 chat_id, ud['include_annotations'], ud['lyrics_lang'], language)
+                 chat_id, ud['include_annotations'],
+                 ud['lyrics_lang'],
+                 language)
 
     buttons = [
         [
@@ -109,7 +146,6 @@ def main_menu(update, context):
             IButton(
                 text['song'],
                 callback_data=str(TYPING_SONG)),
-
         ],
 
         [
@@ -122,6 +158,17 @@ def main_menu(update, context):
         ],
 
     ]
+
+    token = context.user_data.get('token')
+    if token is None:
+        token = context.bot_data['db'].get_token(chat_id)
+        context.user_data['token'] = token
+
+    if token is None:
+        buttons.append([IButton(text['login'], callback_data=LOGIN)])
+    else:
+        buttons.append([IButton(text['logged_in'], callback_data=LOGGED_IN)])
+
     keyboard = IBKeyboard(buttons)
 
     if update.callback_query:
@@ -143,7 +190,7 @@ def main_menu(update, context):
 def stop(update, context):
     """End Conversation by command"""
     language = context.user_data['bot_lang']
-    text = texts[language]['stop']
+    text = context.bot_data['texts'][language]['stop']
 
     update.message.reply_text(text)
     return END
@@ -154,7 +201,7 @@ def stop(update, context):
 def send_feedback(update, context):
     """send user feedback to developers"""
     language = context.user_data['bot_lang']
-    reply_text = texts[language]['send_feedback']
+    reply_text = context.bot_data['texts'][language]['send_feedback']
 
     if update.effective_chat.username:
         text = (f'User: @{update.effective_chat.username}\n'
@@ -181,7 +228,7 @@ def send_feedback(update, context):
 def end_describing(update, context):
     """End conversation altogether or return to upper level"""
     language = context.user_data['bot_lang']
-    text = texts[language]['end_describing']
+    text = context.bot_data['texts'][language]['end_describing']
 
     if update.message:
         update.message.reply_text(text)
@@ -190,11 +237,11 @@ def end_describing(update, context):
     # noinspection PyUnreachableCode
     level = context.user_data.get('level', MAIN_MENU + 1)
 
-    if level - 1 == MAIN_MENU:
+    if level - 1 == MAIN_MENU or level == ACCOUNT_MENU:
         main_menu(update, context)
-    # customize genius menu
     elif level - 1 == CUSTOMIZE_MENU:
         customize.customize_menu(update, context)
+
     return SELECT_ACTION
 
 
@@ -203,7 +250,7 @@ def end_describing(update, context):
 def help_message(update, context):
     """send the /help text to the user"""
     language = context.user_data['bot_lang']
-    text = texts[language]['help_message']
+    text = context.bot_data['texts'][language]['help_message']
 
     update.message.reply_html(text)
     return END
@@ -214,7 +261,7 @@ def help_message(update, context):
 def contact_us(update, context):
     """prompt the user to send a message"""
     language = context.user_data['bot_lang']
-    text = texts[language]['contact_us']
+    text = context.bot_data['texts'][language]['contact_us']
 
     update.message.reply_text(text)
     return TYPING_FEEDBACK
@@ -240,12 +287,17 @@ def error(update, context):
             if update.effective_chat.username:
                 payload += f' (@{update.effective_chat.username})'
             chat_id = update.effective_chat.id
-            msg = f'An error occurred: {context.error}\nStart again by clicking /start'
+            if context:
+                language = context.user_data['language']
+                texts = context.bot_data['texts']
+            else:
+                language = 'en'
+            msg = texts[language]['error']
             context.bot.send_message(chat_id=chat_id,
                                      text=msg)
         # lets put this in a "well" formatted text
-        text = (f"Hey.\n The error <code>{context.error}</code> happened{payload}."
-                f"The full traceback:\n\n<code>{trace}</code>")
+        text = (f"Hey.\nThe error <code>{context.error if context else ''}</code>"
+                f" happened{payload}. The full traceback:\n\n<code>{trace}</code>")
 
     if text == '':
         text = 'Empty Error\n' + payload + trace
@@ -262,12 +314,15 @@ def main():
     """Main function that holds the conversation handlers, and starts the bot"""
 
     updater = Updater(
-        bot=Bot(BOT_TOKEN,
-                defaults=Defaults(parse_mode='html',
-                                  disable_web_page_preview=True)),
+        token=BOT_TOKEN,
+        defaults=Defaults(parse_mode='html',
+                          disable_web_page_preview=True,
+                          run_async=True)
     )
 
     dp = updater.dispatcher
+    dp.bot_data['texts'] = texts
+    dp.bot_data['db'] = database
     my_states = [
 
         CallbackQueryHandler(
@@ -280,23 +335,23 @@ def main():
 
         CallbackQueryHandler(
             album.display_album,
-            pattern=r'^al[0-9]+$'),
+            pattern=r'^album_[0-9]+$'),
 
         CallbackQueryHandler(
             album.display_album_covers,
-            pattern=r'^al[0-9]+c$'),
+            pattern=r'^album_[0-9]+_covers$'),
 
         CallbackQueryHandler(
             album.display_album_tracks,
-            pattern=r'^al[0-9]+t$'),
+            pattern=r'^album_[0-9]+_tracks$'),
 
         CallbackQueryHandler(
             album.display_album_formats,
-            pattern=r'^al[0-9]+l$'),
+            pattern=r'^album_[0-9]+_lyrics$'),
 
         CallbackQueryHandler(
             album.thread_get_album,
-            pattern=r'^al[0-9]+l(p|t|z)$'),
+            pattern=r'^album_[0-9]+_lyrics_(pdf|tgf|zip)$'),
 
         CallbackQueryHandler(
             artist.type_artist,
@@ -304,15 +359,15 @@ def main():
 
         CallbackQueryHandler(
             artist.display_artist,
-            pattern=r'^ar[0-9]+$'),
+            pattern=r'^artist_[0-9]+$'),
 
         CallbackQueryHandler(
             artist.display_artist_albums,
-            pattern=r'^ar[0-9]+a$'),
+            pattern=r'^artist_[0-9]+_albums$'),
 
         CallbackQueryHandler(
             artist.display_artist_songs,
-            pattern=r'^ar[0-9]+s(p|r|t)[0-9]+$'),
+            pattern=r'^artist_[0-9]+_songs_(ppt|rdt|ttl)_[0-9]+$'),
 
         CallbackQueryHandler(
             song.type_song,
@@ -320,11 +375,11 @@ def main():
 
         CallbackQueryHandler(
             song.display_song,
-            pattern=r'^s[0-9]+$'),
+            pattern=r'^song_[0-9]+$'),
 
         CallbackQueryHandler(
             song.thread_display_lyrics,
-            pattern=r'^s[0-9]+l$'),
+            pattern=r'^song_[0-9]+_lyrics$'),
 
         CallbackQueryHandler(
             customize.customize_menu,
@@ -344,7 +399,32 @@ def main():
 
         CallbackQueryHandler(
             multi.display_annotation,
-            pattern=r'^an[0-9]+$'),
+            pattern=r'^annotation_[0-9]+$'),
+
+        CallbackQueryHandler(
+            multi.upvote_annotation,
+            pattern=r'^annotation_[0-9]+_upvote$'),
+
+        CallbackQueryHandler(
+            multi.downvote_annotation,
+            pattern=r'^annotation_[0-9]+_downvote$'),
+
+        CallbackQueryHandler(
+            account.login,
+            pattern='^' + str(LOGIN) + '$'),
+
+        CallbackQueryHandler(
+            account.logged_in,
+            pattern='^' + str(LOGGED_IN) + '$'),
+
+        CallbackQueryHandler(
+            account.logout,
+            pattern='^' + str(LOGOUT) + '$'),
+
+
+        CallbackQueryHandler(
+            account.display_account,
+            pattern=r'^account$'),
     ]
 
     user_input = {
@@ -485,70 +565,70 @@ def main():
         CommandHandler(
             'start',
             album.display_album,
-            Filters.regex(r'^/start al[0-9]+$'),
+            Filters.regex(r'^/start albums_[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_covers,
-            Filters.regex(r'^/start al[0-9]+c$'),
+            Filters.regex(r'^/start album_[0-9]+_covers$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_tracks,
-            Filters.regex(r'^/start al[0-9]+t$'),
+            Filters.regex(r'^/start album_[0-9]+_tracks$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             album.display_album_formats,
-            Filters.regex(r'^/start al[0-9]+l$'),
+            Filters.regex(r'^/start album_[0-9]+_lyrics$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist,
-            Filters.regex(r'^/start ar[0-9]+$'),
+            Filters.regex(r'^/start artist_[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_songs,
-            Filters.regex(r'^/start ar[0-9]+s(p|r|t)[0-9]+$'),
+            Filters.regex(r'^/start artist_[0-9]+_songs_(ppt|rdt|ttl)_[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             artist.display_artist_albums,
-            Filters.regex(r'^/start ar[0-9]+a$'),
+            Filters.regex(r'^/start artist_[0-9]+_albums$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             song.display_song,
-            Filters.regex(r'^/start s[0-9]+$'),
+            Filters.regex(r'^/start song_[0-9]+$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             song.thread_display_lyrics,
-            Filters.regex(r'^/start s[0-9]+l$'),
+            Filters.regex(r'^/start song_[0-9]+_lyrics$'),
             pass_args=True
         ),
 
         CommandHandler(
             'start',
             multi.display_annotation,
-            Filters.regex(r'^/start an[0-9]+$'),
+            Filters.regex(r'^/start annotation_[0-9]+$'),
             pass_args=True
         ),
     ]
@@ -560,14 +640,16 @@ def main():
     dp.add_error_handler(error)
 
     # web hook server to respond to GET cron jobs at /notify
-    # if SERVER_PORT:
-    #     webhook_thread = WebhookThread()
-    #     webhook_thread.start()
+    # and receive user tokens at /callback
     if SERVER_PORT:
-        updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
-        updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
-    else:
-        updater.start_polling()
+        webhook_thread = WebhookThread()
+        webhook_thread.start()
+    # if SERVER_PORT:
+    #
+    #    updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
+    #    updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
+    # else:
+    updater.start_polling()
 
     updater.idle()
 

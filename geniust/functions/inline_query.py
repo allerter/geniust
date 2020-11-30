@@ -9,7 +9,7 @@ from telegram import (
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust.constants import END
-from geniust import genius, username, utils, get_user, texts
+from geniust import genius, username, utils, get_user
 from geniust.utils import log
 
 
@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 @get_user
 def inline_menu(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['inline_menu']
+    text = context.bot_data['texts'][language]['inline_menu']
 
     articles = [
         InlineQueryResultArticle(
@@ -62,7 +62,8 @@ def inline_menu(update, context):
 @get_user
 def search_albums(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['inline_menu']['search_albums']
+    texts = context.bot_data['texts'][language]
+    text = texts['inline_menu']['search_albums']
     input_text = update.inline_query.query.split('.album ')[1].strip()
     if not input_text:
         return
@@ -82,20 +83,24 @@ def search_albums(update, context):
         album_id = album['id']
 
         if 'Genius' in artist:
-            description = texts[language]['inline_menu']['translation']
+            description = texts['inline_menu']['translation']
         else:
             description = ''
-        answer_text = album_caption(album, text['caption'])
-        album_url = create_deep_linked_url(username, f"al{album_id}")
-        cover_url = create_deep_linked_url(username, f"al{album_id}c")
-        songlist_url = create_deep_linked_url(username, f"al{album_id}t")
-        aio_url = create_deep_linked_url(username, f"al{album_id}l")
+        answer_text = album_caption(update, context, album, text['caption'])
+        album_url = create_deep_linked_url(username, f"album_{album_id}")
+        cover_url = create_deep_linked_url(username, f"album_{album_id}_covers")
+        songlist_url = create_deep_linked_url(username, f"album_{album_id}_tracks")
+        aio_url = create_deep_linked_url(username, f"album_{album_id}_lyrics")
 
         buttons = [
-            [IButton(texts[language]['inline_menu']['full_details'], url=album_url)],
-            [IButton(texts[language]['display_album']['cover_arts'], url=cover_url)],
-            [IButton(texts[language]['display_album']['tracks'], url=songlist_url)],
-            [IButton(texts[language]['display_album']['lyrics'], url=aio_url)],
+            [IButton(texts['inline_menu']['full_details'],
+                     url=album_url)],
+            [IButton(texts['display_album']['cover_arts'],
+                     url=cover_url)],
+            [IButton(texts['display_album']['tracks'],
+                     url=songlist_url)],
+            [IButton(texts['display_album']['lyrics'],
+                     url=aio_url)],
             search_more
         ]
         keyboard = IBKeyboard(buttons)
@@ -129,7 +134,8 @@ def search_albums(update, context):
 @get_user
 def search_artists(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['inline_menu']['search_artists'],
+    texts = context.bot_data['texts'][language]
+    text = texts['inline_menu']['search_artists'],
     input_text = update.inline_query.query.split('.artist ')[1].strip()
     if not input_text:
         return END
@@ -147,26 +153,26 @@ def search_artists(update, context):
         artist_id = artist['id']
 
         # description = f"AKA {', '.join(artist['alternate_names'])}"
-        answer_text = artist_caption(artist, text['caption'], language)
+        answer_text = artist_caption(update, context, artist, text['caption'], language)
         artist_url = create_deep_linked_url(
             username,
-            f"ar{artist_id}")
+            f"artist_{artist_id}")
         songlist_ppl = create_deep_linked_url(
             username,
-            f"ar{artist_id}sp1")
+            f"artist_{artist_id}_songs_ppt_1")
         songlist_rdt = create_deep_linked_url(
             username,
-            f"ar{artist_id}sr1")
+            f"artist_{artist_id}_songs_rdt_1")
         songlist_ttl = create_deep_linked_url(
             username,
-            f"ar{artist_id}st1")
+            f"artist_{artist_id}_songs_ttl_1")
         albumlist = create_deep_linked_url(
             username,
-            f"ar{artist_id}a")
+            f"artist_{artist_id}_albums")
 
-        button_text = texts[language]['display_artist']
+        button_text = texts['display_artist']
         buttons = [
-            [IButton(texts[language]['inline_menu']['full_details'], url=artist_url)],
+            [IButton(texts['inline_menu']['full_details'], url=artist_url)],
             [IButton(button_text['songs_by_popularity'], url=songlist_ppl)],
             [IButton(button_text['songs_by_release_data'], url=songlist_rdt)],
             [IButton(button_text['songs_by_title'], url=songlist_ttl)],
@@ -206,7 +212,8 @@ def search_artists(update, context):
 @get_user
 def search_songs(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['inline_menu']['search_songs']
+    texts = context.bot_data['texts'][language]
+    text = texts['inline_menu']['search_songs']
     input_text = update.inline_query.query.split('.song ')[1].strip()
     if not input_text:
         return
@@ -226,12 +233,12 @@ def search_songs(update, context):
         song_id = song['id']
 
         description = 'Translation' if 'Genius' in artist else ''
-        answer_text = song_caption(song, text['caption'], language)
-        song_url = create_deep_linked_url(username, f's{song_id}')
-        lyrics_url = create_deep_linked_url(username, f's{song_id}l')
+        answer_text = song_caption(update, context, song, text['caption'], language)
+        song_url = create_deep_linked_url(username, f'song_{song_id}')
+        lyrics_url = create_deep_linked_url(username, f'song_{song_id}_lyrics')
         buttons = [
-            [IButton(texts[language]['inline_menu']['full_details'], url=song_url)],
-            [IButton(texts[language]['display_song']['lyrics'], url=lyrics_url)],
+            [IButton(texts['inline_menu']['full_details'], url=song_url)],
+            [IButton(texts['display_song']['lyrics'], url=lyrics_url)],
             search_more
         ]
         keyboard = IBKeyboard(buttons)
@@ -262,7 +269,7 @@ def search_songs(update, context):
 
 
 @log
-def album_caption(album, caption):
+def album_caption(update, context, album, caption):
 
     release_date = album['release_date_components']
     year = release_date.get('year')
@@ -285,9 +292,9 @@ def album_caption(album, caption):
 
 
 @log
-def artist_caption(artist, caption, language):
+def artist_caption(update, context, artist, caption, language):
 
-    is_verified = texts[language][artist['is_verified']]
+    is_verified = context.bot_data['texts'][language][artist['is_verified']]
 
     string = (
         caption
@@ -301,9 +308,9 @@ def artist_caption(artist, caption, language):
 
 
 @log
-def song_caption(song, caption, language):
+def song_caption(update, context, song, caption, language):
 
-    hot = texts[language][song['stats']['hot']]
+    hot = context.bot_data['texts'][language][song['stats']['hot']]
 
     string = (
         caption

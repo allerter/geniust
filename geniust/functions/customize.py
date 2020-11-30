@@ -9,7 +9,7 @@ from geniust.constants import (
     END, LYRICS_LANG, SELECT_ACTION, BOT_LANG,
     OPTION1, OPTION2, OPTION3,
 )
-from geniust import database, get_user, texts
+from geniust import database, get_user
 from geniust.utils import log
 
 
@@ -22,8 +22,8 @@ logger.setLevel(logging.DEBUG)
 def customize_menu(update, context):
     """main menu for lyrics customizations"""
     language = context.user_data['bot_lang']
-    text = texts[language]['customize_menu']
     context.user_data['level'] = CUSTOMIZE_MENU
+    text = context.bot_data['texts'][language]['customize_menu']
     chat_id = update.callback_query.message.chat.id
 
     include = context.user_data['include_annotations']
@@ -37,8 +37,8 @@ def customize_menu(update, context):
 
     msg = (
         text['body']
-        .replace('{language}', texts[language]['lyrics_language'][lyrics_lang])
-        .replace('{include}', texts[language][include])
+        .replace('{language}', context.bot_data['texts'][language]['lyrics_language'][lyrics_lang])
+        .replace('{include}', context.bot_data['texts'][language][include])
     )
 
     buttons = [
@@ -49,7 +49,7 @@ def customize_menu(update, context):
             text['annotations'],
             callback_data=str(INCLUDE))],
         [IButton(
-            texts[language]['back'],
+            context.bot_data['texts'][language]['back'],
             callback_data=str(END))],
     ]
     keyboard = IBKeyboard(buttons)
@@ -74,7 +74,7 @@ def customize_menu(update, context):
 def lyrics_language(update, context):
     """Set lyrics language from one of three options."""
     language = context.user_data['bot_lang']
-    text = texts[language]['lyrics_language']
+    text = context.bot_data['texts'][language]['lyrics_language']
     ud = context.user_data
     ud['level'] = CUSTOMIZE_MENU + 1
 
@@ -92,7 +92,7 @@ def lyrics_language(update, context):
                 text['enligh_and_non_english'],
                 callback_data=str(OPTION3))],
             [IButton(
-                texts[language]['back'],
+                context.bot_data['texts'][language]['back'],
                 callback_data=str(END))]
         ]
         keyboard = IBKeyboard(buttons)
@@ -132,14 +132,14 @@ def bot_language(update, context):
     """Set bot language from one of two options."""
     ud = context.user_data
     language = ud['bot_lang']
-    text = texts[language]['bot_language']
+    text = context.bot_data['texts'][language]['bot_language']
     ud['level'] = CUSTOMIZE_MENU + 1
 
     # command
     if update.message or update.callback_query.data == str(BOT_LANG):
 
         buttons = []
-        for key in texts.keys():
+        for key in context.bot_data['texts'].keys():
             buttons.append([IButton(text[key], callback_data=key)])
         keyboard = IBKeyboard(buttons)
 
@@ -155,7 +155,7 @@ def bot_language(update, context):
 
     chat_id = update.callback_query.message.chat.id
     data = update.callback_query.data
-    for key in texts.keys():
+    for key in context.bot_data['texts'].keys():
         if data == key:
             ud['bot_lang'] = data
             break
@@ -178,14 +178,14 @@ def include_annotations(update, context):
     """Set whether to include annotations or not"""
     ud = context.user_data
     language = ud['bot_lang']
-    text = texts[language]['include_annotations']
+    text = context.bot_data['texts'][language]['include_annotations']
 
     # command
     if update.message or int(update.callback_query.data) == INCLUDE:
         buttons = [
-            [IButton(texts[language][True], str(OPTION1))],
-            [IButton(texts[language][False], str(OPTION2))],
-            [IButton(texts[language]['back'], str(END))]
+            [IButton(context.bot_data['texts'][language][True], str(OPTION1))],
+            [IButton(context.bot_data['texts'][language][False], str(OPTION2))],
+            [IButton(context.bot_data['texts'][language]['back'], str(END))]
         ]
         keyboard = IBKeyboard(buttons)
 
@@ -206,7 +206,7 @@ def include_annotations(update, context):
     database.update_include_annotations(chat_id, ud['include_annotations'])
 
     include = ud['include_annotations']
-    text = text['updated'].replace('{include}', texts[language][include])
+    text = text['updated'].replace('{include}', context.bot_data['texts'][language][include])
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)

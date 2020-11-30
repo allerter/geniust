@@ -39,7 +39,8 @@ class Database:
             user_data.update(
                 {'include_annotations': include_annotations,
                  'lyrics_lang': lyrics_language,
-                 'bot_lang': bot_language
+                 'bot_lang': bot_language,
+                 'token': None
                  }
             )
             self.insert(
@@ -62,19 +63,27 @@ class Database:
 
     @log
     @get_cursor
-    def select(self, chat_id, cursor):
+    def select(self, chat_id, cursor, column='*'):
         res = ''
-        query = f"""SELECT * FROM {self.table} WHERE chat_id = {chat_id};"""
+        query = f"""
+        SELECT {column}
+        FROM {self.table}
+        WHERE chat_id = {chat_id};
+        """
 
         # connect to database
         cursor.execute(query)
         res = cursor.fetchall()
         if res:
             res = res[0]
-            res = {'chat_id': res[0],
-                   'include_annotations': res[1],
-                   'lyrics_lang': res[2],
-                   'bot_lang': res[3]}
+            if column == '*':
+                res = {'chat_id': res[0],
+                       'include_annotations': res[1],
+                       'lyrics_lang': res[2],
+                       'bot_lang': res[3],
+                       'token': res[4]}
+            else:
+                res = {column: res[0]}
         return res
 
     @log
@@ -95,3 +104,15 @@ class Database:
 
     def update_bot_language(self, chat_id, data):
         self.update(chat_id, data, 'bot_lang')
+
+    def update_token(self, chat_id, data):
+        self.update(chat_id, data, 'token')
+
+    def delete_token(self, chat_id):
+        self.update(chat_id, None, 'token')
+
+    def get_token(self, chat_id):
+        return self.select(chat_id, column='token').get('token')
+
+    def get_language(self, chat_id):
+        return self.select(chat_id, column='bot_lang').get('bot_lang')

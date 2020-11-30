@@ -7,6 +7,9 @@ BOT_TOKEN = os.environ['BOT_TOKEN']
 DATABASE_URL = os.environ['DATABASE_URL']
 TELEGRAPH_TOKEN = os.environ['TELEGRAPH_TOKEN']
 GENIUS_TOKEN = os.environ['GENIUS_TOKEN']
+GENIUS_CLIENT_ID = os.environ['GENIUS_CLIENT_ID']
+GENIUS_CLIENT_SECRET = os.environ['GENIUS_CLIENT_SECRET']
+GENIUS_REDIRECT_URI = os.environ['GENIUS_REDIRECT_URI']
 ANNOTATIONS_CHANNEL_HANDLE = os.environ['ANNOTATIONS_CHANNEL_HANDLE']
 DEVELOPERS = ([int(x) for x in os.environ['DEVELOPERS'].split(',')]
               if os.environ.get('DEVELOPERS')
@@ -26,6 +29,7 @@ TELEGRAM_HTML_TAGS = [
     'code', 'pre'
 ]
 
+
 # State definitions for conversation
 class AutoRange:
     def __init__(self):
@@ -41,7 +45,7 @@ class AutoRange:
 num = AutoRange()
 
 # Menu Levels
-MAIN_MENU, CUSTOMIZE_MENU = num.assign(2)
+MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
 
 # User Input States
 (TYPING_ALBUM, TYPING_ARTIST, TYPING_SONG, TYPING_FEEDBACK,
@@ -49,5 +53,7 @@ INCLUDE, LYRICS_LANG, BOT_LANG, SELECT_ACTION) = num.assign(8)
 
 # Input Options
 OPTION1, OPTION2, OPTION3 = num.assign(3)
+
+LOGIN, LOGGED_IN, LOGOUT = num.assign(3)
 
 END = ConversationHandler.END

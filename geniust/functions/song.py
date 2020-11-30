@@ -31,24 +31,24 @@ def display_song(update, context):
 
     if update.callback_query:
         chat_id = update.callback_query.message.chat.id
-        song_id = int(update.callback_query.data[1:])
+        song_id = int(update.callback_query.data.split('_')[1])
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
         chat_id = update.message.chat.id
-        song_id = int(context.args[0][1:])
+        song_id = int(context.args.split('_')[1])
 
     song = genius.song(song_id)['song']
     cover_art = song['song_art_image_url']
-    caption = song_caption(song, text['caption'], language)
-    callback_data = f"s{song['id']}l"
+    caption = song_caption(update, context, song, text['caption'], language)
+    callback_data = f"song_{song['id']}_lyrics"
 
     buttons = [[IButton(text['lyrics'], callback_data=callback_data)]]
 
     if song['description_annotation']['annotations'][0]['body']['plain']:
         annotation_id = song['description_annotation']['id']
         button = IButton(text['description'],
-                         callback_data=f"an{annotation_id}")
+                         callback_data=f"annotation_{annotation_id}")
         buttons[0].append(button)
 
     bot.send_photo(
@@ -69,13 +69,8 @@ def display_lyrics(update, context, song_id, text):
 
     genius_t = GeniusT()
 
-    if user_data.get('lyrics_lang'):
-        lyrics_language = user_data['lyrics_lang']
-        include_annotations = user_data['include_annotations']
-    else:
-        # default settings for new users (probably unnecessary)
-        lyrics_language = 'English + Non-English'
-        include_annotations = True
+    lyrics_language = user_data['lyrics_lang']
+    include_annotations = user_data['include_annotations']
 
     logger.debug(f'{lyrics_language} | {include_annotations} | {song_id}')
 
@@ -129,9 +124,9 @@ def thread_display_lyrics(update, context):
 
     if update.callback_query:
         update.callback_query.answer()
-        song_id = int(update.callback_query.data[1:-1])
+        song_id = int(update.callback_query.data.split('_')[1])
     else:
-        song_id = int(update.callback_query.data[1:-1])
+        song_id = int(update.callback_query.data.split('_')[1])
 
     # get and send song to user
     p = threading.Thread(
@@ -175,7 +170,7 @@ def search_songs(update, context):
         title = song['title']
         artist = song['primary_artist']['name']
         title = utils.format_title(artist, title)
-        callback = f"s{song['id']}"
+        callback = f"song_{song['id']}"
 
         buttons.append([IButton(text=title, callback_data=callback)])
 
@@ -187,7 +182,7 @@ def search_songs(update, context):
 
 
 @log
-def song_caption(song, caption, language):
+def song_caption(update, context, song, caption, language):
     release_date = ''
     features = ''
     album = ''
@@ -247,6 +242,10 @@ def song_caption(song, caption, language):
     else:
         tags = ''
 
+    views = song['stats'].get('pageviews', '?')
+    if isinstance(views, int):
+        views = utils.human_format(views)
+
     string = (
         caption['body']
         .replace('{title}', song['title'])
@@ -255,7 +254,7 @@ def song_caption(song, caption, language):
         .replace('{release_date}', release_date)
         .replace('{hot}', hot)
         .replace('{tags}', tags)
-        .replace('{views}', utils.human_format(song['stats'].get('pageviews', '?')))
+        .replace('{views}', views)
         + features
         + album
         + producers

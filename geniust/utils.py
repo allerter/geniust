@@ -46,13 +46,15 @@ def deep_link(entity):
     name = entity.get('name', entity.get('title'))
     id_ = entity['id']
     if 'album' in entity['api_path']:
-        type_ = 'al'
-    elif 'artist' in entity['api_path']:
-        type_ = 'ar'
+        type_ = 'album'
     elif 'song' in entity['api_path']:
-        type_ = 's'
+        type_ = 'song'
+    elif 'artist' in entity['api_path']:
+        type_ = 'artist'
+    else:
+        raise ValueError(f"Unknown entity {entity['api_path']}")
 
-    url = create_deep_linked_url(geniust.username, f"{type_}{id_}")
+    url = create_deep_linked_url(geniust.username, f'{type_}_{id_}')
 
     return f"""<a href="{url}">{name}</a>"""
 
