@@ -39,7 +39,7 @@ remove_english = re.compile(
 newline_pattern = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
 
 # remove links from annotations
-links_pattern = re.compile(r'\nhttp[s].*')
+links_pattern = re.compile(r'\nhttp[s]*.*')
 
 
 def deep_link(entity):
@@ -127,8 +127,11 @@ def format_annotations(
     """
     lyrics = BeautifulSoup(lyrics, 'html.parser')
     if include_annotations and annotations:
+        used = []
         for a in lyrics.find_all('a'):
             annotation_id = a.attrs['href']
+            if annotation_id in used:
+                continue
 
             if format_type == 'zip':
                 annotation = (f'<annotation>'
@@ -149,12 +152,12 @@ def format_annotations(
                             tag.attrs.pop(attribute)
                 if tag.name in ('div', 'script', 'iframe'):
                     tag.decompose()
-                if tag.name == 'blockquote':
+                elif tag.name == 'blockquote':
                     tag.unwrap()
 
             a.attrs.clear()
-
             a.insert_after(annotation)
+            used.append(annotation_id)
 
     return lyrics
 
@@ -173,7 +176,7 @@ def format_filename(string):
     return re.sub(r'[\\/:*?\"<>|]', '', string)
 
 
-def get_description(entity: str) -> str:
+def get_description(entity: dict) -> str:
     if not entity.get('description_annotation'):
         return ''
 
@@ -200,7 +203,12 @@ def human_format(num: int) -> str:
         num /= 1000.0
     # add more suffixes if you need them
 
-    return '%.1f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+    if num == int(num):
+        formatter = '%.1d%s'
+    else:
+        formatter = '%.1f%s'
+
+    return formatter % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 
 def log(func):
@@ -212,6 +220,6 @@ def log(func):
         result = func(*args, **kwargs)
         logger.debug('Exiting: %s (return value: %s)',
                      func.__name__,
-                     repr(result) if repr else result)
+                     repr(result))
         return result
     return wrapper

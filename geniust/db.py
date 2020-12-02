@@ -27,7 +27,6 @@ class Database:
     @log
     def user(self, chat_id, user_data):
         """Check for user in database, and create one if there's none"""
-
         res = self.select(chat_id)
         if res:
             user_data.update(res)
@@ -58,7 +57,6 @@ class Database:
         values = (chat_id, include_annotations, lyrics_lang, bot_language)
         query = f"""INSERT INTO {self.table} VALUES (%s, %s, %s, %s);"""
 
-        # connect to database
         cursor.execute(query, values)
 
     @log
@@ -90,7 +88,7 @@ class Database:
     @get_cursor
     def update(self, chat_id, data, update, cursor):
 
-        query = f"UPDATE {self.table} SET {update} = %s WHERE chat_id = {chat_id}"
+        query = f"UPDATE {self.table} SET {update} = %s WHERE chat_id = {chat_id};"
         values = (data,)
 
         # connect to database

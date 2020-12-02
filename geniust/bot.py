@@ -212,11 +212,9 @@ def send_feedback(update, context):
                 f'{update.effective_user.first_name}</a>\n'
                 f'Chat ID: {update.message.chat.id}')
     text += update.message.text
+
     for developer in DEVELOPERS:
-        context.bot.send_message(
-            chat_id=developer,
-            text=text,
-            parse_mode='HTML')
+        context.bot.send_message(chat_id=developer, text=text)
     context.bot.send_message(
         chat_id=update.message.chat.id,
         text=reply_text)
@@ -252,7 +250,7 @@ def help_message(update, context):
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['help_message']
 
-    update.message.reply_html(text)
+    update.message.reply_text(text)
     return END
 
 

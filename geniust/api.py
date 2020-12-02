@@ -5,10 +5,10 @@ import os
 import asyncio
 import queue
 
+import telethon
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius, PublicAPI
 from concurrent.futures import ThreadPoolExecutor
-from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 # from geniust import annotations_channel
@@ -24,7 +24,7 @@ logger = logging.getLogger()
 
 
 def get_channel():
-    client = TelegramClient(
+    client = telethon.TelegramClient(
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
         TELETHON_API_HASH,
@@ -43,10 +43,8 @@ annotations_channel = get_channel()
 
 
 def telegram_annotation(a):
+    a = a.replace('<p>', '').replace('</p>', '')
     annotation = BeautifulSoup(a, 'html.parser')
-
-    if annotation.find('p'):
-        annotation.find('p').unwrap()
 
     # if the annotations has only one image in it,
     # include it using link preview
@@ -55,7 +53,7 @@ def telegram_annotation(a):
         # Invisible <a> tag
         image_a = annotation.new_tag('a', href=img.attrs['src'])
         image_a.string = '&#8204;'
-        annotation.body.insert(0, image_a)
+        annotation.insert(0, image_a)
         preview = True
     else:
         preview = False
@@ -63,9 +61,18 @@ def telegram_annotation(a):
     # remove extra tags and format the annotations to look better
     valid_tags = ('br', 'strong​', '​b​', 'em​',
                   '​i​', 'a', 'li', 'blockquote')
-    for tag in annotation.find_all():
-        if tag.name not in valid_tags:
-            tag.unwrap()
+    restart = True
+    while restart:
+        restart = False
+        for tag in annotation.find_all():
+            if tag.name == 'div':
+                tag.replace_with('')
+                restart = True
+                break
+            elif tag.name not in valid_tags:
+                tag.unwrap()
+                restart = True
+                break
 
     # remove unnecessary attributes (all except href)
     for tag in annotation:
@@ -82,6 +89,7 @@ def telegram_annotation(a):
         .replace('</blockquote>', '\n')
     )
     annotation = re.sub(r'<blockquote>[\n]*', '\n💬 ', annotation)
+    annotation = re.sub(r'^(?!💬)\n{2,}', '\n\n', annotation)
 
     return annotation[:4096], preview
 
@@ -125,9 +133,10 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
                     for a in posted_annotations:
                         a_id = a[0]
                         a_url = a[1]
-                        if a_id == int(get_id.search(value)[0]):
+                        if int(a_id) == int(get_id.search(value)[0]):
                             url = a_url
                             break
+
                     tag['href'] = url
                 elif unwrap:
                     tag.attrs.pop('href')
@@ -297,27 +306,34 @@ class GeniusT(Genius):
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            client = TelegramClient(
+            client = telethon.TelegramClient(
                 StringSession(TELETHON_SESSION_STRING),
                 TELETHON_API_ID,
                 TELETHON_API_HASH,
                 loop=loop
             )
+
             client.start()
             for annotation_id, annotation_body in annotations.items():
                 annotation, preview = telegram_annotation(annotation_body)
 
                 # send the annotation to the telegram channel
-                msg = client.loop.run_until_complete(
-                    client.send_message(
-                        entity=annotations_channel,
-                        message=annotation,
-                        link_preview=preview,
-                        parse_mode='HTML')
-                )
-                # used to replace href attributes of <a> tags
-                # in the lyrics with links to the annotations
-                url = f'https://t.me/{ANNOTATIONS_CHANNEL_HANDLE}/{msg.id}'
+                try:
+                    msg = client.loop.run_until_complete(
+                        client.send_message(
+                            entity=annotations_channel,
+                            message=annotation,
+                            link_preview=preview,
+                            parse_mode='HTML')
+                    )
+
+                    # used to replace href attributes of <a> tags
+                    # in the lyrics with links to the annotations
+                    url = f'https://t.me/{ANNOTATIONS_CHANNEL_HANDLE}/{msg.id}'
+                except telethon.errors.FloodWaitError as e:
+                    logger.error(str(e))
+                    url = ''
+                    break
                 posted_annotations.append((annotation_id, url))
 
             client.disconnect()
