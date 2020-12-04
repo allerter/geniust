@@ -1,8 +1,10 @@
 import logging
+from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
-from bs4 import BeautifulSoup
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from geniust.constants import (TYPING_ARTIST, END)
 from geniust import (utils, get_user)
@@ -14,7 +16,7 @@ logger = logging.getLogger()
 
 @log
 @get_user
-def type_artist(update, context):
+def type_artist(update: Update, context: CallbackContext) -> int:
     # user has entered the function through the main menu
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['type_artist']
@@ -30,7 +32,7 @@ def type_artist(update, context):
 
 @log
 @get_user
-def search_artists(update, context):
+def search_artists(update: Update, context: CallbackContext) -> int:
     """Checks artist link or return search results, or prompt user for format"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
@@ -57,7 +59,7 @@ def search_artists(update, context):
 
 @log
 @get_user
-def display_artist(update, context):
+def display_artist(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist']
@@ -73,7 +75,8 @@ def display_artist(update, context):
 
     artist = genius.artist(artist_id)['artist']
     cover_art = artist['image_url']
-    caption = artist_caption(update, context, artist, text['caption'], language)
+    caption = artist_caption(update, context, artist,
+                             text['caption'], language)
 
     buttons = [
         [IButton(
@@ -107,7 +110,7 @@ def display_artist(update, context):
 
 @log
 @get_user
-def display_artist_albums(update, context):
+def display_artist_albums(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_artist_albums']
@@ -128,21 +131,21 @@ def display_artist_albums(update, context):
 
     if albums:
         artist = albums_list['albums'][0]['artist']['name']
-        albums = f"{text['albums'].replace('{}', artist)}\n{''.join(albums)}"
+        string = f"{text['albums'].replace('{}', artist)}\n{''.join(albums)}"
     else:
         artist = genius.artist(artist_id)['artist']['name']
         text = text['no_albums'].replace('{}', artist)
         context.bot.send_message(chat_id, text)
         return END
 
-    context.bot.send_message(chat_id, albums)
+    context.bot.send_message(chat_id, string)
 
     return END
 
 
 @log
 @get_user
-def display_artist_songs(update, context):
+def display_artist_songs(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist_songs']
@@ -193,7 +196,7 @@ def display_artist_songs(update, context):
             .replace('{artist}', artist)
             .replace('{sort}', text[sort])
         )
-        songs = f"{msg}\n{''.join(songs)}"
+        string = f"{msg}\n{''.join(songs)}"
     else:
         artist = genius.artist(artist_id)['artist']['name']
         text = text['no_songs'].replace('{}', artist)
@@ -234,15 +237,19 @@ def display_artist_songs(update, context):
         keyboard = None
 
     if message:
-        update.callback_query.edit_message_caption(songs, reply_markup=keyboard)
+        update.callback_query.edit_message_caption(string, reply_markup=keyboard)
     else:
-        context.bot.send_message(chat_id, songs, reply_markup=keyboard)
+        context.bot.send_message(chat_id, string, reply_markup=keyboard)
 
     return END
 
 
 @log
-def artist_caption(update, context, artist, caption, language):
+def artist_caption(update: Update,
+                   context: CallbackContext,
+                   artist: Dict[str, Any],
+                   caption: Dict[str, str],
+                   language: str) -> str:
     alternate_names = ''
     social_media = ''
     social_media_links = []

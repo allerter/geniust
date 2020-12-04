@@ -2,6 +2,8 @@ import json
 import re
 from io import BytesIO
 import pathlib
+from typing import Any, Dict, Tuple
+
 import requests
 import reportlab
 from reportlab.platypus.paraparser import _paraAttrMap as valid_attributes
@@ -89,7 +91,7 @@ class MyDocTemplate(BaseDocTemplate):
              PageTemplate(id='Later', frames=frameT, pagesize=self.pagesize)]
         )
 
-    def afterFlowable(self, flowable):
+    def afterFlowable(self, flowable: Any) -> None:
         """adds song title to bookmarks and the TOC"""
         if flowable.__class__.__name__ == 'Paragraph':
             text = flowable.getPlainText()
@@ -102,7 +104,7 @@ class MyDocTemplate(BaseDocTemplate):
                 self.notify('TOCEntry', (0, text, self.page, key))
 
 
-def get_farsi_text(text, long_text=False):
+def get_farsi_text(text: str, long_text: bool = False) -> Tuple[str, bool]:
     """reshapes arabic/farsi words to be showed properly in the PDF"""
     arabic = False
     if reshaper.has_arabic_letters(text):
@@ -122,7 +124,7 @@ def get_farsi_text(text, long_text=False):
             else:
                 reshaped_words.append(word)
         reshaped_words.reverse()
-        return ' '.join(reshaped_words)
+        return ' '.join(reshaped_words), arabic
     return text, arabic
 
 
@@ -130,7 +132,7 @@ valid = list(valid_attributes.keys())
 valid.append('href')
 
 
-def remove_invalid_tags(soup, keep_href=False):
+def remove_invalid_tags(soup: BeautifulSoup, keep_href: bool = False) -> None:
     if hasattr(soup, 'find_all'):
         for tag in soup.find_all('a'):
             for attribute, value in list(tag.attrs.items()):
@@ -141,7 +143,8 @@ def remove_invalid_tags(soup, keep_href=False):
             tag.decompose()
 
 
-def create_pdf(data, user_data):
+def create_pdf(data: Dict[str, Any],
+               user_data: Dict[str, Any]) -> BytesIO:
     """creates a PDF file from the data"""
     bio = BytesIO()
     doc = MyDocTemplate(
@@ -296,10 +299,12 @@ def create_pdf(data, user_data):
     return bio
 
 
-def test(json_file, lyrics_language, include_annotations):
+def test(json_file: str,
+         lyrics_language: str,
+         include_annotations: bool) -> None:
     with open(json_file, 'r') as f:
         data = json.loads(f.read())
     file = create_pdf(data, {'lyrics_lang': lyrics_language,
                              'include_annotations': include_annotations})
-    with open('test.pdf', 'wb') as f:
-        f.write(file.getvalue())
+    with open('test.pdf', 'wb') as f:  # type:ignore
+        f.write(file.getvalue())  # type: ignore

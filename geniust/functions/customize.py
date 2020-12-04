@@ -2,7 +2,8 @@ import logging
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
-from telegram.error import BadRequest
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from geniust.constants import (
     INCLUDE, CUSTOMIZE_MENU,
@@ -18,12 +19,11 @@ logger = logging.getLogger()
 
 @log
 @get_user
-def customize_menu(update, context):
+def customize_menu(update: Update, context: CallbackContext) -> int:
     """main menu for lyrics customizations"""
     language = context.user_data['bot_lang']
     context.user_data['level'] = CUSTOMIZE_MENU
     text = context.bot_data['texts'][language]['customize_menu']
-    chat_id = update.effective_chat.id
 
     include = context.user_data['include_annotations']
     lyrics_lang = context.user_data['lyrics_lang']
@@ -65,7 +65,9 @@ def customize_menu(update, context):
 
 @log
 @get_user
-def lyrics_language(update, context):
+def lyrics_language(update: Update,
+                    context: CallbackContext
+                    ) -> int:
     """Set lyrics language from one of three options."""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['lyrics_language']
@@ -125,7 +127,9 @@ def lyrics_language(update, context):
 
 @log
 @get_user
-def bot_language(update, context):
+def bot_language(update: Update,
+                 context: CallbackContext
+                 ) -> int:
     """Set bot language from one of two options."""
     ud = context.user_data
     language = ud['bot_lang']
@@ -147,7 +151,8 @@ def bot_language(update, context):
             ud['command_entry'] = True
             update.message.reply_text(msg, reply_markup=keyboard)
         else:
-            update.callback_query.edit_message_text(msg, reply_markup=keyboard)
+            update.callback_query.edit_message_text(msg,
+                                                    reply_markup=keyboard)
 
         return BOT_LANG
 
@@ -171,7 +176,9 @@ def bot_language(update, context):
 
 @log
 @get_user
-def include_annotations(update, context):
+def include_annotations(update: Update,
+                        context: CallbackContext
+                        ) -> int:
     """Set whether to include annotations or not"""
     ud = context.user_data
     language = ud['bot_lang']

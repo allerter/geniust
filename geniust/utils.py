@@ -5,6 +5,8 @@ Kept here in case improvements are added.
 import re
 import logging
 from functools import wraps
+from typing import (Any, TypeVar, Callable, Pattern,
+                    Optional, List, Union, Tuple, Dict)
 
 from bs4 import BeautifulSoup, NavigableString, Comment
 from bs4.element import Tag
@@ -23,26 +25,26 @@ regex = (
     r'[^\x00-\x7F]'  # is followed by a non-ASCII character
     r'.*'  # get the rest of the sentence
 )
-remove_non_english = re.compile(regex, re.MULTILINE)
+remove_non_english: Pattern[str] = re.compile(regex, re.MULTILINE)
 
 # The two expressions are fairly like
 # the one below captures lines in English.
 # The only noticeable difference is
 # ignoring \u2005 or \u200c characters usually used in Persian.
-remove_english = re.compile(
+remove_english: Pattern[str] = re.compile(
     r"(\[[^\]\n]+\]|\\n|\\u200[5c]|!--![\S\s]*?!__!|<.*?>)|^.*[a-zA-Z]+.*",
     re.MULTILINE
 )
 
 # remove extra newlines except the ones before headers.
 # Removes instances of two or more newlines (either \n or <br>)
-newline_pattern = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
+newline_pattern: Pattern[str] = re.compile(r'(\n|<br\s*[/]*>){2,}(?!\[)')
 
 # remove links from annotations
-links_pattern = re.compile(r'\nhttp[s]*.*')
+links_pattern: Pattern[str] = re.compile(r'\nhttp[s]*.*')
 
 
-def deep_link(entity):
+def deep_link(entity: dict) -> str:
     name = entity.get('name', entity.get('title'))
     id_ = entity['id']
     if 'album' in entity['api_path']:
@@ -59,7 +61,8 @@ def deep_link(entity):
     return f"""<a href="{url}">{name}</a>"""
 
 
-def remove_unsupported_tags(soup, supported=None):
+def remove_unsupported_tags(soup: BeautifulSoup,
+                            supported: Optional[List[str]] = None) -> BeautifulSoup:
     if supported is None:
         supported = TELEGRAM_HTML_TAGS
 
@@ -86,10 +89,11 @@ def remove_links(s: str) -> str:
     return links_pattern.sub('', s)
 
 
-def format_language(lyrics: [BeautifulSoup, str],
-                    lyrics_language: [BeautifulSoup, str]):
+def format_language(lyrics: Union[BeautifulSoup, str],
+                    lyrics_language: str
+                    ) -> Union[BeautifulSoup, str]:
     """removes (non-)ASCII characters"""
-    def string_formatter(s):
+    def string_formatter(s: str) -> str:
         if lyrics_language == 'English':
             s = remove_non_english.sub("\\1", s, 0)
         elif lyrics_language == 'Non-English':
@@ -114,34 +118,36 @@ def format_language(lyrics: [BeautifulSoup, str],
 
 
 def format_annotations(
-        lyrics,
-        annotations,
-        include_annotations,
-        identifiers=['!--!', '!__!'],
-        format_type='zip',
-        lyrics_language=None):
-    """Formats annotations in lyrics.
+        lyrics: str,
+        annotations: List[Tuple[int, str]],
+        include_annotations: bool,
+        identifiers: Tuple[str, str] = ('!--!', '!__!'),
+        format_type: str = 'zip',
+        lyrics_language: Optional[str] = None) -> BeautifulSoup:
+    """Formats annotations in soup.
     Include the annotations by inspecting <a> tags and
     then remove the unnecessary HTML tags
     in the end.
     """
-    lyrics = BeautifulSoup(lyrics, 'html.parser')
+    soup: BeautifulSoup = BeautifulSoup(lyrics, 'html.parser')
     if include_annotations and annotations:
         used = []
-        for a in lyrics.find_all('a'):
+        for a in soup.find_all('a'):
             annotation_id = a.attrs['href']
             if annotation_id in used:
                 continue
 
             if format_type == 'zip':
-                annotation = (f'<annotation>'
-                              f'\n{identifiers[0]}\n'
-                              f'{annotations[annotation_id]}'
-                              f'\n{identifiers[1]}\n'
-                              '</annotation>')
+                annotation_content = (f'<annotation>'
+                                      f'\n{identifiers[0]}\n'
+                                      f'{annotations[annotation_id]}'
+                                      f'\n{identifiers[1]}\n'
+                                      f'</annotation>')
             else:
-                annotation = f'<annotation>{annotations[annotation_id]}</annotation>'
-            annotation = BeautifulSoup(annotation, 'html.parser')
+                annotation_content = (f'<annotation>'
+                                      f'{annotations[annotation_id]}'
+                                      f'</annotation>')
+            annotation = BeautifulSoup(annotation_content, 'html.parser')
             # annotation = newline_pattern.sub('\n', annotation)
             # annotation = links_pattern.sub('', annotation)
 
@@ -159,10 +165,10 @@ def format_annotations(
             a.insert_after(annotation)
             used.append(annotation_id)
 
-    return lyrics
+    return soup
 
 
-def format_title(artist, title):
+def format_title(artist: str, title: str) -> str:
     """removes artist name if "Genius" is in the artist name"""
     if 'Genius' in artist:
         final_title = title
@@ -171,12 +177,12 @@ def format_title(artist, title):
     return final_title
 
 
-def format_filename(string):
+def format_filename(string: str) -> str:
     """removes invalid characters in file name"""
     return re.sub(r'[\\/:*?\"<>|]', '', string)
 
 
-def get_description(entity: dict) -> str:
+def get_description(entity: Dict[str, Any]) -> str:
     if not entity.get('description_annotation'):
         return ''
 
@@ -200,7 +206,7 @@ def human_format(num: int) -> str:
     magnitude = 0
     while abs(num) >= 1000:
         magnitude += 1
-        num /= 1000.0
+        num /= 1000.0  # type: ignore
     # add more suffixes if you need them
 
     if num == int(num):
@@ -211,11 +217,14 @@ def human_format(num: int) -> str:
     return formatter % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 
-def log(func):
+RT = TypeVar('RT')
+
+
+def log(func: Callable[..., RT]) -> Callable[..., RT]:
     logger = logging.getLogger(func.__module__)
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> RT:
         logger.debug('Entering: %s', func.__name__)
         result = func(*args, **kwargs)
         logger.debug('Exiting: %s (return value: %s)',

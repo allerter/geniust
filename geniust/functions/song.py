@@ -1,9 +1,12 @@
 import logging
 import threading
 import re
+from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
+from telegram import Update
+from telegram.ext import CallbackContext
 from telegram.constants import MAX_MESSAGE_LENGTH
 from bs4 import BeautifulSoup
 
@@ -14,12 +17,11 @@ from geniust.utils import log
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 @log
 @get_user
-def display_song(update, context):
+def display_song(update: Update, context: CallbackContext) -> int:
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_song']
     bot = context.bot
@@ -35,7 +37,8 @@ def display_song(update, context):
 
     song = genius.song(song_id)['song']
     cover_art = song['song_art_image_url']
-    caption = song_caption(update, context, song, text['caption'], language)
+    caption = song_caption(update, context, song,
+                           text['caption'], language)
     callback_data = f"song_{song['id']}_lyrics"
 
     buttons = [[IButton(text['lyrics'], callback_data=callback_data)]]
@@ -56,7 +59,10 @@ def display_song(update, context):
 
 
 @log
-def display_lyrics(update, context, song_id, text):
+def display_lyrics(update: Update,
+                   context: CallbackContext,
+                   song_id: int,
+                   text: Dict[str, str]) -> None:
     """retrieve and send song lyrics to user"""
     user_data = context.user_data
     bot = context.bot
@@ -100,20 +106,20 @@ def display_lyrics(update, context, song_id, text):
     # that's dealt with too
     max_length = MAX_MESSAGE_LENGTH
     while sent < len_lyrics:
-        text = lyrics[i * max_length: (i * max_length) + max_length]
-        a_start = text.count('<a')
-        a_end = text.count('</a>')
+        string = lyrics[i * max_length: (i * max_length) + max_length]
+        a_start = string.count('<a')
+        a_end = string.count('</a>')
         if a_start != a_end:
-            a_pos = text.rfind('<a')
-            text = text[:a_pos]
-        bot.send_message(chat_id, text)
-        sent += len(text)
+            a_pos = string.rfind('<a')
+            string = string[:a_pos]
+        bot.send_message(chat_id, string)
+        sent += len(string)
         i += 1
 
 
 @log
 @get_user
-def thread_display_lyrics(update, context):
+def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_lyrics']
 
@@ -135,7 +141,7 @@ def thread_display_lyrics(update, context):
 
 @log
 @get_user
-def type_song(update, context):
+def type_song(update: Update, context: CallbackContext) -> int:
     # user has entered the function through the main menu
     language = context.user_data['bot_lang']
     msg = context.bot_data['texts'][language]['type_song']
@@ -151,7 +157,7 @@ def type_song(update, context):
 
 @log
 @get_user
-def search_songs(update, context):
+def search_songs(update: Update, context: CallbackContext) -> int:
     """Handle incoming song request"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
@@ -171,20 +177,25 @@ def search_songs(update, context):
         buttons.append([IButton(text=title, callback_data=callback)])
 
     if buttons:
-        update.message.reply_text(text['choose'], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(text['choose'],
+                                  reply_markup=IBKeyboard(buttons))
     else:
         update.message.reply_text(text['no_songs'])
     return END
 
 
 @log
-def song_caption(update, context, song, caption, language):
+def song_caption(update: Update,
+                 context: CallbackContext,
+                 song: Dict[str, Any],
+                 caption: Dict[str, str],
+                 language: str) -> str:
     release_date = ''
     features = ''
     album = ''
     producers = ''
     writers = ''
-    relationships = ''
+    relationships: Any = ''
     tags = ''
 
     if song.get('release_date'):

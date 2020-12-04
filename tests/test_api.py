@@ -78,7 +78,7 @@ def test_lyrics_no_annotations(genius, song_id, song_url, page):
                                             include_annotations=False,
                                             telegram_song=False)
     assert isinstance(lyrics, str), "Lyrics wasn't a string"
-    assert annotations == [], "Annotations weren't empty"
+    assert annotations == {}, "Annotations weren't empty"
 
 
 def test_lyrics_telegram_song(genius, song_id, song_url, page, annotations):

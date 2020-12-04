@@ -1,13 +1,16 @@
 import logging
 import threading
+from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto
+from telegram import Update
+from telegram.ext import CallbackContext
 from telegram.error import TimedOut, NetworkError
 
-from geniust.constants import (TYPING_ALBUM, END,)
-from geniust import (api, utils, get_user)
+from geniust.constants import TYPING_ALBUM, END
+from geniust import api, utils, get_user
 from geniust.utils import log
 
 from .album_conversion import (
@@ -20,7 +23,7 @@ logger = logging.getLogger()
 
 @log
 @get_user
-def type_album(update, context):
+def type_album(update: Update, context: CallbackContext) -> int:
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['type_album']
 
@@ -36,7 +39,7 @@ def type_album(update, context):
 
 @log
 @get_user
-def search_albums(update, context):
+def search_albums(update: Update, context: CallbackContext) -> int:
     """Checks album link or return search results, or prompt user for format"""
     genius = context.bot_data['genius']
     input_text = update.message.text
@@ -57,7 +60,8 @@ def search_albums(update, context):
         buttons.append([IButton(title, callback_data=callback)])
 
     if buttons:
-        update.message.reply_text(text['choose'], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(text['choose'],
+                                  reply_markup=IBKeyboard(buttons))
     else:
         update.message.reply_text(text['no_albums'])
 
@@ -66,7 +70,7 @@ def search_albums(update, context):
 
 @log
 @get_user
-def display_album(update, context):
+def display_album(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_album']
@@ -115,7 +119,7 @@ def display_album(update, context):
 
 @log
 @get_user
-def display_album_covers(update, context):
+def display_album_covers(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_album_covers']
@@ -146,7 +150,7 @@ def display_album_covers(update, context):
 
 @log
 @get_user
-def display_album_tracks(update, context):
+def display_album_tracks(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     msg = context.bot_data['texts'][language]['display_album_tracks']
@@ -177,7 +181,7 @@ def display_album_tracks(update, context):
 
 
 @log
-def display_album_formats(update, context):
+def display_album_formats(update: Update, context: CallbackContext) -> int:
     language = context.user_data['bot_lang']
     msg = context.bot_data['texts'][language]['display_album_formats']
     chat_id = update.effective_chat.id
@@ -211,7 +215,7 @@ def display_album_formats(update, context):
 
 @log
 @get_user
-def thread_get_album(update, context):
+def thread_get_album(update: Update, context: CallbackContext) -> int:
     """Create a thread and download the album"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['get_album']
@@ -229,7 +233,11 @@ def thread_get_album(update, context):
 
 
 @log
-def get_album(update, context, album_id, album_format, text):
+def get_album(update: Update,
+              context: CallbackContext,
+              album_id: int,
+              album_format: str,
+              text: Dict[str, str]) -> None:
     """Download and send the album to the user in the selected format"""
     ud = context.user_data
     include_annotations = ud['include_annotations']
@@ -247,8 +255,8 @@ def get_album(update, context, album_id, album_format, text):
 
     # result should be a dict if the operation was successful
     if not isinstance(album, dict):
-        text = text['failed']
-        progress.edit_message_text(text)
+        msg = text['failed']
+        progress.edit_message_text(msg)
         logging.error(
             f"Couldn't get album:\n"
             f"Album ID:{album_id}\n"
@@ -272,6 +280,7 @@ def get_album(update, context, album_id, album_format, text):
         raise ValueError(f'Unknown album format: {album_format}')
 
     msg = text['uploading']
+    update.effective_chat.send_chat_action('upload_document')
     progress.edit_message_text(msg)
 
     # send the file
@@ -292,9 +301,12 @@ def get_album(update, context, album_id, album_format, text):
 
 
 @log
-def album_caption(update, context, album, caption):
+def album_caption(update: Update,
+                  context: CallbackContext,
+                  album: Dict[str, Any],
+                  caption: Dict[str, str]) -> str:
 
-    release_date = ''
+    release_date: Any = ''
     features = ''
     labels = ''
 

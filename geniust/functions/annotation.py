@@ -3,6 +3,8 @@ import re
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from geniust.constants import END
 from geniust import get_user
@@ -16,7 +18,7 @@ logger = logging.getLogger()
 
 @log
 @get_user
-def display_annotation(update, context):
+def display_annotation(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     placeholder_text = context.bot_data['texts'][language]['display_annotation']
@@ -63,7 +65,7 @@ def display_annotation(update, context):
 
 @log
 @get_user
-def upvote_annotation(update, context):
+def upvote_annotation(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]['upvote_annotation']
@@ -90,7 +92,8 @@ def upvote_annotation(update, context):
         change = 1
 
     upvotes = message.reply_markup.inline_keyboard[0][0].text
-    upvotes = int(re.search(r'\d+', upvotes)[0])
+    match = re.search(r'\d+', upvotes)
+    upvotes = int(match[0]) if match else 0
     new_text = '👍 ' + str(upvotes + change)
     message.reply_markup.inline_keyboard[0][0].text = new_text
 
@@ -101,7 +104,7 @@ def upvote_annotation(update, context):
 
 @log
 @get_user
-def downvote_annotation(update, context):
+def downvote_annotation(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]['downvote_annotation']
@@ -128,7 +131,8 @@ def downvote_annotation(update, context):
         change = 1
 
     downvotes = message.reply_markup.inline_keyboard[0][-1].text
-    downvotes = int(re.search(r'\d+', downvotes)[0])
+    match = re.search(r'\d+', downvotes)
+    downvotes = int(match[0]) if match else 0
     new_text = '👎 ' + str(downvotes + change)
     message.reply_markup.inline_keyboard[0][-1].text = new_text
 

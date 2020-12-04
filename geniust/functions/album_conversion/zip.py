@@ -1,12 +1,15 @@
 import json
 import re
 from io import BytesIO
+from typing import Any, Dict
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from geniust import utils
 
 
-def create_zip(album, user_data):
+def create_zip(album: Dict[str, Any],
+               user_data: Dict[str, Any]
+               ) -> BytesIO:
     """creates a zip from the data applyting user_data, and returns an in-memory file"""
     bio = BytesIO()
     zip_file = ZipFile(bio, "a", compression=ZIP_DEFLATED)
@@ -60,16 +63,15 @@ def create_zip(album, user_data):
 
 
 # driver code
-def test(json_file, lyrics_language, include_annotations):
+def test(json_file: str,
+         lyrics_language: str,
+         include_annotations: bool) -> None:
     with open(json_file) as f:
         data = json.load(f)
-    user_data = {
+    user_data: Any = {
         'lyrics_lang': lyrics_language,
         'include_annotations': include_annotations
     }
     file = create_zip(data, user_data)
-    with open('test.zip', 'wb') as f:
-        f.write(file.getvalue())
-
-
-# test('hotel diablo.json', 'English + Non-English', True)
+    with open('test.zip', 'wb') as f:  # type: ignore
+        f.write(file.getvalue())  # type: ignore

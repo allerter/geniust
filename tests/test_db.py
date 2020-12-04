@@ -71,7 +71,7 @@ def test_select(connection, database):
     key = 'bot_lang'
     value = 'en'
 
-    connection().__enter__().cursor().__enter__().fetchall.return_value = [(value,)]
+    connection().__enter__().cursor().__enter__().fetchone.return_value = (value,)
 
     res = database.select(chat_id, column=key)
 
@@ -81,10 +81,8 @@ def test_select(connection, database):
 @patch('psycopg2.connect')
 def test_select_all(connection, database):
     chat_id = 1
-    values = [1, True, 'English', 'en', None]
-
-    return_values = [[x for x in values]]
-    connection().__enter__().cursor().__enter__().fetchall.return_value = return_values
+    values = (1, True, 'English', 'en', None)
+    connection().__enter__().cursor().__enter__().fetchone.return_value = values
 
     res = database.select(chat_id)
 

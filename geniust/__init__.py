@@ -3,6 +3,7 @@ import functools
 import pathlib
 from os import listdir
 from os.path import isfile, join
+from typing import TypeVar, Callable
 
 from telegram import Bot
 from lyricsgenius import OAuth2
@@ -13,16 +14,18 @@ from geniust.api import GeniusT
 from geniust.constants import (BOT_TOKEN,
     GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET)
 
-username = 'genius_the_bot'  # Bot(BOT_TOKEN).get_me().username
+username: str = 'genius_the_bot'  # Bot(BOT_TOKEN).get_me().username
 
 database = Database(table='user_data')
 
 genius = GeniusT()
 
+RT = TypeVar('RT')
 
-def get_user(func):
+
+def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> RT:
         chat_id = args[0].effective_chat.id
         context = args[1]
         if 'bot_lang' not in context.user_data:

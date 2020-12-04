@@ -1,5 +1,7 @@
 import logging
 from functools import wraps
+from typing import (Any, TypeVar, Callable, Optional,
+                    Tuple, Union, Dict, List)
 
 import psycopg2
 
@@ -9,10 +11,12 @@ from geniust.utils import log
 
 logging.getLogger().setLevel(logging.DEBUG)
 
+RT = TypeVar('RT')
 
-def get_cursor(func):
+
+def get_cursor(func: Callable[..., RT]) -> Callable[..., RT]:
     @wraps(func)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs) -> RT:
         with psycopg2.connect(DATABASE_URL, sslmode='require') as con:
             with con.cursor() as cursor:
                 return func(self, *args, **kwargs, cursor=cursor)
@@ -25,7 +29,7 @@ class Database:
         self.table = table
 
     @log
-    def user(self, chat_id, user_data):
+    def user(self, chat_id: int, user_data: dict) -> None:
         """Check for user in database, and create one if there's none"""
         res = self.select(chat_id)
         if res:
@@ -52,7 +56,10 @@ class Database:
 
     @log
     @get_cursor
-    def insert(self, chat_id, *data, cursor):
+    def insert(self,
+               chat_id: int,
+               *data: Tuple[bool, str, str, Optional[str]],
+               cursor: Any) -> None:
         include_annotations, lyrics_lang, bot_language = data
         values = (chat_id, include_annotations, lyrics_lang, bot_language)
         query = f"""INSERT INTO {self.table} VALUES (%s, %s, %s, %s);"""
@@ -61,8 +68,10 @@ class Database:
 
     @log
     @get_cursor
-    def select(self, chat_id, cursor, column='*'):
-        res = ''
+    def select(self,
+               chat_id: int,
+               cursor: Any,
+               column: str = '*') -> Dict[str, Any]:
         query = f"""
         SELECT {column}
         FROM {self.table}
@@ -71,9 +80,8 @@ class Database:
 
         # connect to database
         cursor.execute(query)
-        res = cursor.fetchall()
-        if res:
-            res = res[0]
+        res = cursor.fetchone()
+        if res is not None:
             if column == '*':
                 res = {'chat_id': res[0],
                        'include_annotations': res[1],
@@ -86,7 +94,11 @@ class Database:
 
     @log
     @get_cursor
-    def update(self, chat_id, data, update, cursor):
+    def update(self,
+               chat_id: int,
+               data: Union[bool, str, None],
+               update: str,
+               cursor: Any):
 
         query = f"UPDATE {self.table} SET {update} = %s WHERE chat_id = {chat_id};"
         values = (data,)
@@ -94,23 +106,23 @@ class Database:
         # connect to database
         cursor.execute(query, values)
 
-    def update_include_annotations(self, chat_id, data):
+    def update_include_annotations(self, chat_id: int, data: bool) -> None:
         self.update(chat_id, data, 'include_annotations')
 
-    def update_lyrics_language(self, chat_id, data):
+    def update_lyrics_language(self, chat_id: int, data: str) -> None:
         self.update(chat_id, data, 'lyrics_lang')
 
-    def update_bot_language(self, chat_id, data):
+    def update_bot_language(self, chat_id: int, data: str) -> None:
         self.update(chat_id, data, 'bot_lang')
 
-    def update_token(self, chat_id, data):
+    def update_token(self, chat_id: int, data: str) -> None:
         self.update(chat_id, data, 'token')
 
-    def delete_token(self, chat_id):
+    def delete_token(self, chat_id: int) -> None:
         self.update(chat_id, None, 'token')
 
-    def get_token(self, chat_id):
-        return self.select(chat_id, column='token').get('token')
+    def get_token(self, chat_id: int) -> str:
+        return self.select(chat_id, column='token').get('token')  # type: ignore
 
-    def get_language(self, chat_id):
-        return self.select(chat_id, column='bot_lang').get('bot_lang')
+    def get_language(self, chat_id: int) -> str:
+        return self.select(chat_id, column='bot_lang').get('bot_lang')  # type: ignore

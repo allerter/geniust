@@ -9,16 +9,9 @@ from typing import Optional, Awaitable
 
 import tornado.ioloop
 import tornado.web
-from geniust.functions import (
-    account,
-    album,
-    artist,
-    song,
-    customize,
-    inline_query,
-    annotation
-)
-from telegram import Bot
+from lyricsgenius import OAuth2
+from telegram import Bot, Update
+from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram.ext import (
@@ -35,8 +28,18 @@ from telegram.utils.helpers import mention_html
 from telegram.utils.webhookhandler import WebhookServer
 from tornado.web import url, RequestHandler
 
+from geniust.functions import (
+    account,
+    album,
+    artist,
+    song,
+    customize,
+    inline_query,
+    annotation
+)
 from geniust import get_user, texts, auth, database, username, genius
 from geniust.utils import log
+from geniust.db import Database
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
     TYPING_ALBUM, TYPING_SONG,
@@ -62,7 +65,11 @@ class CronHandler(RequestHandler):
 
 
 class TokenHandler(RequestHandler):
-    def initialize(self, auth, database, bot, texts):
+    def initialize(self,
+                   auth: OAuth2,
+                   database: Database,
+                   bot: Bot,
+                   texts: dict) -> None:
         self.auth = auth
         self.database = database
         self.bot = bot
@@ -118,7 +125,7 @@ class WebhookThread(threading.Thread):
 
 @log
 @get_user
-def main_menu(update, context):
+def main_menu(update: Update, context: CallbackContext) -> int:
     """Genius main menu.
     Displays song lyrics, album lyrics, and customize output.
 
@@ -187,7 +194,7 @@ def main_menu(update, context):
 
 @log
 @get_user
-def stop(update, context):
+def stop(update: Update, context: CallbackContext) -> int:
     """End Conversation by command"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['stop']
@@ -198,7 +205,7 @@ def stop(update, context):
 
 @log
 @get_user
-def send_feedback(update, context):
+def send_feedback(update: Update, context: CallbackContext) -> int:
     """send user feedback to developers"""
     language = context.user_data['bot_lang']
     reply_text = context.bot_data['texts'][language]['send_feedback']
@@ -223,7 +230,7 @@ def send_feedback(update, context):
 
 @log
 @get_user
-def end_describing(update, context):
+def end_describing(update: Update, context: CallbackContext) -> int:
     """End conversation altogether or return to upper level"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['end_describing']
@@ -245,7 +252,7 @@ def end_describing(update, context):
 
 @log
 @get_user
-def help_message(update, context):
+def help_message(update: Update, context: CallbackContext) -> int:
     """send the /help text to the user"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['help_message']
@@ -256,7 +263,7 @@ def help_message(update, context):
 
 @log
 @get_user
-def contact_us(update, context):
+def contact_us(update: Update, context: CallbackContext) -> int:
     """prompt the user to send a message"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['contact_us']
@@ -265,7 +272,7 @@ def contact_us(update, context):
     return TYPING_FEEDBACK
 
 
-def error(update, context):
+def error(update: Update, context: CallbackContext) -> None:
     """handle errors and alert the developers"""
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible

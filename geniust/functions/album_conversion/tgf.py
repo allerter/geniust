@@ -1,13 +1,13 @@
-# import queue
 import re
 import logging
 import asyncio
 import json
+from socket import timeout
+from time import sleep
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
-from socket import timeout
 from concurrent.futures import ThreadPoolExecutor
-from time import sleep
+from typing import Any, Dict, Tuple, Union, List
 
 import telegraph
 from bs4 import BeautifulSoup
@@ -18,7 +18,7 @@ from geniust.constants import TELEGRAPH_TOKEN
 logger = logging.getLogger()
 
 
-def fetch(img):
+def fetch(img: str) -> Tuple[str, str]:
     """downloads the image and uploads it to telegraph"""
     req = Request(img, headers={'User-Agent': 'Mozilla/5.0'})
     while True:
@@ -32,14 +32,16 @@ def fetch(img):
         except (HTTPError, URLError) as e:
             logger.critical(f'Error raised and caught: {e}')
         break
-    return (img, cover_art)
+    return img, cover_art
 
 
-async def download_cover_arts(data, q):
+async def download_cover_arts(data: Dict[str, Any],
+                              q  # type: ignore
+                              ) -> None:
     """downloads covert arts, optimizing threads.
     Avoids uploading the same pic more than once.
     """
-    all_pics = []
+    all_pics: List[Union[int, str]] = []
     for track in data['tracks']:
         song = track['song']
         img = song['song_art_image_url']
@@ -65,12 +67,15 @@ async def download_cover_arts(data, q):
     q.put(all_pics)
 
 
-def create_album_songs(account, album, user_data):
+def create_album_songs(account: telegraph.Telegraph,
+                       album: Dict[str, Any],
+                       user_data: Dict[str, Any]
+                       ) -> List[List[str]]:
     """create telegraph pages for songs of the album."""
     # lyrics customizations
     include_annotations = user_data['include_annotations']
     lyrics_language = user_data['lyrics_lang']
-    identifiers = ['!--!', '!__!']
+    identifiers = ('!--!', '!__!')
     song_links = []
 
     artist = album['artist']['name']
@@ -172,7 +177,9 @@ def create_album_songs(account, album, user_data):
     return song_links
 
 
-def create_pages(album, user_data):
+def create_pages(album: Dict[str, Any],
+                 user_data: Dict[str, Any]
+                 ) -> str:
     """creates telegraph page of an album
     Returns the link to the final page.
     """
@@ -222,15 +229,14 @@ def create_pages(album, user_data):
     return response_link
 
 
-def test(json_file, lyrics_language, include_annotations):
+def test(json_file: str,
+         lyrics_language: str,
+         include_annotations: bool) -> None:
     logging.getLogger().setLevel(logging.DEBUG)
-    user_data = {
+    user_data: Any = {
         'lyrics_lang': lyrics_language,
         'include_annotations': include_annotations
     }
     with open(json_file, 'r') as f:
         data = json.load(f)
-    print(create_pages(user_data=user_data, album=data))
-
-
-# test('hotel diablo.json', 'English + Non-English', True)
+    print(create_pages(album=data, user_data=user_data))

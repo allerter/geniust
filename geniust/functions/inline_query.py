@@ -1,11 +1,15 @@
 import logging
 from uuid import uuid4
+from typing import Any, Dict
+
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import (
     InlineQueryResultArticle,
-    InputTextMessageContent
+    InputTextMessageContent,
+    Update,
 )
+from telegram.ext import CallbackContext
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust.constants import END
@@ -14,12 +18,11 @@ from geniust.utils import log
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 @log
 @get_user
-def inline_menu(update, context):
+def inline_menu(update: Update, context: CallbackContext) -> None:
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['inline_menu']
 
@@ -60,7 +63,7 @@ def inline_menu(update, context):
 
 @log
 @get_user
-def search_albums(update, context):
+def search_albums(update: Update, context: CallbackContext) -> None:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -130,7 +133,7 @@ def search_albums(update, context):
 
 @log
 @get_user
-def search_artists(update, context):
+def search_artists(update: Update, context: CallbackContext) -> None:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -151,8 +154,8 @@ def search_artists(update, context):
         title = artist['name']
         artist_id = artist['id']
 
-        # description = f"AKA {', '.join(artist['alternate_names'])}"
-        answer_text = artist_caption(update, context, artist, text['caption'], language)
+        answer_text = artist_caption(update, context, artist,
+                                     text['caption'], language)
         artist_url = create_deep_linked_url(
             username,
             f"artist_{artist_id}")
@@ -206,7 +209,7 @@ def search_artists(update, context):
 
 @log
 @get_user
-def search_songs(update, context):
+def search_songs(update: Update, context: CallbackContext) -> None:
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -233,7 +236,8 @@ def search_songs(update, context):
             description = texts['inline_menu']['translation']
         else:
             description = ''
-        answer_text = song_caption(update, context, song, text['caption'], language)
+        answer_text = song_caption(update, context, song,
+                                   text['caption'], language)
         song_url = create_deep_linked_url(username, f'song_{song_id}')
         lyrics_url = create_deep_linked_url(username, f'song_{song_id}_lyrics')
         buttons = [
@@ -266,7 +270,10 @@ def search_songs(update, context):
 
 
 @log
-def album_caption(update, context, album, caption):
+def album_caption(update: Update,
+                  context: CallbackContext,
+                  album: Dict[str, Any],
+                  caption: str) -> str:
 
     release_date = album['release_date_components']
     if release_date is not None:
@@ -292,7 +299,11 @@ def album_caption(update, context, album, caption):
 
 
 @log
-def artist_caption(update, context, artist, caption, language):
+def artist_caption(update: Update,
+                   context: CallbackContext,
+                   artist: Dict[str, Any],
+                   caption: str,
+                   language: str) -> str:
 
     is_verified = context.bot_data['texts'][language][artist['is_verified']]
 
@@ -308,7 +319,11 @@ def artist_caption(update, context, artist, caption, language):
 
 
 @log
-def song_caption(update, context, song, caption, language):
+def song_caption(update: Update,
+                 context: CallbackContext,
+                 song: Dict[str, Any],
+                 caption: str,
+                 language) -> str:
 
     hot = context.bot_data['texts'][language][song['stats']['hot']]
 

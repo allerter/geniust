@@ -1,7 +1,10 @@
 import logging
+from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, END
 from geniust import utils, auth, get_user
@@ -13,7 +16,7 @@ logger = logging.getLogger()
 
 @log
 @get_user
-def login(update, context):
+def login(update: Update, context: CallbackContext) -> int:
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['login']
 
@@ -33,7 +36,7 @@ def login(update, context):
 
 @log
 @get_user
-def logged_in(update, context):
+def logged_in(update: Update, context: CallbackContext) -> int:
     bd = context.bot_data
     ud = context.user_data
     ud['level'] = ACCOUNT_MENU
@@ -56,7 +59,7 @@ def logged_in(update, context):
 
 @log
 @get_user
-def logout(update, context):
+def logout(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     bd = context.bot_data
     ud = context.user_data
@@ -72,7 +75,7 @@ def logout(update, context):
 
 @log
 @get_user
-def display_account(update, context):
+def display_account(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     bd = context.bot_data
     ud = context.user_data
@@ -93,9 +96,12 @@ def display_account(update, context):
 
 
 @log
-def account_caption(update, context, account, caption):
+def account_caption(update: Update,
+                    context: CallbackContext,
+                    account: Dict[str, Any],
+                    caption: str) -> str:
     string = (
-        caption['body']
+        caption['body']  # type: ignore
         .replace('{name}', account['name'])
         .replace('{unread_group}', str(account['unread_groups_inbox_count']))
         .replace('{unread_main}', str(account['unread_main_activity_inbox_count']))
@@ -116,5 +122,5 @@ def account_caption(update, context, account, caption):
     )
     if account['artist']:
         artist = utils.deep_link(account['artist'])
-        string = string + caption['artist'].replace(artist)
+        string += caption['artist'].replace('{}', artist)  # type: ignore
     return string
