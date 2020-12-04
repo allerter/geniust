@@ -1,6 +1,6 @@
 import pytest
 import re
-from unittest.mock import MagicMock, patch, create_autospec
+from unittest.mock import MagicMock, patch
 
 from bs4 import BeautifulSoup
 
@@ -61,6 +61,11 @@ def test_replace_hrefs_telegram_song(lyrics, posted_annotations):
     msg = "Annotation link wasn't found in the tags"
     for text in [x[1] for x in posted_annotations]:
         assert lyrics.find('a', attrs={'href': text}) is not None, msg
+
+
+@pytest.fixture
+def genius():
+    return api.GeniusT()
 
 
 def test_lyrics_no_annotations(genius, song_id, song_url, page):

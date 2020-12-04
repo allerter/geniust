@@ -13,7 +13,7 @@ from geniust.api import GeniusT
 from geniust.constants import (BOT_TOKEN,
     GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET)
 
-username = Bot(BOT_TOKEN).get_me().username
+username = 'genius_the_bot'  # Bot(BOT_TOKEN).get_me().username
 
 database = Database(table='user_data')
 

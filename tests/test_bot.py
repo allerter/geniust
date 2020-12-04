@@ -5,10 +5,13 @@ import pytest
 from geniust import constants, bot
 
 
-def test_main_menu(update_callback_query, context):
+@pytest.mark.parametrize('token', ['test_token', None])
+def test_main_menu(update_callback_query, context, token):
 
     update = update_callback_query
     user = context.user_data
+    user['token'] = token
+
     # Return None when bot tries to get the token
     context.bot_data['db'].get_token.return_value = None
     res = bot.main_menu(update, context)
@@ -17,7 +20,7 @@ def test_main_menu(update_callback_query, context):
                 .call_args[1]['reply_markup']['inline_keyboard'])
 
     # Check if bot returned correct keyboard for logged-in/out users
-    if user['token'] is None:
+    if token is None:
         context.bot_data['db'].get_token.assert_called_once()
         assert keyboard[-1][0]['callback_data'] == constants.LOGIN
     else:
@@ -41,7 +44,7 @@ def test_stop(update_message, context):
 def test_send_feedback(update_message, context):
     update = update_message
 
-    chat_id = context.user_data['chat_id']
+    chat_id = update.effective_chat.id
     update.message.chat.id = chat_id
 
     username = 'test_username'
@@ -62,7 +65,6 @@ def test_send_feedback(update_message, context):
                                    constants.ACCOUNT_MENU,
                                    constants.CUSTOMIZE_MENU,
                                    ])
-@pytest.mark.skip('24 tests!')
 def test_end_describing(update_callback_query, context, level):
     update = update_callback_query
     context.user_data['level'] = level

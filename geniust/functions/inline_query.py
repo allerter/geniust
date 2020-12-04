@@ -9,7 +9,7 @@ from telegram import (
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust.constants import END
-from geniust import genius, username, utils, get_user
+from geniust import username, utils, get_user
 from geniust.utils import log
 
 
@@ -61,6 +61,7 @@ def inline_menu(update, context):
 @log
 @get_user
 def search_albums(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
     text = texts['inline_menu']['search_albums']
@@ -75,7 +76,7 @@ def search_albums(update, context):
 
     res = genius.search_albums(input_text, per_page=10)
     articles = []
-    for i, hit in enumerate(res['sections'][0]['hits']):
+    for hit in res['sections'][0]['hits'][:10]:
         album = hit['result']
         name = album['name']
         artist = album['artist']['name']
@@ -124,21 +125,19 @@ def search_albums(update, context):
         #    reply_markup=keyboard, description=description)
         articles.append(answer)
 
-        if i == 9:
-            break
-
     update.inline_query.answer(articles)
 
 
 @log
 @get_user
 def search_artists(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
-    text = texts['inline_menu']['search_artists'],
+    text = texts['inline_menu']['search_artists']
     input_text = update.inline_query.query.split('.artist ')[1].strip()
     if not input_text:
-        return END
+        return
 
     search_more = [IButton(
         text=f"...{text['body']}...",
@@ -147,7 +146,7 @@ def search_artists(update, context):
 
     res = genius.search_artists(input_text, per_page=10)
     articles = []
-    for i, hit in enumerate(res['sections'][0]['hits']):
+    for hit in res['sections'][0]['hits'][:10]:
         artist = hit['result']
         title = artist['name']
         artist_id = artist['id']
@@ -200,9 +199,6 @@ def search_artists(update, context):
         #    reply_markup=keyboard, description=description)
         articles.append(answer)
 
-        if i == 9:
-            break
-
     update.inline_query.answer(articles)
 
     return END
@@ -211,6 +207,7 @@ def search_artists(update, context):
 @log
 @get_user
 def search_songs(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
     text = texts['inline_menu']['search_songs']
@@ -225,14 +222,17 @@ def search_songs(update, context):
 
     res = genius.search_songs(input_text, per_page=10)
     articles = []
-    for i, hit in enumerate(res['hits']):
+    for hit in res['sections'][0]['hits'][:10]:
         song = hit['result']
         title = song['title']
         artist = song['primary_artist']['name']
         answer_title = utils.format_title(artist, title)
         song_id = song['id']
 
-        description = 'Translation' if 'Genius' in artist else ''
+        if 'Genius' in title:
+            description = texts['inline_menu']['translation']
+        else:
+            description = ''
         answer_text = song_caption(update, context, song, text['caption'], language)
         song_url = create_deep_linked_url(username, f'song_{song_id}')
         lyrics_url = create_deep_linked_url(username, f'song_{song_id}_lyrics')
@@ -262,9 +262,6 @@ def search_songs(update, context):
         #    reply_markup=keyboard, description=description)
         articles.append(answer)
 
-        if i == 9:
-            break
-
     update.inline_query.answer(articles)
 
 
@@ -272,11 +269,14 @@ def search_songs(update, context):
 def album_caption(update, context, album, caption):
 
     release_date = album['release_date_components']
-    year = release_date.get('year')
-    month = release_date.get('month')
-    day = release_date.get('day')
-    components = [year, month, day]
-    release_date = '-'.join(str(x) for x in components if x is not None)
+    if release_date is not None:
+        year = release_date.get('year')
+        month = release_date.get('month')
+        day = release_date.get('day')
+        components = [year, month, day]
+        release_date = '-'.join(str(x) for x in components if x is not None)
+    else:
+        release_date = '?'
 
     string = (
         caption

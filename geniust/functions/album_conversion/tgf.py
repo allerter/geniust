@@ -172,7 +172,7 @@ def create_album_songs(account, album, user_data):
     return song_links
 
 
-def create_pages(user_data, album):
+def create_pages(album, user_data):
     """creates telegraph page of an album
     Returns the link to the final page.
     """

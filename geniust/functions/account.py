@@ -6,7 +6,7 @@ from telegram import InlineKeyboardMarkup as IBKeyboard
 from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, END
 from geniust import utils, auth, get_user
 from geniust.utils import log
-from geniust.api import GeniusT
+from geniust import api
 
 logger = logging.getLogger()
 
@@ -24,6 +24,7 @@ def login(update, context):
     keyboard = IBKeyboard(buttons)
 
     msg = text['body']
+    update.callback_query.answer()
     update.callback_query.edit_message_text(msg,
                                             reply_markup=keyboard)
 
@@ -46,6 +47,7 @@ def logged_in(update, context):
     ]
     keyboard = IBKeyboard(buttons)
 
+    update.callback_query.answer()
     update.callback_query.edit_message_text(texts['body'],
                                             reply_markup=keyboard)
 
@@ -62,7 +64,7 @@ def logout(update, context):
     text = bd['texts'][language]['logout']
 
     bd['db'].delete_token(chat_id)
-
+    update.callback_query.answer()
     update.callback_query.edit_message_text(text)
 
     return END
@@ -81,9 +83,9 @@ def display_account(update, context):
     if update.callback_query:
         update.callback_query.message.delete()
 
-    account = GeniusT(ud['token']).account()['user']
+    account = api.GeniusT(ud['token']).account()['user']
     avatar = account['avatar']['medium']['url']
-    caption = account_caption(update, context, account, texts['caption'])
+    caption = account_caption(update, context, account, texts['caption'])\
 
     context.bot.send_photo(chat_id, avatar, caption)
 

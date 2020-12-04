@@ -5,16 +5,11 @@ import re
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram.constants import MAX_MESSAGE_LENGTH
+from bs4 import BeautifulSoup
 
-from geniust.constants import (
-    END, TYPING_SONG
-)
-from geniust import (
-    genius,
-    utils,
-    get_user, texts
-)
-from geniust.api import GeniusT
+from geniust.constants import END, TYPING_SONG
+from geniust import utils, api
+from geniust import get_user
 from geniust.utils import log
 
 
@@ -26,17 +21,17 @@ logger.setLevel(logging.DEBUG)
 @get_user
 def display_song(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['display_song']
+    text = context.bot_data['texts'][language]['display_song']
     bot = context.bot
+    genius = context.bot_data['genius']
+    chat_id = update.effective_chat.id
 
     if update.callback_query:
-        chat_id = update.callback_query.message.chat.id
         song_id = int(update.callback_query.data.split('_')[1])
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        chat_id = update.message.chat.id
-        song_id = int(context.args.split('_')[1])
+        song_id = int(context.args[0].split('_')[1])
 
     song = genius.song(song_id)['song']
     cover_art = song['song_art_image_url']
@@ -67,7 +62,7 @@ def display_lyrics(update, context, song_id, text):
     bot = context.bot
     chat_id = update.effective_chat.id
 
-    genius_t = GeniusT()
+    genius_t = api.GeniusT()
 
     lyrics_language = user_data['lyrics_lang']
     include_annotations = user_data['include_annotations']
@@ -80,17 +75,17 @@ def display_lyrics(update, context, song_id, text):
 
     lyrics = genius_t.lyrics(
         song_id=song_id,
-        song_url=genius.song(song_id)['song']['url'],
+        song_url=genius_t.song(song_id)['song']['url'],
         include_annotations=include_annotations,
         telegram_song=True,
     )
 
     # formatting lyrics language
+    lyrics = BeautifulSoup(lyrics, 'html.parser')
     lyrics = utils.format_language(lyrics, lyrics_language)
     lyrics = utils.remove_unsupported_tags(lyrics)
     lyrics = re.sub(r'<[/]*(br|div|p).*[/]*?>', '', str(lyrics))
 
-    # edit the message for callback query users
     bot.delete_message(chat_id=chat_id,
                        message_id=message_id)
 
@@ -120,13 +115,13 @@ def display_lyrics(update, context, song_id, text):
 @get_user
 def thread_display_lyrics(update, context):
     language = context.user_data['bot_lang']
-    text = texts[language]['display_lyrics']
+    text = context.bot_data['texts'][language]['display_lyrics']
 
     if update.callback_query:
         update.callback_query.answer()
         song_id = int(update.callback_query.data.split('_')[1])
     else:
-        song_id = int(update.callback_query.data.split('_')[1])
+        song_id = int(context.args[0].split('_')[1])
 
     # get and send song to user
     p = threading.Thread(
@@ -143,7 +138,7 @@ def thread_display_lyrics(update, context):
 def type_song(update, context):
     # user has entered the function through the main menu
     language = context.user_data['bot_lang']
-    msg = texts[language]['type_song']
+    msg = context.bot_data['texts'][language]['type_song']
 
     if update.callback_query:
         update.callback_query.answer()
@@ -158,14 +153,15 @@ def type_song(update, context):
 @get_user
 def search_songs(update, context):
     """Handle incoming song request"""
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
-    text = texts[language]['search_songs']
+    text = context.bot_data['texts'][language]['search_songs']
     input_text = update.message.text
 
     # get <= 10 hits for user input from Genius API search
-    json_search = genius.search_songs(input_text)['sections'][0]
+    json_search = genius.search_songs(input_text)
     buttons = []
-    for hit in json_search['hits'][:10]:
+    for hit in json_search['sections'][0]['hits'][:10]:
         song = hit['result']
         title = song['title']
         artist = song['primary_artist']['name']
@@ -235,7 +231,7 @@ def song_caption(update, context, song, caption, language):
             media.append(string)
         external_links += ' | ' + ' | '.join(media)
 
-    hot = texts[language][song['stats']['hot']]
+    hot = context.bot_data['texts'][language][song['stats']['hot']]
 
     if song['tags']:
         tags = ', '.join(tag['name'] for tag in song['tags'])

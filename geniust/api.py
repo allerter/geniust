@@ -39,7 +39,7 @@ def get_channel():
     return channel
 
 
-annotations_channel = get_channel()
+annotations_channel = None #  get_channel()
 
 
 def telegram_annotation(a):
@@ -147,7 +147,8 @@ def replace_hrefs(lyrics, posted_annotations=None, telegram_song=False):
 class GeniusT(Genius):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(GENIUS_TOKEN, *args, **kwargs)
+        token = GENIUS_TOKEN if not args else args[0]
+        super().__init__(token, *args, **kwargs)
 
         self.response_format = 'html,plain'
         self.retries = 3
@@ -291,12 +292,10 @@ class GeniusT(Genius):
             lyrics = lyrics.find('p') if lyrics.find('p') else lyrics
         else:
             br = html.new_tag('br')
-            try:
-                for div in lyrics[1:]:
-                    lyrics[0].append(div).append(br)
-            except Exception as e:
-                msg = f'{str(e)} for {song_id} with {div.attrs}'
-                logger.error(msg)
+            for div in lyrics[1:]:
+                if div.get_text().strip():
+                    div.append(br)
+                    lyrics[0].append(div)
             lyrics = lyrics[0]
 
         if include_annotations and not telegram_song:
@@ -480,9 +479,3 @@ class GeniusT(Genius):
         )
         new_loop.run_until_complete(future)
         return q.get()
-
-
-def test(album_id, include_annotations=False):
-    logger.setLevel(logging.DEBUG)
-    genius = GeniusT(GENIUS_TOKEN)
-    return genius.async_album_search(album_id, include_annotations)

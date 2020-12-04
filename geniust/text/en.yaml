@@ -190,7 +190,7 @@ inline_menu:
     initial_caption: Click on the button below to search artists.
 
   search_lyrics:
-    title: Search Lyrics
+    body: Search Lyrics
     caption: |-
       {title} by {artist}
 
@@ -207,7 +207,7 @@ inline_menu:
     initial_caption: Click on the button below to search lyrics.
 
   search_songs:
-    title: Search songs
+    body: Search songs
     caption: |-
       {title} by {artist_name}
 
@@ -240,7 +240,7 @@ upvote_annotation:
   voted: 👍 Upvoted
   unvoted: Unvoted!
 
-downvoted_annotation:
+downvote_annotation:
   login_necessary: You need to log in before voting. Log in using /account
   voted: 👎 Downvoted
   unvoted: Unvoted!
@@ -279,11 +279,13 @@ display_album_covers:
 
 display_album_tracks: "{} tracks"
 
+display_album_formats: Choose a format.
+
 get_album:
   downloading: Downloading album...
   failed: Couldn't get album :(
   converting: Converting to specified format...
-  Uploading: Uploading...
+  uploading: Uploading...
 
 # ----------- Artist -----------
 
@@ -357,7 +359,7 @@ display_song:
     producers: "\n<b>Producers:</b>\n{}"
     writers: "\n<b>Writers:</b>\n{}"
     verified: "\n<b>Verified Lyrics:</b>\n{}"
-
+  description: Description
   lyrics: Lyrics
 
 display_lyrics: getting lyrics...

@@ -16,7 +16,7 @@ from geniust.functions import (
     song,
     customize,
     inline_query,
-    multi
+    annotation
 )
 from telegram import Bot
 from telegram import InlineKeyboardButton as IButton
@@ -35,7 +35,7 @@ from telegram.utils.helpers import mention_html
 from telegram.utils.webhookhandler import WebhookServer
 from tornado.web import url, RequestHandler
 
-from geniust import get_user, texts, auth, database, username
+from geniust import get_user, texts, auth, database, username, genius
 from geniust.utils import log
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
@@ -321,6 +321,7 @@ def main():
     dp = updater.dispatcher
     dp.bot_data['texts'] = texts
     dp.bot_data['db'] = database
+    dp.bot_data['genius'] = genius
     my_states = [
 
         CallbackQueryHandler(
@@ -396,15 +397,15 @@ def main():
             pattern='^' + str(BOT_LANG) + '$'),
 
         CallbackQueryHandler(
-            multi.display_annotation,
+            annotation.display_annotation,
             pattern=r'^annotation_[0-9]+$'),
 
         CallbackQueryHandler(
-            multi.upvote_annotation,
+            annotation.upvote_annotation,
             pattern=r'^annotation_[0-9]+_upvote$'),
 
         CallbackQueryHandler(
-            multi.downvote_annotation,
+            annotation.downvote_annotation,
             pattern=r'^annotation_[0-9]+_downvote$'),
 
         CallbackQueryHandler(
@@ -625,7 +626,7 @@ def main():
 
         CommandHandler(
             'start',
-            multi.display_annotation,
+            annotation.display_annotation,
             Filters.regex(r'^/start annotation_[0-9]+$'),
             pass_args=True
         ),

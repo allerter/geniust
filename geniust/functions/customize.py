@@ -9,12 +9,11 @@ from geniust.constants import (
     END, LYRICS_LANG, SELECT_ACTION, BOT_LANG,
     OPTION1, OPTION2, OPTION3,
 )
-from geniust import database, get_user
+from geniust import get_user
 from geniust.utils import log
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 @log
@@ -24,7 +23,7 @@ def customize_menu(update, context):
     language = context.user_data['bot_lang']
     context.user_data['level'] = CUSTOMIZE_MENU
     text = context.bot_data['texts'][language]['customize_menu']
-    chat_id = update.callback_query.message.chat.id
+    chat_id = update.effective_chat.id
 
     include = context.user_data['include_annotations']
     lyrics_lang = context.user_data['lyrics_lang']
@@ -35,9 +34,11 @@ def customize_menu(update, context):
     else:
         lyrics_lang = 'enligh_and_non_english'
 
+    language_display = (context.bot_data['texts'][language]
+                        ['lyrics_language'][lyrics_lang])
     msg = (
         text['body']
-        .replace('{language}', context.bot_data['texts'][language]['lyrics_language'][lyrics_lang])
+        .replace('{language}', language_display)
         .replace('{include}', context.bot_data['texts'][language][include])
     )
 
@@ -54,17 +55,10 @@ def customize_menu(update, context):
     ]
     keyboard = IBKeyboard(buttons)
 
-    try:
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=msg,
-            reply_markup=keyboard)
-    except (AttributeError, BadRequest) as e:
-        logger.info(f'{customize_menu}: {e}')
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=msg,
-            reply_markup=keyboard)
+    update.callback_query.answer()
+    update.callback_query.edit_message_text(
+        text=msg,
+        reply_markup=keyboard)
 
     return SELECT_ACTION
 
@@ -77,9 +71,10 @@ def lyrics_language(update, context):
     text = context.bot_data['texts'][language]['lyrics_language']
     ud = context.user_data
     ud['level'] = CUSTOMIZE_MENU + 1
+    chat_id = update.effective_chat.id
 
     # command
-    if update.message or int(update.callback_query.data) == LYRICS_LANG:
+    if update.message or update.callback_query.data == str(LYRICS_LANG):
 
         buttons = [
             [IButton(
@@ -107,18 +102,20 @@ def lyrics_language(update, context):
 
         return LYRICS_LANG
 
-    chat_id = update.callback_query.message.chat.id
     data = int(update.callback_query.data)
     if data == OPTION1:
         ud['lyrics_lang'] = 'English'
+        language_display = 'only_english'
     elif data == OPTION2:
         ud['lyrics_lang'] = 'Non-English'
+        language_display = 'only_non_english'
     else:
+        language_display = 'enligh_and_non_english'
         ud['lyrics_lang'] = 'English + Non-English'
 
-    database.update_lyrics_language(chat_id, ud['lyrics_lang'])
+    context.bot_data['db'].update_lyrics_language(chat_id, ud['lyrics_lang'])
 
-    text = text['updated'].replace('{language}', ud['lyrics_lang'])
+    text = text['updated'].replace('{language}', text[language_display])
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
@@ -134,6 +131,7 @@ def bot_language(update, context):
     language = ud['bot_lang']
     text = context.bot_data['texts'][language]['bot_language']
     ud['level'] = CUSTOMIZE_MENU + 1
+    chat_id = update.effective_chat.id
 
     # command
     if update.message or update.callback_query.data == str(BOT_LANG):
@@ -153,7 +151,6 @@ def bot_language(update, context):
 
         return BOT_LANG
 
-    chat_id = update.callback_query.message.chat.id
     data = update.callback_query.data
     for key in context.bot_data['texts'].keys():
         if data == key:
@@ -162,7 +159,7 @@ def bot_language(update, context):
     else:
         return END
 
-    database.update_bot_language(chat_id, ud['bot_lang'])
+    context.bot_data['db'].update_bot_language(chat_id, ud['bot_lang'])
 
     text = text['updated'].replace('{language}', text[ud['bot_lang']])
 
@@ -179,9 +176,10 @@ def include_annotations(update, context):
     ud = context.user_data
     language = ud['bot_lang']
     text = context.bot_data['texts'][language]['include_annotations']
+    chat_id = update.effective_chat.id
 
     # command
-    if update.message or int(update.callback_query.data) == INCLUDE:
+    if update.message or update.callback_query.data == str(INCLUDE):
         buttons = [
             [IButton(context.bot_data['texts'][language][True], str(OPTION1))],
             [IButton(context.bot_data['texts'][language][False], str(OPTION2))],
@@ -199,14 +197,20 @@ def include_annotations(update, context):
 
         return INCLUDE
 
-    chat_id = update.callback_query.message.chat.id
-    data = int(update.callback_query.data)
-    ud['include_annotations'] = True if data == OPTION1 else False
+    data = update.callback_query.data
+    if data == str(OPTION1):
+        ud['include_annotations'] = True
+    elif data == str(OPTION2):
+        ud['include_annotations'] = False
+    else:
+        return END
 
-    database.update_include_annotations(chat_id, ud['include_annotations'])
+    context.bot_data['db'].update_include_annotations(
+        chat_id, ud['include_annotations'])
 
     include = ud['include_annotations']
-    text = text['updated'].replace('{include}', context.bot_data['texts'][language][include])
+    include_display = context.bot_data['texts'][language][include]
+    text = text['updated'].replace('{include}', include_display)
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)

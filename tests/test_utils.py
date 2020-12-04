@@ -166,9 +166,9 @@ def test_format_title(artist, title):
         assert res == 'test_artist - test_name'
 
 
-@pytest.mark.parametrize('entity', [pytest.lazy_fixture('album'),
-                                    pytest.lazy_fixture('artist'),
-                                    pytest.lazy_fixture('song'),
+@pytest.mark.parametrize('entity', [pytest.lazy_fixture('album_dict'),
+                                    pytest.lazy_fixture('artist_dict'),
+                                    pytest.lazy_fixture('song_dict'),
                                     {'entity': {}}])
 def test_get_description(entity):
     entity = entity[list(entity)[0]]

@@ -5,9 +5,9 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 
 from geniust.constants import END
-from geniust import genius, get_user
+from geniust import get_user
 from geniust.utils import log, remove_unsupported_tags
-from geniust.api import GeniusT
+from geniust import api
 
 from bs4 import BeautifulSoup
 
@@ -17,15 +17,16 @@ logger = logging.getLogger()
 @log
 @get_user
 def display_annotation(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     placeholder_text = context.bot_data['texts'][language]['display_annotation']
+    chat_id = update.effective_chat.id
 
     if update.callback_query:
-        chat_id = update.callback_query.message.chat.id
-        annotation_id = int(update.callback_query.data.split('_')[1])
         update.callback_query.answer()
+        annotation_id = int(update.callback_query.data.split('_')[1])
+
     else:
-        chat_id = update.message.chat.id
         annotation_id = int(context.args[0].split('_')[1])
 
     annotation = genius.annotation(annotation_id, text_format='html')
@@ -68,23 +69,23 @@ def upvote_annotation(update, context):
     texts = context.bot_data['texts'][language]['upvote_annotation']
     message = update.callback_query.message
 
-    annotation_id = update.callback_query.data.split('_')[1]
+    annotation_id = int(update.callback_query.data.split('_')[1])
     token = context.user_data['token']
 
     if token is None:
         context.bot.send_message(chat_id, texts['login_necessary'])
         return END
 
-    genius_t = GeniusT(token)
-    account = genius_t.account()['user']['id']
-    voters = genius.voters(annotation_id=annotation_id)['voters']
-    print(account in [x['id'] for x in voters['up']])
+    genius_user = api.GeniusT(token)
+    account = genius_user.account()['user']['id']
+    voters = genius_user.voters(annotation_id=annotation_id)['voters']
+
     if account in [x['id'] for x in voters['up']]:
-        genius_t.unvote_annotation(annotation_id)
+        genius_user.unvote_annotation(annotation_id)
         update.callback_query.answer(texts['unvoted'])
         change = -1
     else:
-        genius_t.upvote_annotation(annotation_id)
+        genius_user.upvote_annotation(annotation_id)
         update.callback_query.answer(texts['voted'])
         change = 1
 
@@ -106,7 +107,7 @@ def downvote_annotation(update, context):
     texts = context.bot_data['texts'][language]['downvote_annotation']
     message = update.callback_query.message
 
-    annotation_id = update.callback_query.data.split('_')[1]
+    annotation_id = int(update.callback_query.data.split('_')[1])
     token = context.user_data['token']
 
     if token is None:
@@ -114,9 +115,9 @@ def downvote_annotation(update, context):
         context.bot.send_message(chat_id, texts['login_necessary'])
         return END
 
-    genius_t = GeniusT(token)
+    genius_t = api.GeniusT(token)
     account = genius_t.account()['user']['id']
-    voters = genius.voters(annotation_id=annotation_id)['voters']
+    voters = genius_t.voters(annotation_id=annotation_id)['voters']
     if account in [x['id'] for x in voters['down']]:
         genius_t.unvote_annotation(annotation_id)
         update.callback_query.answer(texts['unvoted'])

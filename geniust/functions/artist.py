@@ -4,12 +4,8 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from bs4 import BeautifulSoup
 
-from geniust.constants import (
-    TYPING_ARTIST, END,
-)
-from geniust import (
-    genius, utils, get_user
-)
+from geniust.constants import (TYPING_ARTIST, END)
+from geniust import (utils, get_user)
 from geniust.utils import log
 
 
@@ -36,6 +32,7 @@ def type_artist(update, context):
 @get_user
 def search_artists(update, context):
     """Checks artist link or return search results, or prompt user for format"""
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['search_artists']
     input_text = update.message.text
@@ -61,16 +58,17 @@ def search_artists(update, context):
 @log
 @get_user
 def display_artist(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist']
     bot = context.bot
+    chat_id = update.effective_chat.id
+
     if update.callback_query:
-        chat_id = update.callback_query.message.chat.id
         artist_id = int(update.callback_query.data.split('_')[1])
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        chat_id = update.message.chat.id
         artist_id = int(context.args[0].split('_')[1])
 
     artist = genius.artist(artist_id)['artist']
@@ -104,23 +102,21 @@ def display_artist(update, context):
         caption,
         reply_markup=IBKeyboard(buttons))
 
+    return END
+
 
 @log
 @get_user
 def display_artist_albums(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
-    text = context.bot['texts'][language]['display_artist_albums']
+    text = context.bot_data['texts'][language]['display_artist_albums']
+    chat_id = update.effective_chat.id
 
     if update.callback_query:
         update.callback_query.answer()
-        message = update.callback_query.message
-        chat_id = update.callback_query.message.chat.id
-
         artist_id = int(update.callback_query.data.split('_')[1])
     else:
-        message = None
-        chat_id = update.message.chat.id
-
         artist_id = int(context.args[0].split('_')[1])
 
     albums = []
@@ -128,7 +124,6 @@ def display_artist_albums(update, context):
     albums_list = genius.artist_albums(artist_id, per_page=50)
     for album in albums_list['albums']:
         name = text['album'].replace('{}', utils.deep_link(album))
-
         albums.append(name)
 
     if albums:
@@ -140,12 +135,7 @@ def display_artist_albums(update, context):
         context.bot.send_message(chat_id, text)
         return END
 
-    if (message
-            and BeautifulSoup(message.caption + albums,
-                              'html.parser').get_text() < 1024):
-        update.callback_query.edit_message_caption(message.caption + albums)
-    else:
-        context.bot.send_message(chat_id, albums)
+    context.bot.send_message(chat_id, albums)
 
     return END
 
@@ -153,8 +143,10 @@ def display_artist_albums(update, context):
 @log
 @get_user
 def display_artist_songs(update, context):
+    genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist_songs']
+    chat_id = update.effective_chat.id
 
     if update.callback_query:
         update.callback_query.answer()
@@ -162,16 +154,13 @@ def display_artist_songs(update, context):
         # A message with a photo means the user came from display_artist
         # and so we send the songs as a new message
         message = message if message.photo is None else None
-        chat_id = update.callback_query.message.chat.id
-
         _, artist_id, _, sort, page = update.callback_query.data.split('_')
     else:
         message = None
-        chat_id = update.message.chat.id
-
         _, artist_id, _, sort, page = context.args[0].split('_')
-        page = int(page)
-        artist_id = int(artist_id)
+
+    page = int(page)
+    artist_id = int(artist_id)
 
     if sort == 'ppt':
         sort = 'popularity'

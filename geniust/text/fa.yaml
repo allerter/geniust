@@ -186,7 +186,7 @@ inline_menu:
     initial_caption: برای جستجو بین خواننده‌ها روی دکمه‌ی زیر کلیک کن.
 
   search_lyrics:
-    title: جستجوی متن
+    body: جستجوی متن
     caption: |-
       {artist} از {title}
 
@@ -203,7 +203,7 @@ inline_menu:
     initial_caption: برای جستجو بر اساس متن روی دکمه‌ی زیر کلیک کن.
 
   search_songs:
-    title: جستجوی آّهنگ
+    body: جستجوی آّهنگ
     caption: |-
       {artist_name} از {title}
 
@@ -238,7 +238,7 @@ upvote_annotation:
   voted: 👍 رأی مثبت داده شد.
   unvoted: رأی پس گرفته شد!
 
-downvoted_annotation:
+downvote_annotation:
   login_necessary: >-
     برای رأی‌دادن باید به حسابت توی جینیس وارد بشی.
     برای این کار روی دستور روبرو  کلیک کن /account 
@@ -279,11 +279,13 @@ display_album_covers:
 
 display_album_tracks: "{} آهنگ‌های"
 
+display_album_formats: یک فرمت را انتخاب کنید.
+
 get_album:
   downloading: در حال دانلود آلبوم...
   failed: نتونستم آلبوم رو دانلود کنم :(
   converting: در حال تبدیل آلبوم...
-  Uploading: در حال آپلودکردن...
+  uploading: در حال آپلودکردن...
 
 # ----------- Artist -----------
 
@@ -360,7 +362,6 @@ display_song:
     producers: "\n<b>تهیه‌کننده:</b>\n{}"
     writers: "\n<b>نویسنده:</b>\n{}"
     verified: "\n<b>متن تأییدشده:</b>\n{}"
-
   description: شرح
   lyrics: متن آهنگ
 
