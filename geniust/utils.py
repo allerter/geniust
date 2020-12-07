@@ -76,7 +76,7 @@ def deep_link(entity: dict) -> str:
 
 
 def remove_unsupported_tags(soup: BeautifulSoup,
-                            supported: Optional[List[str]] = TELEGRAM_HTML_TAGS
+                            supported: List[str] = TELEGRAM_HTML_TAGS
                             ) -> BeautifulSoup:
     """Removes unsupported tag from BeautifulSoup object.
 
