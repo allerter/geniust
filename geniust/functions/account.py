@@ -17,7 +17,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def login(update: Update, context: CallbackContext) -> int:
-    """Prompts user to log into Genius.com"""    
+    """Prompts user to log into Genius.com"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['login']
 
@@ -38,7 +38,7 @@ def login(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def logged_in(update: Update, context: CallbackContext) -> int:
-    """Displays options for a logged-in user"""    
+    """Displays options for a logged-in user"""
     bd = context.bot_data
     ud = context.user_data
     ud['level'] = ACCOUNT_MENU

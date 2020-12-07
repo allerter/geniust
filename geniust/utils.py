@@ -58,7 +58,7 @@ def deep_link(entity: dict) -> str:
     Returns:
         str: Deep linked entity
             (e.g. <a href="link">song name</name>)
-    """    
+    """
     name = entity.get('name', entity.get('title'))
     id_ = entity['id']
     if 'album' in entity['api_path']:
@@ -87,7 +87,7 @@ def remove_unsupported_tags(soup: BeautifulSoup,
 
     Returns:
         BeautifulSoup
-    """    
+    """
     restart = True
     while restart:
         restart = False
@@ -115,7 +115,7 @@ def remove_extra_newlines(s: str) -> str:
 
     Returns:
         str: formattted string.
-    """    
+    """
     return newline_pattern.sub('\n', s)
 
 
@@ -129,7 +129,7 @@ def remove_links(s: str) -> str:
 
     Returns:
         str: formatted string.
-    """    
+    """
     return links_pattern.sub('', s)
 
 
@@ -177,8 +177,7 @@ def format_annotations(
         annotations: List[Dict[int, str]],
         include_annotations: bool,
         identifiers: Tuple[str, str] = ('!--!', '!__!'),
-        format_type: str = 'zip',
-        ) -> BeautifulSoup:
+        format_type: str = 'zip') -> BeautifulSoup:
     """Formats annotations in BeautifulSoup object
 
     Includes the annotations by inspecting <a> tags and
@@ -247,7 +246,7 @@ def format_title(artist: str, title: str) -> str:
 
     Returns:
         str: formatted title.
-    """    
+    """
     if 'Genius' in artist:
         final_title = title
     else:
@@ -263,7 +262,7 @@ def format_filename(string: str) -> str:
 
     Returns:
         str: formatted filename.
-    """    
+    """
     return re.sub(r'[\\/:*?\"<>|]', '', string)
 
 
@@ -278,7 +277,7 @@ def get_description(entity: Dict[str, Any]) -> str:
 
     Returns:
         str: Description.
-    """    
+    """
     if not entity.get('description_annotation'):
         return ''
 
@@ -303,7 +302,7 @@ def human_format(num: int) -> str:
 
     Returns:
         str: Human-readable number.
-    """    
+    """
     # f
 
     if num < 10000:
@@ -326,7 +325,7 @@ RT = TypeVar('RT')
 
 
 def log(func: Callable[..., RT]) -> Callable[..., RT]:
-    """logs entering and exiting functions for debugging."""    
+    """logs entering and exiting functions for debugging."""
     logger = logging.getLogger(func.__module__)
 
     @wraps(func)

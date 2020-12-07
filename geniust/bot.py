@@ -53,7 +53,8 @@ logger.setLevel(logging.DEBUG)
 
 
 class CronHandler(RequestHandler):
-    """Handles cron-job requests"""    
+    """Handles cron-job requests"""
+
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
@@ -69,7 +70,8 @@ class TokenHandler(RequestHandler):
     redirects to the web server, processing the
     query's parameters and retrieving a token
     from Genius for the corresponding user.
-    """    
+    """
+
     def initialize(self,
                    auth: OAuth2,
                    database: Database,

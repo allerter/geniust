@@ -33,9 +33,10 @@ TELEGRAM_HTML_TAGS = [
 
 # State definitions for conversation
 class AutoRange:
-    """Automatically assign numbers to constants"""    
+    """Automatically assign numbers to constants"""
+
     def __init__(self):
-        
+
         self.current = 0
 
     def assign(self, length: int) -> range:
@@ -43,7 +44,7 @@ class AutoRange:
 
         Args:
             length (int): Length of range.
-        """        
+        """
         start = self.current
         end = start + length
         self.current = end
@@ -57,7 +58,7 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
 
 # User Input States
 (TYPING_ALBUM, TYPING_ARTIST, TYPING_SONG, TYPING_FEEDBACK,
-INCLUDE, LYRICS_LANG, BOT_LANG, SELECT_ACTION) = num.assign(8)
+ INCLUDE, LYRICS_LANG, BOT_LANG, SELECT_ACTION) = num.assign(8)
 
 # Input Options
 OPTION1, OPTION2, OPTION3 = num.assign(3)

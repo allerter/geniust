@@ -84,7 +84,8 @@ class MyDocTemplate(BaseDocTemplate):
     """Template used in generated PDF files.
 
     Adds song title and pages to PDF bookmarks and the TOC.
-    """    
+    """
+
     def __init__(self, filename, **kw):
         self.allowSplitting = 0
         BaseDocTemplate.__init__(self, filename, **kw)
@@ -272,7 +273,7 @@ def create_pdf(data: Dict[str, Any],
 
         Returns:
             str: Formatted string.
-        """        
+        """
         line, persian_char = get_farsi_text(str(tag))
         if persian_char:
             line = f'<font name={font_persian}>{line}</font>'

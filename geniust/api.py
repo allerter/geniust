@@ -29,7 +29,7 @@ def get_channel() -> types.TypeInputPeer:
 
     Returns:
         types.TypeInputPeer
-    """    
+    """
     client = telethon.TelegramClient(
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
@@ -61,9 +61,9 @@ def telegram_annotation(a: str) -> Tuple[str, bool]:
         a (str): an annotation
 
     Returns:
-        Tuple[str, bool]: formatted annotation and 
+        Tuple[str, bool]: formatted annotation and
             preview if link preview should be activated.
-    """    
+    """
     a = a.replace('<p>', '').replace('</p>', '')
     annotation = BeautifulSoup(a, 'html.parser')
 
@@ -184,7 +184,7 @@ class GeniusT(Genius):
 
     Args:
         Genius (lyricsgenius.Genius): The original Genius class.
-    """    
+    """
 
     def __init__(self, *args, **kwargs):
         token = GENIUS_TOKEN if not args else args[0]
@@ -336,8 +336,8 @@ class GeniusT(Genius):
         lyrics = html.find_all("div", class_=re.compile("^lyrics$|Lyrics__Container"))
         if lyrics is None:
             logger.error("Couldn't find the lyrics section. "
-                  "Please report this if the song has lyrics.\n"
-                  "Song URL: https://genius.com/{}".format(path))
+                         "Please report this if the song has lyrics.\n"
+                         "Song URL: https://genius.com/{}".format(path))
             return 'None'
 
         if lyrics[0].get('class')[0] == 'lyrics':

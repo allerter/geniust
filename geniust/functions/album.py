@@ -55,7 +55,7 @@ def search_albums(update: Update, context: CallbackContext) -> int:
         album = hit['result']
         album_id = album['id']
         title = utils.format_title(album['artist']['name'],
-                                  album['name'])
+                                   album['name'])
         callback = f"album_{album_id}"
 
         buttons.append([IButton(title, callback_data=callback)])

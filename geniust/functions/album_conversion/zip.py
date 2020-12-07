@@ -21,7 +21,7 @@ def create_zip(album: Dict[str, Any],
 
     Returns:
         BytesIO: ZIP file seeked to the 0 position.
-    """ 
+    """
     bio = BytesIO()
     zip_file = ZipFile(bio, "a", compression=ZIP_DEFLATED)
 
