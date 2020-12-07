@@ -25,6 +25,11 @@ logger = logging.getLogger()
 
 
 def get_channel() -> types.TypeInputPeer:
+    """Returns telethon Input Peer for the annotations channel
+
+    Returns:
+        types.TypeInputPeer
+    """    
     client = telethon.TelegramClient(
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
@@ -44,6 +49,21 @@ annotations_channel = None  # get_channel()
 
 
 def telegram_annotation(a: str) -> Tuple[str, bool]:
+    """Formats the annotation for Telegram
+
+    If the annotations has only one image,
+    the image is added in an invisible
+    space character to the beginning. Then
+    all tags not supported by Telegram are
+    removed.
+
+    Args:
+        a (str): an annotation
+
+    Returns:
+        Tuple[str, bool]: formatted annotation and 
+            preview if link preview should be activated.
+    """    
     a = a.replace('<p>', '').replace('</p>', '')
     annotation = BeautifulSoup(a, 'html.parser')
 
@@ -98,6 +118,21 @@ def telegram_annotation(a: str) -> Tuple[str, bool]:
 def replace_hrefs(lyrics: BeautifulSoup,
                   posted_annotations: List[Tuple[int, str]] = [],
                   telegram_song: bool = False) -> None:
+    """Replaced the href of <a> tags with annotation IDs or links
+
+    This function replaces the href attributes with the annotation
+    ID inside the href or with a link to a Telegram post (uploaded
+    annotation) so the annotated fragment can be linked to the
+    annotation.
+
+    Args:
+        lyrics (BeautifulSoup): song lyrics as a BeautifulSoup object
+        posted_annotations (List[Tuple[int, str]], optional):
+            List of uploaded annotations to Telegram with tuples of
+            annotation IDs and their corresponding Telegram post. Defaults to [].
+        telegram_song (bool, optional): Indicates if it's the lyrics is meant
+            for Telegram. Defaults to False.
+    """
     # annotation IDs are formatted in two ways in the lyrics:
     # the old lyrics page: somethings#note-12345
     # the new lyrics page: /12345/somethings
@@ -142,6 +177,14 @@ def replace_hrefs(lyrics: BeautifulSoup,
 
 
 class GeniusT(Genius):
+    """Interface to Genius
+
+    This class inherits lyricsgenius.Genius and overrides some
+    methods to provide the functionality needed for the bot.
+
+    Args:
+        Genius (lyricsgenius.Genius): The original Genius class.
+    """    
 
     def __init__(self, *args, **kwargs):
         token = GENIUS_TOKEN if not args else args[0]
@@ -157,14 +200,15 @@ class GeniusT(Genius):
                text_format: Optional[str] = None,
                public_api: bool = False) -> Dict[str, dict]:
         """Gets data for a specific artist.
+
         Args:
-            artist_id (:obj:`int`): Genius artist ID
-            text_format (:obj:`str`, optional): Text format of the results
+            artist_id (int): Genius artist ID
+            text_format (str, optional): Text format of the results
                 ('dom', 'html', 'markdown' or 'plain').
-            public_api (:obj:`bool`, optional): If `True`, performs the search
+            public_api (bool, optional): If `True`, performs the search
                 using the public API endpoint.
         Returns:
-            :obj:`dict`
+            dict
         Note:
             Using the public API will return the same artist but with more fields:
             - API: Result will have 19 fields.
@@ -182,14 +226,15 @@ class GeniusT(Genius):
              text_format: Optional[str] = None,
              public_api: bool = False) -> Dict[str, dict]:
         """Gets data for a specific song.
+
         Args:
-            song_id (:obj:`int`): Genius song ID
-            text_format (:obj:`str`, optional): Text format of the results
+            song_id (int): Genius song ID
+            text_format (str, optional): Text format of the results
                 ('dom', 'html', 'markdown' or 'plain').
-            public_api (:obj:`bool`, optional): If `True`, performs the search
+            public_api (bool, optional): If `True`, performs the search
                 using the public API endpoint.
         Returns:
-            :obj:`dict`
+            dict
         Note:
             Using the public API will return the same song but with more fields:
             - API: Song will have 39 fields.
@@ -208,15 +253,16 @@ class GeniusT(Genius):
                      page: Optional[int] = None,
                      public_api: bool = False) -> Dict[str, Any]:
         """Searches songs hosted on Genius.
+
         Args:
-            search_term (:obj:`str`): A term to search on Genius.
-            per_page (:obj:`int`, optional): Number of results to
+            search_term (str): A term to search on Genius.
+            per_page (int, optional): Number of results to
                 return per page. It can't be more than 5 for this method.
-            page (:obj:`int`, optional): Number of the page.
-            public_api (:obj:`bool`, optional): If `True`, performs the search
+            page (int, optional): Number of the page.
+            public_api (bool, optional): If `True`, performs the search
                 using the public API endpoint.
         Returns:
-            :obj:`dict`
+            dict
         Note:
             Using the API or the public API returns the same results. The only
             difference is in the number of values each API returns.
@@ -252,14 +298,14 @@ class GeniusT(Genius):
         """Uses BeautifulSoup to scrape song info off of a Genius song URL
 
         Args:
-            urlthing (:obj:`str` | :obj:`int`):
+            urlthing (str | int):
                 Song ID or song URL.
-            remove_section_headers (:obj:`bool`, optional):
+            remove_section_headers (bool, optional):
                 If `True`, removes [Chorus], [Bridge], etc. headers from lyrics.
 
         Returns:
-            :obj:`str` \\|‌ :obj:`None`:
-                :obj:`str` If it can find the lyrics, otherwise `None`
+            str \\|‌ None:
+                str If it can find the lyrics, otherwise `None`
 
         Note:
             If you pass a song ID, the method will have to make an extra request
@@ -373,12 +419,12 @@ class GeniusT(Genius):
         """Return song's annotations with associated fragment in list of tuple.
 
         Args:
-            song_id (:obj:`int`): song ID
-            text_format (:obj:`str`, optional): Text format of the results
+            song_id (int): song ID
+            text_format (str, optional): Text format of the results
                 ('dom', 'html', 'markdown' or 'plain').
 
         Returns:
-            :obj:`list`: list of tuples(fragment, [annotations])
+            list: list of tuples(fragment, [annotations])
 
         Note:
             This method uses :meth:`Genius.referents`, but provides convenient
@@ -440,16 +486,17 @@ class GeniusT(Genius):
     ) -> None:
         """Searches for a specific album and gets its songs.
 
-        You must pass either a :obj:`name` or an :obj:`album_id`.
+        Overrides the orignal genius.search_album method to
+        get the songs asynchronously.
+
+        You must pass either a name or an album_id.
 
         Args:
-            album_id (:obj:`int`, optional): Album ID.
-            include_annotations (:obj:`bool`): Download annotations or not.
-            queue(:obj:`queue.Queue`): A :obj:`Queue` object to put the album in.
-            text_format (:obj:`bool`, optional): Text format of the response.
+            album_id (int, optional): Album ID.
+            include_annotations (bool): Retrieve annotations for each song.
+            queue(queue.Queue): A Queue object to put the album in.
+            text_format (bool, optional): Text format of the response.
 
-        Returns:
-            :obj:`dict`
 
         """
         album = self.album(album_id, text_format)['album']

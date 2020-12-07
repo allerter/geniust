@@ -21,7 +21,54 @@ logger = logging.getLogger()
 
 @log
 @get_user
+def type_song(update: Update, context: CallbackContext) -> int:
+    """Prompts user to type song title"""
+    # user has entered the function through the main menu
+    language = context.user_data['bot_lang']
+    msg = context.bot_data['texts'][language]['type_song']
+
+    if update.callback_query:
+        update.callback_query.answer()
+        update.callback_query.edit_message_text(msg)
+    else:
+        update.message.reply_text(msg)
+
+    return TYPING_SONG
+
+
+@log
+@get_user
+def search_songs(update: Update, context: CallbackContext) -> int:
+    """Displays a list of song titles based on user input"""
+    genius = context.bot_data['genius']
+    language = context.user_data['bot_lang']
+    text = context.bot_data['texts'][language]['search_songs']
+    input_text = update.message.text
+
+    # get <= 10 hits for user input from Genius API search
+    json_search = genius.search_songs(input_text)
+    buttons = []
+    for hit in json_search['sections'][0]['hits'][:10]:
+        song = hit['result']
+        title = song['title']
+        artist = song['primary_artist']['name']
+        title = utils.format_title(artist, title)
+        callback = f"song_{song['id']}"
+
+        buttons.append([IButton(text=title, callback_data=callback)])
+
+    if buttons:
+        update.message.reply_text(text['choose'],
+                                  reply_markup=IBKeyboard(buttons))
+    else:
+        update.message.reply_text(text['no_songs'])
+    return END
+
+
+@log
+@get_user
 def display_song(update: Update, context: CallbackContext) -> int:
+    """Displays song"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_song']
     bot = context.bot
@@ -63,7 +110,14 @@ def display_lyrics(update: Update,
                    context: CallbackContext,
                    song_id: int,
                    text: Dict[str, str]) -> None:
-    """retrieve and send song lyrics to user"""
+    """Retrieves and sends song lyrics to user
+
+    Args:
+        update (Update): Update object.
+        context (CallbackContext): User data, texts and etc.
+        song_id (int): Genius song ID.
+        text (Dict[str, str]): Texts to inform user of the progress.
+    """
     user_data = context.user_data
     bot = context.bot
     chat_id = update.effective_chat.id
@@ -120,6 +174,7 @@ def display_lyrics(update: Update,
 @log
 @get_user
 def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
+    """Creates a thread to get the song"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_lyrics']
 
@@ -140,56 +195,26 @@ def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
 
 
 @log
-@get_user
-def type_song(update: Update, context: CallbackContext) -> int:
-    # user has entered the function through the main menu
-    language = context.user_data['bot_lang']
-    msg = context.bot_data['texts'][language]['type_song']
-
-    if update.callback_query:
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
-    else:
-        update.message.reply_text(msg)
-
-    return TYPING_SONG
-
-
-@log
-@get_user
-def search_songs(update: Update, context: CallbackContext) -> int:
-    """Handle incoming song request"""
-    genius = context.bot_data['genius']
-    language = context.user_data['bot_lang']
-    text = context.bot_data['texts'][language]['search_songs']
-    input_text = update.message.text
-
-    # get <= 10 hits for user input from Genius API search
-    json_search = genius.search_songs(input_text)
-    buttons = []
-    for hit in json_search['sections'][0]['hits'][:10]:
-        song = hit['result']
-        title = song['title']
-        artist = song['primary_artist']['name']
-        title = utils.format_title(artist, title)
-        callback = f"song_{song['id']}"
-
-        buttons.append([IButton(text=title, callback_data=callback)])
-
-    if buttons:
-        update.message.reply_text(text['choose'],
-                                  reply_markup=IBKeyboard(buttons))
-    else:
-        update.message.reply_text(text['no_songs'])
-    return END
-
-
-@log
 def song_caption(update: Update,
                  context: CallbackContext,
                  song: Dict[str, Any],
                  caption: Dict[str, str],
                  language: str) -> str:
+    """Generates caption for artist.
+
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors and provide language
+            equivalent for True and False ('Yes' and 'No' for English).
+        artist (Dict[str, Any]): Artist data.
+        caption (str): Caption template.
+        language (str): User's bot language.
+
+    Returns:
+        str: Formatted caption.
+    """
     release_date = ''
     features = ''
     album = ''

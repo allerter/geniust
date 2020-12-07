@@ -17,6 +17,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def type_artist(update: Update, context: CallbackContext) -> int:
+    """Prompts user to type artist name"""
     # user has entered the function through the main menu
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['type_artist']
@@ -33,7 +34,7 @@ def type_artist(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def search_artists(update: Update, context: CallbackContext) -> int:
-    """Checks artist link or return search results, or prompt user for format"""
+    """Displays a list of artist names based on user input"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['search_artists']
@@ -60,6 +61,7 @@ def search_artists(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_artist(update: Update, context: CallbackContext) -> int:
+    """Displays artist"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist']
@@ -111,6 +113,7 @@ def display_artist(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_artist_albums(update: Update, context: CallbackContext) -> int:
+    """Displays artist's albums"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_artist_albums']
@@ -146,6 +149,7 @@ def display_artist_albums(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_artist_songs(update: Update, context: CallbackContext) -> int:
+    """Displays artist's songs"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot['texts'][language]['display_artist_songs']
@@ -250,6 +254,21 @@ def artist_caption(update: Update,
                    artist: Dict[str, Any],
                    caption: Dict[str, str],
                    language: str) -> str:
+    """Generates caption for artist.
+
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors and provide language
+            equivalent for True and False ('Yes' and 'No' for English).
+        artist (Dict[str, Any]): Artist data.
+        caption (str): Caption template.
+        language (str): User's bot language.
+
+    Returns:
+        str: Formatted caption.
+    """
     alternate_names = ''
     social_media = ''
     social_media_links = []

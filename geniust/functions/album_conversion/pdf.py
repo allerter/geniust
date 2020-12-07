@@ -81,6 +81,10 @@ styles.add(ParagraphStyle(name='Songs',
 
 
 class MyDocTemplate(BaseDocTemplate):
+    """Template used in generated PDF files.
+
+    Adds song title and pages to PDF bookmarks and the TOC.
+    """    
     def __init__(self, filename, **kw):
         self.allowSplitting = 0
         BaseDocTemplate.__init__(self, filename, **kw)
@@ -105,7 +109,19 @@ class MyDocTemplate(BaseDocTemplate):
 
 
 def get_farsi_text(text: str, long_text: bool = False) -> Tuple[str, bool]:
-    """reshapes arabic/farsi words to be showed properly in the PDF"""
+    """Reshapes arabic/farsi words to be showed properly in the PDF
+
+    from https://stackoverflow.com/a/41346589/4249434
+
+    Args:
+        text (str): string.
+        long_text (bool, optional): If True, splits the string by space
+            (although it might be inaccurate) to avoid long processing times.
+            Defaults to False.
+
+    Returns:
+        Tuple[str, bool]: Formatted string and True if string had Arabic letters.
+    """
     arabic = False
     if reshaper.has_arabic_letters(text):
         arabic = True
@@ -128,24 +144,20 @@ def get_farsi_text(text: str, long_text: bool = False) -> Tuple[str, bool]:
     return text, arabic
 
 
-valid = list(valid_attributes.keys())
-valid.append('href')
-
-
-def remove_invalid_tags(soup: BeautifulSoup, keep_href: bool = False) -> None:
-    if hasattr(soup, 'find_all'):
-        for tag in soup.find_all('a'):
-            for attribute, value in list(tag.attrs.items()):
-                if attribute not in valid or not keep_href:
-                    tag.attrs.pop(attribute)
-
-        for tag in soup.find_all('img'):
-            tag.decompose()
+valid_tags = list(valid_attributes.keys())
 
 
 def create_pdf(data: Dict[str, Any],
                user_data: Dict[str, Any]) -> BytesIO:
-    """creates a PDF file from the data"""
+    """Creates a PDF file from supplied album data
+
+    Args:
+        data (Dict[str, Any]): Album data.
+        user_data (Dict[str, Any]): User preferences.
+
+    Returns:
+        BytesIO: PDF file seeked to the 0 position.
+    """
     bio = BytesIO()
     doc = MyDocTemplate(
         bio,
@@ -211,7 +223,7 @@ def create_pdf(data: Dict[str, Any],
         'html.parser'
     )
 
-    remove_invalid_tags(biography, keep_href=True)
+    utils.remove_unsupported_tags(biography, supported=valid_tags + ['href'])
 
     for a in biography.find_all('a'):
         a.attrs['color'] = 'blue'
@@ -247,10 +259,23 @@ def create_pdf(data: Dict[str, Any],
     Story.append(page_break)
 
     # -------------- Songs --------------
-    def check_persian(line):
+    def check_persian(line: str) -> str:
+        """Formats line if it has Arabic/Persian characters.
+
+        If the line contains Arabic/Persian characters, the
+        font will also be changed to font_persian to correctly
+        render these characters which the normal font doesn't
+        contain.
+
+        Args:
+            line (str): string.
+
+        Returns:
+            str: Formatted string.
+        """        
         line, persian_char = get_farsi_text(str(tag))
         if persian_char:
-            line = f'<font color="blue" name={font_persian}>{line}</font>'
+            line = f'<font name={font_persian}>{line}</font>'
         return line
 
     format_title = re.compile(r'^[\S\s]*-\s|\([^\x00-\x7F][\s\S]*')
@@ -274,13 +299,12 @@ def create_pdf(data: Dict[str, Any],
             song['annotations'],
             include_annotations,
             format_type='pdf',
-            lyrics_language=lyrics_language
         )
         lyrics = utils.format_language(lyrics, lyrics_language)
         if lyrics.find('div'):
             lyrics.find('div').unwrap()
         for tag in lyrics:
-            remove_invalid_tags(tag)
+            utils.remove_unsupported_tags(tag, supported=valid_tags)
             if tag.name == 'a':
                 line = check_persian(str(tag)).strip().replace('\n', '<br/>')
                 Story.append(Paragraph(line, styles['Song Annotated']))

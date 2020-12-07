@@ -10,7 +10,18 @@ from geniust import utils
 def create_zip(album: Dict[str, Any],
                user_data: Dict[str, Any]
                ) -> BytesIO:
-    """creates a zip from the data applyting user_data, and returns an in-memory file"""
+    """Creates zipped album
+
+    Creates the album from the album data, applyting user_data,
+    and returns an in-memory file.
+
+    Args:
+        album (Dict[str, Any]): Album data
+        user_data (Dict[str, Any]): User data.
+
+    Returns:
+        BytesIO: ZIP file seeked to the 0 position.
+    """ 
     bio = BytesIO()
     zip_file = ZipFile(bio, "a", compression=ZIP_DEFLATED)
 

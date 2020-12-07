@@ -24,6 +24,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def type_album(update: Update, context: CallbackContext) -> int:
+    """Prompts user to type album name"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['type_album']
 
@@ -40,7 +41,7 @@ def type_album(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def search_albums(update: Update, context: CallbackContext) -> int:
-    """Checks album link or return search results, or prompt user for format"""
+    """Displays a list of album names based on user input"""
     genius = context.bot_data['genius']
     input_text = update.message.text
     language = context.user_data['bot_lang']
@@ -71,6 +72,7 @@ def search_albums(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_album(update: Update, context: CallbackContext) -> int:
+    """Displays album"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_album']
@@ -120,6 +122,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_album_covers(update: Update, context: CallbackContext) -> int:
+    """Displays an album's cover arts"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['display_album_covers']
@@ -151,6 +154,7 @@ def display_album_covers(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_album_tracks(update: Update, context: CallbackContext) -> int:
+    """Displays an album's tracks"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     msg = context.bot_data['texts'][language]['display_album_tracks']
@@ -182,6 +186,7 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
 
 @log
 def display_album_formats(update: Update, context: CallbackContext) -> int:
+    """Displays available formats to get album lyrics"""
     language = context.user_data['bot_lang']
     msg = context.bot_data['texts'][language]['display_album_formats']
     chat_id = update.effective_chat.id
@@ -216,7 +221,7 @@ def display_album_formats(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def thread_get_album(update: Update, context: CallbackContext) -> int:
-    """Create a thread and download the album"""
+    """Creates a thread to get the album"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['get_album']
 
@@ -238,7 +243,18 @@ def get_album(update: Update,
               album_id: int,
               album_format: str,
               text: Dict[str, str]) -> None:
-    """Download and send the album to the user in the selected format"""
+    """Gets the album and sends it to the user.
+
+    Args:
+        update (Update): Update object.
+        context (CallbackContext): Contains user data.
+        album_id (int): Genius album ID.
+        album_format (str): Album format (pdf, tgf or zip).
+        text (Dict[str, str]): Texts to inform user of the progress.
+
+    Raises:
+        ValueError: If it receives an unfamiliar format type.
+    """
     ud = context.user_data
     include_annotations = ud['include_annotations']
     msg = text['downloading']
@@ -305,7 +321,19 @@ def album_caption(update: Update,
                   context: CallbackContext,
                   album: Dict[str, Any],
                   caption: Dict[str, str]) -> str:
+    """Generates caption for album.
 
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors.
+        album (Dict[str, Any]): Album data.
+        caption (str): Caption template.
+
+    Returns:
+        str: Formatted caption.
+    """
     release_date: Any = ''
     features = ''
     labels = ''

@@ -19,7 +19,14 @@ logger = logging.getLogger()
 
 
 def fetch(img: str) -> Tuple[str, str]:
-    """downloads the image and uploads it to telegraph"""
+    """Downloads the image and uploads it to telegraph
+
+    Args:
+        img (str): Genius image URL.
+
+    Returns:
+        Tuple[str, str]: The original image URL and the uploaded one.
+    """
     req = Request(img, headers={'User-Agent': 'Mozilla/5.0'})
     while True:
         try:
@@ -31,6 +38,7 @@ def fetch(img: str) -> Tuple[str, str]:
             continue
         except (HTTPError, URLError) as e:
             logger.critical(f'Error raised and caught: {e}')
+            cover_art = ''
         break
     return img, cover_art
 
@@ -38,8 +46,15 @@ def fetch(img: str) -> Tuple[str, str]:
 async def download_cover_arts(data: Dict[str, Any],
                               q  # type: ignore
                               ) -> None:
-    """downloads covert arts, optimizing threads.
-    Avoids uploading the same pic more than once.
+    """Downloads covert arts.
+
+    Download and uploads song cover arts asynchronously
+    and also avoids downloading and uploading images
+    with equal URLs.
+
+    Args:
+        data (Dict[str, Any]): Album data.
+        q (queue.Queue): Queue to put results in.
     """
     all_pics: List[Union[int, str]] = []
     for track in data['tracks']:
@@ -71,7 +86,16 @@ def create_album_songs(account: telegraph.Telegraph,
                        album: Dict[str, Any],
                        user_data: Dict[str, Any]
                        ) -> List[List[str]]:
-    """create telegraph pages for songs of the album."""
+    """Creates Telegraph pages for songs of the album.
+
+    Args:
+        account (telegraph.Telegraph): Telegraph account to upload songs with.
+        album (Dict[str, Any]): Album data.
+        user_data (Dict[str, Any]): User data.
+
+    Returns:
+        List[List[str]]: List of song title and links.
+    """
     # lyrics customizations
     include_annotations = user_data['include_annotations']
     lyrics_language = user_data['lyrics_lang']
@@ -180,8 +204,17 @@ def create_album_songs(account: telegraph.Telegraph,
 def create_pages(album: Dict[str, Any],
                  user_data: Dict[str, Any]
                  ) -> str:
-    """creates telegraph page of an album
-    Returns the link to the final page.
+    """Creates Telegraph album.
+
+    Creates a Telegraph page for each song and a final
+    album page with links to all the tracks.
+
+    Args:
+        album (Dict[str, Any]): Album data.
+        user_data (Dict[str, Any]): User data.
+
+    Returns:
+        str: Telegraph album URL.
     """
     # download cover arts async
     # q = queue.Queue()

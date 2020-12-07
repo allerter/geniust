@@ -23,6 +23,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def inline_menu(update: Update, context: CallbackContext) -> None:
+    """Displays help for inline search"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['inline_menu']
 
@@ -64,6 +65,7 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
 @log
 @get_user
 def search_albums(update: Update, context: CallbackContext) -> None:
+    """Displays a list of album names based on user input"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -134,6 +136,7 @@ def search_albums(update: Update, context: CallbackContext) -> None:
 @log
 @get_user
 def search_artists(update: Update, context: CallbackContext) -> None:
+    """Displays a list of artist names based on user input"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -210,6 +213,7 @@ def search_artists(update: Update, context: CallbackContext) -> None:
 @log
 @get_user
 def search_songs(update: Update, context: CallbackContext) -> None:
+    """Displays a list of song titles based on user input"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]
@@ -274,7 +278,19 @@ def album_caption(update: Update,
                   context: CallbackContext,
                   album: Dict[str, Any],
                   caption: str) -> str:
+    """Generates caption for album.
 
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors.
+        album (Dict[str, Any]): Album data.
+        caption (str): Caption template.
+
+    Returns:
+        str: Formatted caption.
+    """
     release_date = album['release_date_components']
     if release_date is not None:
         year = release_date.get('year')
@@ -304,7 +320,21 @@ def artist_caption(update: Update,
                    artist: Dict[str, Any],
                    caption: str,
                    language: str) -> str:
+    """Generates caption for artist.
 
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors and provide language
+            equivalent for True and False ('Yes' and 'No' for English).
+        artist (Dict[str, Any]): Artist data.
+        caption (str): Caption template.
+        language (str): User's bot language.
+
+    Returns:
+        str: Formatted caption.
+    """
     is_verified = context.bot_data['texts'][language][artist['is_verified']]
 
     string = (
@@ -324,7 +354,21 @@ def song_caption(update: Update,
                  song: Dict[str, Any],
                  caption: str,
                  language) -> str:
+    """Generates caption for artist.
 
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors and provide language
+            equivalent for True and False ('Yes' and 'No' for English).
+        song (Dict[str, Any]): Song data.
+        caption (str): Caption template.
+        language (str): User's bot language.
+
+    Returns:
+        str: Formatted caption.
+    """
     hot = context.bot_data['texts'][language][song['stats']['hot']]
 
     string = (

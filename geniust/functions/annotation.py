@@ -19,6 +19,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def display_annotation(update: Update, context: CallbackContext) -> int:
+    """Displays annotation"""
     genius = context.bot_data['genius']
     language = context.user_data['bot_lang']
     placeholder_text = context.bot_data['texts'][language]['display_annotation']
@@ -66,6 +67,7 @@ def display_annotation(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def upvote_annotation(update: Update, context: CallbackContext) -> int:
+    """Upvotes/unvotes annotation on behalf of the user"""
     chat_id = update.effective_chat.id
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]['upvote_annotation']
@@ -105,6 +107,7 @@ def upvote_annotation(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def downvote_annotation(update: Update, context: CallbackContext) -> int:
+    """Downvotes/unvotes annotation on behalf of the user"""
     chat_id = update.effective_chat.id
     language = context.user_data['bot_lang']
     texts = context.bot_data['texts'][language]['downvote_annotation']

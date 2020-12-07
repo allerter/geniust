@@ -1,7 +1,3 @@
-"""
-Some regular expressions, and methods used throughout the code.
-Kept here in case improvements are added.
-"""
 import re
 import logging
 from functools import wraps
@@ -45,6 +41,24 @@ links_pattern: Pattern[str] = re.compile(r'\nhttp[s]*.*')
 
 
 def deep_link(entity: dict) -> str:
+    """Deep links given entity using <a> tag.
+
+    This functions will wrap the entity's name
+    or title in an <a> where its href attribute
+    will be a deep linked URL allowing the URL
+    to get information for the entity.
+
+    Args:
+        entity (dict): Entity data.
+
+    Raises:
+        ValueError: If it comes accross an unknown
+            entity (an entiy with an unfimilar API path).
+
+    Returns:
+        str: Deep linked entity
+            (e.g. <a href="link">song name</name>)
+    """    
     name = entity.get('name', entity.get('title'))
     id_ = entity['id']
     if 'album' in entity['api_path']:
@@ -62,10 +76,18 @@ def deep_link(entity: dict) -> str:
 
 
 def remove_unsupported_tags(soup: BeautifulSoup,
-                            supported: Optional[List[str]] = None) -> BeautifulSoup:
-    if supported is None:
-        supported = TELEGRAM_HTML_TAGS
+                            supported: Optional[List[str]] = TELEGRAM_HTML_TAGS
+                            ) -> BeautifulSoup:
+    """Removes unsupported tag from BeautifulSoup object.
 
+    Args:
+        soup (BeautifulSoup): BeautifulSoup object.
+        supported (Optional[List[str]], optional): List of supported tags to keep.
+        Defaults to TELEGRAM_HTML_TAGS.
+
+    Returns:
+        BeautifulSoup
+    """    
     restart = True
     while restart:
         restart = False
@@ -82,17 +104,50 @@ def remove_unsupported_tags(soup: BeautifulSoup,
 
 
 def remove_extra_newlines(s: str) -> str:
+    """Removes extra newlines.
+
+    Replaces where there are two or more
+    newlines with a single newline except
+    for the beginning of a lyrics section (e.g. \n\n[Chorus])
+
+    Args:
+        s (str): string.
+
+    Returns:
+        str: formattted string.
+    """    
     return newline_pattern.sub('\n', s)
 
 
 def remove_links(s: str) -> str:
+    """Removes links from string.
+    Meant to remove links from Genius annotations
+    that have a "plain" text format.
+
+    Args:
+        s (str): string.
+
+    Returns:
+        str: formatted string.
+    """    
     return links_pattern.sub('', s)
 
 
 def format_language(lyrics: Union[BeautifulSoup, str],
                     lyrics_language: str
                     ) -> Union[BeautifulSoup, str]:
-    """removes (non-)ASCII characters"""
+    """Removes (non-)ASCII characters
+
+    Removes ASCII or non-ASCII or keeps both based
+    on supplied lyrics_language.
+
+    Args:
+        lyrics (Union[BeautifulSoup, str]): lyrics.
+        lyrics_language (str): User perferred language.
+
+    Returns:
+        Union[BeautifulSoup, str]: formatted lyrics.
+    """
     def string_formatter(s: str) -> str:
         if lyrics_language == 'English':
             s = remove_non_english.sub("\\1", s, 0)
@@ -119,15 +174,30 @@ def format_language(lyrics: Union[BeautifulSoup, str],
 
 def format_annotations(
         lyrics: str,
-        annotations: List[Tuple[int, str]],
+        annotations: List[Dict[int, str]],
         include_annotations: bool,
         identifiers: Tuple[str, str] = ('!--!', '!__!'),
         format_type: str = 'zip',
-        lyrics_language: Optional[str] = None) -> BeautifulSoup:
-    """Formats annotations in soup.
-    Include the annotations by inspecting <a> tags and
+        ) -> BeautifulSoup:
+    """Formats annotations in BeautifulSoup object
+
+    Includes the annotations by inspecting <a> tags and
     then remove the unnecessary HTML tags
     in the end.
+
+    Args:
+        lyrics (str): song lyrics.
+        annotations (List[Tuple[int, str]]): Song annotations.
+            Keys are annotation IDs that point to the annotation text.
+            The annotations are found by the href attribute of <a> tags
+            in the lyrics.
+        include_annotations (bool): Add annotations to lyrics.
+        identifiers (Tuple[str, str], optional): Identifiers to wrap annotations in
+            when using the zip format. Defaults to ('!--!', '!__!').
+        format_type (str, optional): pdf, tgf or zip. Defaults to 'zip'.
+
+    Returns:
+        BeautifulSoup: BeautifulSoup object.
     """
     soup: BeautifulSoup = BeautifulSoup(lyrics, 'html.parser')
     if include_annotations and annotations:
@@ -169,7 +239,15 @@ def format_annotations(
 
 
 def format_title(artist: str, title: str) -> str:
-    """removes artist name if "Genius" is in the artist name"""
+    """Removes artist name if "Genius" is in the artist name
+
+    Args:
+        artist (str): item artist.
+        title (str): item title/name.
+
+    Returns:
+        str: formatted title.
+    """    
     if 'Genius' in artist:
         final_title = title
     else:
@@ -178,11 +256,29 @@ def format_title(artist: str, title: str) -> str:
 
 
 def format_filename(string: str) -> str:
-    """removes invalid characters in file name"""
+    """Removes invalid characters in file name
+
+    Args:
+        string (str): filename.
+
+    Returns:
+        str: formatted filename.
+    """    
     return re.sub(r'[\\/:*?\"<>|]', '', string)
 
 
 def get_description(entity: Dict[str, Any]) -> str:
+    """Gets description of entity.
+
+    Gets description of entity from its description annotations,
+    removes links and extra newlines in it and returns it.
+
+    Args:
+        entity (Dict[str, Any]): Entity data.
+
+    Returns:
+        str: Description.
+    """    
     if not entity.get('description_annotation'):
         return ''
 
@@ -198,7 +294,17 @@ def get_description(entity: Dict[str, Any]) -> str:
 
 
 def human_format(num: int) -> str:
-    # from https://stackoverflow.com/a/579376
+    """Returns num in human-redabale format
+
+    from https://stackoverflow.com/a/579376
+
+    Args:
+        num (int): number.
+
+    Returns:
+        str: Human-readable number.
+    """    
+    # f
 
     if num < 10000:
         return str(num)
@@ -207,7 +313,6 @@ def human_format(num: int) -> str:
     while abs(num) >= 1000:
         magnitude += 1
         num /= 1000.0  # type: ignore
-    # add more suffixes if you need them
 
     if num == int(num):
         formatter = '%.1d%s'
@@ -221,6 +326,7 @@ RT = TypeVar('RT')
 
 
 def log(func: Callable[..., RT]) -> Callable[..., RT]:
+    """logs entering and exiting functions for debugging."""    
     logger = logging.getLogger(func.__module__)
 
     @wraps(func)

@@ -1,6 +1,3 @@
-"""
-Main script of the bot which contains most of the functions.
-"""
 import logging
 import sys
 import threading
@@ -56,15 +53,23 @@ logger.setLevel(logging.DEBUG)
 
 
 class CronHandler(RequestHandler):
+    """Handles cron-job requests"""    
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
     def get(self):
-        """respond to GET request to make cron job successful"""
+        """Responds to GET request to make cron job successful"""
         self.write('OK')
 
 
 class TokenHandler(RequestHandler):
+    """Handles redirected URLs from Genius
+
+    This class will handle the URLs that Genius
+    redirects to the web server, processing the
+    query's parameters and retrieving a token
+    from Genius for the corresponding user.
+    """    
     def initialize(self,
                    auth: OAuth2,
                    database: Database,
@@ -76,7 +81,7 @@ class TokenHandler(RequestHandler):
         self.texts = texts
 
     def get(self):
-        """receive and process callback data from Genius"""
+        """Receives and processes callback data from Genius"""
         redirected_url = '{}://{}{}'.format(self.request.protocol,
                                             self.request.host,
                                             self.request.uri)
@@ -96,8 +101,9 @@ class TokenHandler(RequestHandler):
 
 
 class WebhookThread(threading.Thread):
-    """start a web hook server
-    This webhook is to respond to cron jobs that keep the bot from
+    """Starts a web-hook server
+
+    This webhook is intended to respond to cron jobs that keep the bot from
     going to sleep in Heroku's free plan and receive tokens from Genius.
     """
 
@@ -126,10 +132,7 @@ class WebhookThread(threading.Thread):
 @log
 @get_user
 def main_menu(update: Update, context: CallbackContext) -> int:
-    """Genius main menu.
-    Displays song lyrics, album lyrics, and customize output.
-
-    """
+    """Displays main menu"""
     ud = context.user_data
     chat_id = update.effective_chat.id
 
@@ -195,7 +198,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def stop(update: Update, context: CallbackContext) -> int:
-    """End Conversation by command"""
+    """Ends Conversation by command"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['stop']
 
@@ -206,7 +209,7 @@ def stop(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def send_feedback(update: Update, context: CallbackContext) -> int:
-    """send user feedback to developers"""
+    """Sends user feedback to developers"""
     language = context.user_data['bot_lang']
     reply_text = context.bot_data['texts'][language]['send_feedback']
 
@@ -231,7 +234,7 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def end_describing(update: Update, context: CallbackContext) -> int:
-    """End conversation altogether or return to upper level"""
+    """Ends conversation altogether or returns to upper level"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['end_describing']
 
@@ -253,7 +256,7 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def help_message(update: Update, context: CallbackContext) -> int:
-    """send the /help text to the user"""
+    """Sends the /help text to the user"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['help_message']
 
@@ -264,7 +267,7 @@ def help_message(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def contact_us(update: Update, context: CallbackContext) -> int:
-    """prompt the user to send a message"""
+    """Prompts the user to send a message"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['contact_us']
 
@@ -273,7 +276,7 @@ def contact_us(update: Update, context: CallbackContext) -> int:
 
 
 def error(update: Update, context: CallbackContext) -> None:
-    """handle errors and alert the developers"""
+    """Handles errors and alerts the developers"""
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible
     payload = ""
@@ -292,12 +295,18 @@ def error(update: Update, context: CallbackContext) -> None:
             if update.effective_chat.username:
                 payload += f' (@{update.effective_chat.username})'
             chat_id = update.effective_chat.id
+
             if context:
                 language = context.user_data['language']
-                texts = context.bot_data['texts']
             else:
                 language = 'en'
-            msg = texts[language]['error']
+
+            try:
+                msg = texts[language]['error']  # type: ignore
+            except NameError:
+                logger.error('texts global was unaccessable in error handler')
+                msg = 'Something went wrong. Start again using /start'
+
             context.bot.send_message(chat_id=chat_id,
                                      text=msg)
         # lets put this in a "well" formatted text
@@ -312,11 +321,11 @@ def error(update: Update, context: CallbackContext) -> None:
         context.bot.send_message(dev_id, text, parse_mode='HTML')
     # we raise the error again, so the logger module catches it.
     # If you don't use the logger module, use it.
-    raise
+    raise  # type: ignore
 
 
 def main():
-    """Main function that holds the conversation handlers, and starts the bot"""
+    """Main function that holds the handlers and starts the bot"""
 
     updater = Updater(
         token=BOT_TOKEN,

@@ -1,4 +1,3 @@
-"""Some constants e.g. the bot token"""
 import os
 
 from typing import List, Optional
@@ -34,10 +33,17 @@ TELEGRAM_HTML_TAGS = [
 
 # State definitions for conversation
 class AutoRange:
+    """Automatically assign numbers to constants"""    
     def __init__(self):
+        
         self.current = 0
 
     def assign(self, length: int) -> range:
+        """Returns a range of integers.
+
+        Args:
+            length (int): Length of range.
+        """        
         start = self.current
         end = start + length
         self.current = end

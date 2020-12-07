@@ -20,7 +20,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def customize_menu(update: Update, context: CallbackContext) -> int:
-    """main menu for lyrics customizations"""
+    """Main menu for lyrics customizations"""
     language = context.user_data['bot_lang']
     context.user_data['level'] = CUSTOMIZE_MENU
     text = context.bot_data['texts'][language]['customize_menu']
@@ -68,7 +68,7 @@ def customize_menu(update: Update, context: CallbackContext) -> int:
 def lyrics_language(update: Update,
                     context: CallbackContext
                     ) -> int:
-    """Set lyrics language from one of three options."""
+    """Sets lyrics language or displays options"""
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['lyrics_language']
     ud = context.user_data
@@ -130,7 +130,7 @@ def lyrics_language(update: Update,
 def bot_language(update: Update,
                  context: CallbackContext
                  ) -> int:
-    """Set bot language from one of two options."""
+    """Sets bot language or displays options"""
     ud = context.user_data
     language = ud['bot_lang']
     text = context.bot_data['texts'][language]['bot_language']
@@ -179,7 +179,7 @@ def bot_language(update: Update,
 def include_annotations(update: Update,
                         context: CallbackContext
                         ) -> int:
-    """Set whether to include annotations or not"""
+    """Sets including annotations or displays options"""
     ud = context.user_data
     language = ud['bot_lang']
     text = context.bot_data['texts'][language]['include_annotations']

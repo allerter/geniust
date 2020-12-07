@@ -1,4 +1,3 @@
-"""Some constants e.g. the bot token"""
 import functools
 import pathlib
 from os import listdir
@@ -24,6 +23,12 @@ RT = TypeVar('RT')
 
 
 def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
+    """Gets user data for the function
+
+    Checks for user data in CallbackContext and gets
+    user data from the database if the CallbackContext doesn't
+    have user's data.
+    """    
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> RT:
         chat_id = args[0].effective_chat.id

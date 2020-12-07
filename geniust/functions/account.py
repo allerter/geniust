@@ -17,6 +17,7 @@ logger = logging.getLogger()
 @log
 @get_user
 def login(update: Update, context: CallbackContext) -> int:
+    """Prompts user to log into Genius.com"""    
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['login']
 
@@ -37,6 +38,7 @@ def login(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def logged_in(update: Update, context: CallbackContext) -> int:
+    """Displays options for a logged-in user"""    
     bd = context.bot_data
     ud = context.user_data
     ud['level'] = ACCOUNT_MENU
@@ -60,6 +62,7 @@ def logged_in(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def logout(update: Update, context: CallbackContext) -> int:
+    """Logs user out"""
     chat_id = update.effective_chat.id
     bd = context.bot_data
     ud = context.user_data
@@ -76,6 +79,7 @@ def logout(update: Update, context: CallbackContext) -> int:
 @log
 @get_user
 def display_account(update: Update, context: CallbackContext) -> int:
+    """Displays uer's account data"""
     chat_id = update.effective_chat.id
     bd = context.bot_data
     ud = context.user_data
@@ -100,6 +104,19 @@ def account_caption(update: Update,
                     context: CallbackContext,
                     account: Dict[str, Any],
                     caption: str) -> str:
+    """Generates caption for user account data.
+
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors.
+        account (Dict[str, Any]): Account data.
+        caption (str): Caption template.
+
+    Returns:
+        str: Formatted caption.
+    """
     string = (
         caption['body']  # type: ignore
         .replace('{name}', account['name'])
