@@ -1,7 +1,6 @@
 import logging
 from functools import wraps
-from typing import (Any, TypeVar, Callable, Optional,
-                    Tuple, Union, Dict)
+from typing import Any, TypeVar, Callable, Optional, Tuple, Union, Dict
 
 import psycopg2
 
@@ -11,16 +10,18 @@ from geniust.utils import log
 
 logging.getLogger().setLevel(logging.DEBUG)
 
-RT = TypeVar('RT')
+RT = TypeVar("RT")
 
 
 def get_cursor(func: Callable[..., RT]) -> Callable[..., RT]:
     """Returns a DB cursor for the wrapped functions"""
+
     @wraps(func)
     def wrapper(self, *args, **kwargs) -> RT:
-        with psycopg2.connect(DATABASE_URL, sslmode='require') as con:
+        with psycopg2.connect(DATABASE_URL, sslmode="require") as con:
             with con.cursor() as cursor:
                 return func(self, *args, **kwargs, cursor=cursor)
+
     return wrapper
 
 
@@ -48,29 +49,24 @@ class Database:
         else:
             # create user data with default preferences
             include_annotations = True
-            lyrics_language = 'English + Non-English'
-            bot_language = 'en'
+            lyrics_language = "English + Non-English"
+            bot_language = "en"
             user_data.update(
-                {'include_annotations': include_annotations,
-                 'lyrics_lang': lyrics_language,
-                 'bot_lang': bot_language,
-                 'token': None
-                 }
+                {
+                    "include_annotations": include_annotations,
+                    "lyrics_lang": lyrics_language,
+                    "bot_lang": bot_language,
+                    "token": None,
+                }
             )
-            self.insert(
-                chat_id,
-                include_annotations,
-                lyrics_language,
-                bot_language
-            )
-            logging.debug('created user')
+            self.insert(chat_id, include_annotations, lyrics_language, bot_language)
+            logging.debug("created user")
 
     @log
     @get_cursor
-    def insert(self,
-               chat_id: int,
-               *data: Tuple[bool, str, str, Optional[str]],
-               cursor: Any) -> None:
+    def insert(
+        self, chat_id: int, *data: Tuple[bool, str, str, Optional[str]], cursor: Any
+    ) -> None:
         """Inserts data into database.
 
         Args:
@@ -86,10 +82,7 @@ class Database:
 
     @log
     @get_cursor
-    def select(self,
-               chat_id: int,
-               cursor: Any,
-               column: str = '*') -> Dict[str, Any]:
+    def select(self, chat_id: int, cursor: Any, column: str = "*") -> Dict[str, Any]:
         """Selects values from table.
 
         Args:
@@ -111,23 +104,23 @@ class Database:
         cursor.execute(query)
         res = cursor.fetchone()
         if res is not None:
-            if column == '*':
-                res = {'chat_id': res[0],
-                       'include_annotations': res[1],
-                       'lyrics_lang': res[2],
-                       'bot_lang': res[3],
-                       'token': res[4]}
+            if column == "*":
+                res = {
+                    "chat_id": res[0],
+                    "include_annotations": res[1],
+                    "lyrics_lang": res[2],
+                    "bot_lang": res[3],
+                    "token": res[4],
+                }
             else:
                 res = {column: res[0]}
         return res
 
     @log
     @get_cursor
-    def update(self,
-               chat_id: int,
-               data: Union[bool, str, None],
-               update: str,
-               cursor: Any):
+    def update(
+        self, chat_id: int, data: Union[bool, str, None], update: str, cursor: Any
+    ):
         """Updates user data.
 
         Args:
@@ -149,7 +142,7 @@ class Database:
             chat_id (int): Chat ID.
             data (bool): True or False.
         """
-        self.update(chat_id, data, 'include_annotations')
+        self.update(chat_id, data, "include_annotations")
 
     def update_lyrics_language(self, chat_id: int, data: str) -> None:
         """Updates the language of the lyrics.
@@ -158,7 +151,7 @@ class Database:
             chat_id (int): Chat ID.
             data (str): 'English', 'Non-English' or 'English + Non-English'.
         """
-        self.update(chat_id, data, 'lyrics_lang')
+        self.update(chat_id, data, "lyrics_lang")
 
     def update_bot_language(self, chat_id: int, data: str) -> None:
         """Updates the language of the bot.
@@ -167,7 +160,7 @@ class Database:
             chat_id (int): Chat ID.
             data (str): 'en', 'fa' or etc (ISO 639-1 codes).
         """
-        self.update(chat_id, data, 'bot_lang')
+        self.update(chat_id, data, "bot_lang")
 
     def update_token(self, chat_id: int, data: str) -> None:
         """Updates user's Genius token.
@@ -176,7 +169,7 @@ class Database:
             chat_id (int): Chat ID.
             data (str): Genius user token.
         """
-        self.update(chat_id, data, 'token')
+        self.update(chat_id, data, "token")
 
     def delete_token(self, chat_id: int) -> None:
         """Removes user's Genius token from database.
@@ -184,7 +177,7 @@ class Database:
         Args:
             chat_id (int): Chat ID.
         """
-        self.update(chat_id, None, 'token')
+        self.update(chat_id, None, "token")
 
     def get_token(self, chat_id: int) -> str:
         """Gets user's Genius token from database.
@@ -195,7 +188,7 @@ class Database:
         Returns:
             str: Genius user token.
         """
-        return self.select(chat_id, column='token').get('token')  # type: ignore
+        return self.select(chat_id, column="token").get("token")  # type: ignore
 
     def get_language(self, chat_id: int) -> str:
         """Gets user's bot language.
@@ -206,4 +199,4 @@ class Database:
         Returns:
             str: 'en', 'fa' or etc (ISO 639-1 codes).
         """
-        return self.select(chat_id, column='bot_lang').get('bot_lang')  # type: ignore
+        return self.select(chat_id, column="bot_lang").get("bot_lang")  # type: ignore

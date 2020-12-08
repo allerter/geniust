@@ -18,7 +18,7 @@ from geniust.constants import (
     TELETHON_API_HASH,
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
-    GENIUS_TOKEN
+    GENIUS_TOKEN,
 )
 
 logger = logging.getLogger()
@@ -34,7 +34,7 @@ def get_channel() -> types.TypeInputPeer:
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
         TELETHON_API_HASH,
-        loop=asyncio.new_event_loop()
+        loop=asyncio.new_event_loop(),
     )
     client.start()
 
@@ -64,30 +64,29 @@ def telegram_annotation(a: str) -> Tuple[str, bool]:
         Tuple[str, bool]: formatted annotation and
             preview if link preview should be activated.
     """
-    a = a.replace('<p>', '').replace('</p>', '')
-    annotation = BeautifulSoup(a, 'html.parser')
+    a = a.replace("<p>", "").replace("</p>", "")
+    annotation = BeautifulSoup(a, "html.parser")
 
     # if the annotations has only one image in it,
     # include it using link preview
-    if (images := annotation.find_all('img')) and len(images) == 1:
+    if (images := annotation.find_all("img")) and len(images) == 1:
         img = images[0]
         # Invisible <a> tag
-        image_a = annotation.new_tag('a', href=img.attrs['src'])
-        image_a.string = '&#8204;'
+        image_a = annotation.new_tag("a", href=img.attrs["src"])
+        image_a.string = "&#8204;"
         annotation.insert(0, image_a)
         preview = True
     else:
         preview = False
 
     # remove extra tags and format the annotations to look better
-    valid_tags = ('br', 'strong​', '​b​', 'em​',
-                  '​i​', 'a', 'li', 'blockquote')
+    valid_tags = ("br", "strong​", "​b​", "em​", "​i​", "a", "li", "blockquote")
     restart = True
     while restart:
         restart = False
         for tag in annotation.find_all():
-            if tag.name == 'div':
-                tag.replace_with('')
+            if tag.name == "div":
+                tag.replace_with("")
                 restart = True
                 break
             elif tag.name not in valid_tags:
@@ -97,27 +96,29 @@ def telegram_annotation(a: str) -> Tuple[str, bool]:
 
     # remove unnecessary attributes (all except href)
     for tag in annotation:
-        if hasattr(tag, 'attrs'):
+        if hasattr(tag, "attrs"):
             for attr in list(tag.attrs.keys()):
-                if attr != 'href':
+                if attr != "href":
                     tag.attrs.pop(attr)
 
     annotation = (
         str(annotation)
-        .replace('&amp;', '&')  # bs4 escapes the '&' in '&#8204;'
-        .replace('<li>', '▪️ ')
-        .replace('</li>', '\n')
-        .replace('</blockquote>', '\n')
+        .replace("&amp;", "&")  # bs4 escapes the '&' in '&#8204;'
+        .replace("<li>", "▪️ ")
+        .replace("</li>", "\n")
+        .replace("</blockquote>", "\n")
     )
-    annotation = re.sub(r'<blockquote>[\n]*', '\n💬 ', annotation)
-    annotation = re.sub(r'^(?!💬)\n{2,}', '\n\n', annotation)
+    annotation = re.sub(r"<blockquote>[\n]*", "\n💬 ", annotation)
+    annotation = re.sub(r"^(?!💬)\n{2,}", "\n\n", annotation)
 
     return annotation[:4096], preview
 
 
-def replace_hrefs(lyrics: BeautifulSoup,
-                  posted_annotations: List[Tuple[int, str]] = [],
-                  telegram_song: bool = False) -> None:
+def replace_hrefs(
+    lyrics: BeautifulSoup,
+    posted_annotations: List[Tuple[int, str]] = [],
+    telegram_song: bool = False,
+) -> None:
     """Replaced the href of <a> tags with annotation IDs or links
 
     This function replaces the href attributes with the annotation
@@ -136,23 +137,22 @@ def replace_hrefs(lyrics: BeautifulSoup,
     # annotation IDs are formatted in two ways in the lyrics:
     # the old lyrics page: somethings#note-12345
     # the new lyrics page: /12345/somethings
-    get_id = re.compile(r'(?<=#note-)[0-9]+|(?<=^/)[0-9]+(?=/)')
+    get_id = re.compile(r"(?<=#note-)[0-9]+|(?<=^/)[0-9]+(?=/)")
 
     # remove extra tags and attributes from the lyrics
     # any tag attribute except href is redundant
-    for tag in lyrics.find_all('a'):
+    for tag in lyrics.find_all("a"):
         for attribute, value in list(tag.attrs.items()):
-            if attribute != 'href':
+            if attribute != "href":
                 tag.attrs.pop(attribute)
             else:
                 # there might be other links in the text except annotations
                 # in that case, their href attribute is
                 # set to 0 so as not to skip them later
                 # in string_funcs.format_annotations()
-                if tag.get('class'):
-                    class_ = tag['class'][0]
-                    if ('referent' not in class_
-                            and 'ReferentFragment' not in class_):
+                if tag.get("class"):
+                    class_ = tag["class"][0]
+                    if "referent" not in class_ and "ReferentFragment" not in class_:
                         tag[attribute] = 0
                         continue
                 else:
@@ -162,7 +162,7 @@ def replace_hrefs(lyrics: BeautifulSoup,
                 # replace the href attribute with either the link to the
                 # annotation on telegram or the annotation ID
                 if telegram_song:
-                    url = '0'
+                    url = "0"
                     for a in posted_annotations:
                         a_id = a[0]
                         a_url = a[1]
@@ -170,10 +170,10 @@ def replace_hrefs(lyrics: BeautifulSoup,
                         if match and int(a_id) == int(match[0]):
                             url = a_url
                             break
-                    tag['href'] = url
+                    tag["href"] = url
                 else:
                     match = get_id.search(value)
-                    tag['href'] = match[0] if match else '0'
+                    tag["href"] = match[0] if match else "0"
 
 
 class GeniusT(Genius):
@@ -190,15 +190,17 @@ class GeniusT(Genius):
         token = GENIUS_TOKEN if not args else args[0]
         super().__init__(token, *args, **kwargs)
 
-        self.response_format = 'html,plain'
+        self.response_format = "html,plain"
         self.retries = 3
         self.timeout = 5
         self.public_api = True
 
-    def artist(self,
-               artist_id: int,
-               text_format: Optional[str] = None,
-               public_api: bool = False) -> Dict[str, dict]:
+    def artist(
+        self,
+        artist_id: int,
+        text_format: Optional[str] = None,
+        public_api: bool = False,
+    ) -> Dict[str, dict]:
         """Gets data for a specific artist.
 
         Args:
@@ -218,13 +220,12 @@ class GeniusT(Genius):
             return super(PublicAPI, self).artist(artist_id, text_format)
         else:
             if self.access_token is None:
-                raise ValueError('You need an access token for the developers API.')
+                raise ValueError("You need an access token for the developers API.")
             return super().artist(artist_id, text_format)
 
-    def song(self,
-             song_id: int,
-             text_format: Optional[str] = None,
-             public_api: bool = False) -> Dict[str, dict]:
+    def song(
+        self, song_id: int, text_format: Optional[str] = None, public_api: bool = False
+    ) -> Dict[str, dict]:
         """Gets data for a specific song.
 
         Args:
@@ -244,14 +245,16 @@ class GeniusT(Genius):
             return super(PublicAPI, self).song(song_id, text_format)
         else:
             if self.access_token is None:
-                raise ValueError('You need an access token for the developers API.')
+                raise ValueError("You need an access token for the developers API.")
             return super().song(song_id, text_format)
 
-    def search_songs(self,
-                     search_term: str,
-                     per_page: Optional[int] = None,
-                     page: Optional[int] = None,
-                     public_api: bool = False) -> Dict[str, Any]:
+    def search_songs(
+        self,
+        search_term: str,
+        per_page: Optional[int] = None,
+        page: Optional[int] = None,
+        public_api: bool = False,
+    ) -> Dict[str, Any]:
         """Searches songs hosted on Genius.
 
         Args:
@@ -275,26 +278,26 @@ class GeniusT(Genius):
             return super(PublicAPI, self).search_songs(search_term, per_page, page)
         else:
             if self.access_token is None:
-                raise ValueError('You need an access token for the developers API.')
+                raise ValueError("You need an access token for the developers API.")
             return super().search_songs(search_term, per_page, page)
 
-    def song_page_data(self,
-                       path: str) -> Dict[str, Any]:
-        endpoint = 'page_data/song'
+    def song_page_data(self, path: str) -> Dict[str, Any]:
+        endpoint = "page_data/song"
 
-        params = {'page_path': '/songs/' + path}
+        params = {"page_path": "/songs/" + path}
 
         res = self._make_request(endpoint, params_=params, public_api=True)
 
-        return res['page_data']
+        return res["page_data"]
 
-    def lyrics(self,
-               song_id: int,
-               song_url: str,
-               include_annotations: bool = False,
-               remove_section_headers: bool = False,
-               telegram_song: bool = False,
-               ) -> Union[Tuple[str, Dict[int, str]], str]:
+    def lyrics(
+        self,
+        song_id: int,
+        song_url: str,
+        include_annotations: bool = False,
+        remove_section_headers: bool = False,
+        telegram_song: bool = False,
+    ) -> Union[Tuple[str, Dict[int, str]], str]:
         """Uses BeautifulSoup to scrape song info off of a Genius song URL
 
         Args:
@@ -327,24 +330,23 @@ class GeniusT(Genius):
 
         # Scrape the song lyrics from the HTML
         page = self._make_request(path, web=True)
-        html = BeautifulSoup(
-            page.replace('<br/>', '\n'),
-            "html.parser"
-        )
+        html = BeautifulSoup(page.replace("<br/>", "\n"), "html.parser")
 
         # Determine the class of the div
         lyrics = html.find_all("div", class_=re.compile("^lyrics$|Lyrics__Container"))
         if lyrics is None:
-            logger.error("Couldn't find the lyrics section. "
-                         "Please report this if the song has lyrics.\n"
-                         "Song URL: https://genius.com/{}".format(path))
-            return 'None'
+            logger.error(
+                "Couldn't find the lyrics section. "
+                "Please report this if the song has lyrics.\n"
+                "Song URL: https://genius.com/{}".format(path)
+            )
+            return "None"
 
-        if lyrics[0].get('class')[0] == 'lyrics':
+        if lyrics[0].get("class")[0] == "lyrics":
             lyrics = lyrics[0]
-            lyrics = lyrics.find('p') if lyrics.find('p') else lyrics
+            lyrics = lyrics.find("p") if lyrics.find("p") else lyrics
         else:
-            br = html.new_tag('br')
+            br = html.new_tag("br")
             for div in lyrics[1:]:
                 if div.get_text().strip():
                     div.append(br)
@@ -352,9 +354,9 @@ class GeniusT(Genius):
             lyrics = lyrics[0]
 
         if include_annotations and not telegram_song:
-            annotations = self.song_annotations(song_id, 'html')
+            annotations = self.song_annotations(song_id, "html")
         elif include_annotations and telegram_song:
-            annotations = self.song_annotations(song_id, 'html')
+            annotations = self.song_annotations(song_id, "html")
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -362,7 +364,7 @@ class GeniusT(Genius):
                 StringSession(TELETHON_SESSION_STRING),
                 TELETHON_API_ID,
                 TELETHON_API_HASH,
-                loop=loop
+                loop=loop,
             )
 
             client.start()
@@ -376,15 +378,16 @@ class GeniusT(Genius):
                             entity=annotations_channel,
                             message=annotation,
                             link_preview=preview,
-                            parse_mode='HTML')
+                            parse_mode="HTML",
+                        )
                     )
 
                     # used to replace href attributes of <a> tags
                     # in the lyrics with links to the annotations
-                    url = f'https://t.me/{ANNOTATIONS_CHANNEL_HANDLE}/{msg.id}'
+                    url = f"https://t.me/{ANNOTATIONS_CHANNEL_HANDLE}/{msg.id}"
                 except telethon.errors.FloodWaitError as e:
                     logger.error(str(e))
-                    url = ''
+                    url = ""
                     break
                 posted_annotations.append((annotation_id, url))
 
@@ -398,24 +401,24 @@ class GeniusT(Genius):
         # remove redundant tags that neither Telegram
         # nor the other formats (PDF and Telegra.ph) support
         for tag in lyrics.find_all():
-            if tag.name not in ('br', 'strong​', '​b​', 'em​', '​i​', 'a'):
+            if tag.name not in ("br", "strong​", "​b​", "em​", "​i​", "a"):
                 tag.unwrap()
 
         if remove_section_headers:
             assert telegram_song, False
             # Remove [Verse] and [Bridge] stuff
-            lyrics = re.sub(r'(\[.*?\])*', '', lyrics)
+            lyrics = re.sub(r"(\[.*?\])*", "", lyrics)
             # Remove gaps between verses
-            lyrics = re.sub('\n{2}', '\n', lyrics)
+            lyrics = re.sub("\n{2}", "\n", lyrics)
 
         if telegram_song:
             return lyrics
         else:
-            return str(lyrics).strip('\n'), annotations
+            return str(lyrics).strip("\n"), annotations
 
-    def song_annotations(self,
-                         song_id: int,
-                         text_format: Optional[str] = None) -> Dict[int, str]:
+    def song_annotations(
+        self, song_id: int, text_format: Optional[str] = None
+    ) -> Dict[int, str]:
         """Return song's annotations with associated fragment in list of tuple.
 
         Args:
@@ -434,48 +437,42 @@ class GeniusT(Genius):
 
         """
         text_format = text_format or self.response_format
-        assert len(text_format.split(',')), 1
+        assert len(text_format.split(",")), 1
 
-        referents = self.referents(song_id=song_id,
-                                   text_format=text_format,
-                                   per_page=50)
+        referents = self.referents(
+            song_id=song_id, text_format=text_format, per_page=50
+        )
 
         all_annotations: Dict[int, str] = {}
-        for r in referents['referents']:
+        for r in referents["referents"]:
             # r['id'] isn't always the one ued in href attributes
-            api_path = r['api_path']
-            annotation_id = int(api_path[api_path.rfind('/') + 1:])
-            annotation = r['annotations'][0]['body'][text_format]
+            api_path = r["api_path"]
+            annotation_id = int(api_path[api_path.rfind("/") + 1 :])
+            annotation = r["annotations"][0]["body"][text_format]
 
             if annotation_id not in all_annotations.keys():
                 all_annotations[annotation_id] = annotation
         return all_annotations
 
-    def fetch(self,
-              track: Dict[str, Any],
-              include_annotations: bool) -> None:
+    def fetch(self, track: Dict[str, Any], include_annotations: bool) -> None:
         """fetches song from Genius adds it to the artist object"""
-        song = track['song']
+        song = track["song"]
 
         annotations: Dict[int, str] = {}
 
-        if song['lyrics_state'] == 'complete' and not song['instrumental']:
+        if song["lyrics_state"] == "complete" and not song["instrumental"]:
             lyrics, annotations = self.lyrics(  # type: ignore
-                song['id'],
-                song['url'],
-                include_annotations=include_annotations
+                song["id"], song["url"], include_annotations=include_annotations
             )
-        elif song['instrumental']:
+        elif song["instrumental"]:
             lyrics = "[Instrumental]"
         else:
             lyrics = ""
 
-        song.update(
-            self.song(song['id'])['song']
-        )
+        song.update(self.song(song["id"])["song"])
 
-        song['lyrics'] = lyrics
-        song['annotations'] = annotations
+        song["lyrics"] = lyrics
+        song["annotations"] = annotations
 
     async def search_album(
         self,
@@ -499,13 +496,11 @@ class GeniusT(Genius):
 
 
         """
-        album = self.album(album_id, text_format)['album']
+        album = self.album(album_id, text_format)["album"]
 
-        album['tracks'] = self.album_tracks(
-            album_id,
-            per_page=50,
-            text_format=text_format
-        )['tracks']
+        album["tracks"] = self.album_tracks(
+            album_id, per_page=50, text_format=text_format
+        )["tracks"]
 
         # Get number of available cores
         try:
@@ -517,20 +512,18 @@ class GeniusT(Genius):
             loop = asyncio.get_event_loop()
             tasks = [
                 loop.run_in_executor(
-                    executor,
-                    self.fetch,
-                    *(track, include_annotations)
+                    executor, self.fetch, *(track, include_annotations)
                 )
-                for track in album['tracks']
+                for track in album["tracks"]
             ]
             await asyncio.gather(*tasks)
 
         # return the album by putting it in the queue
         queue.put(album)
 
-    def async_album_search(self,
-                           album_id: int,
-                           include_annotations: bool = False) -> Dict[str, Any]:
+    def async_album_search(
+        self, album_id: int, include_annotations: bool = False
+    ) -> Dict[str, Any]:
         """gets the album from Genius and returns a dictionary"""
         q: queue.Queue = queue.Queue(1)
         new_loop = asyncio.new_event_loop()
