@@ -12,10 +12,16 @@ with open(here / 'runtime.txt', 'r') as f:
 
 
 extras_require = {
+    'checks': [
+        'mypy==0.790',
+        'black==20.8b1'
+    ],
     'tests': [
         'pytest==6.1.2',
         'pytest-lazy-fixture==0.6.3',
     ]}
+
+extras_require['dev'] = extras_require['checks'] + extras_require['tests']
 
 setup(
     name="geniust",
