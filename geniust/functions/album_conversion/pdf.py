@@ -110,7 +110,7 @@ class MyDocTemplate(BaseDocTemplate):
 
 
 def get_farsi_text(text: str, long_text: bool = False) -> Tuple[str, bool]:
-    """Reshapes arabic/farsi words to be showed properly in the PDF
+    """Reshapes Arabic/Farsi words to be displayed properly in the PDF
 
     from https://stackoverflow.com/a/41346589/4249434
 

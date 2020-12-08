@@ -13,15 +13,15 @@ GENIUS_CLIENT_SECRET: str = os.environ['GENIUS_CLIENT_SECRET']
 GENIUS_REDIRECT_URI: str = os.environ['GENIUS_REDIRECT_URI']
 ANNOTATIONS_CHANNEL_HANDLE: str = os.environ['ANNOTATIONS_CHANNEL_HANDLE']
 DEVELOPERS: List[int] = ([int(x) for x in os.environ['DEVELOPERS'].split(',')]
-                         if os.environ.get('DEVELOPERS')
+                         if 'DEVELOPERS' in os.environ
                          else [])
-SERVER_PORT: Optional[int] = int(os.environ['PORT']) if os.environ.get('PORT') else None
+SERVER_PORT: Optional[int] = int(os.environ['PORT']) if 'PORT' in os.environ else None
 SERVER_ADDRESS: Optional[str] = os.environ.get('SERVER_ADDRESS')
 TELETHON_API_ID: str = os.environ['TELETHON_API_ID']
 TELETHON_API_HASH: str = os.environ['TELETHON_API_HASH']
 TELETHON_SESSION_STRING: str = os.environ['TELETHON_SESSION_STRING']
 
-TELEGRAM_HTML_TAGS = [
+TELEGRAM_HTML_TAGS: List[str] = [
     'b', 'strong',
     'i', 'em',
     'u', 'ins',
@@ -51,7 +51,7 @@ class AutoRange:
         return range(start, end)
 
 
-num = AutoRange()
+num: AutoRange = AutoRange()
 
 # Menu Levels
 MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
@@ -65,4 +65,4 @@ OPTION1, OPTION2, OPTION3 = num.assign(3)
 
 LOGIN, LOGGED_IN, LOGOUT = num.assign(3)
 
-END = ConversationHandler.END
+END: int = ConversationHandler.END

@@ -304,7 +304,7 @@ def error(update: Update, context: CallbackContext) -> None:
                 language = 'en'
 
             try:
-                msg = texts[language]['error']  # type: ignore
+                msg = texts[language]['error']
             except NameError:
                 logger.error('texts global was unaccessable in error handler')
                 msg = 'Something went wrong. Start again using /start'

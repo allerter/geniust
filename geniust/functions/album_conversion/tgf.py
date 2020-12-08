@@ -123,6 +123,10 @@ def create_album_songs(account: telegraph.Telegraph,
         # formatting language
         lyrics = utils.format_language(lyrics, lyrics_language)
 
+        for tag in lyrics.find_all('blockquote'):
+            tag.unwrap()
+            tag.decompose()
+
         # convert annotation text style to quotes
         for tag in lyrics.find_all('annotation'):
             tag.name = 'blockquote'

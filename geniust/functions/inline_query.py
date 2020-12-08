@@ -207,8 +207,6 @@ def search_artists(update: Update, context: CallbackContext) -> None:
 
     update.inline_query.answer(articles)
 
-    return END
-
 
 @log
 @get_user
