@@ -1,8 +1,58 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, create_autospec
 
 import pytest
 
 from geniust import constants, bot
+from geniust.bot import CronHandler, TokenHandler
+from geniust.db import Database
+from lyricsgenius import OAuth2
+
+
+def test_cron_handler():
+    handler = MagicMock()
+
+    CronHandler.get(handler)
+
+    handler.write.assert_called_once()
+
+
+@pytest.mark.parametrize('state', ['1_test-state',
+                                   '1_invalid-state',
+                                   '2_test-state',
+                                   'invalid_state',
+                                   'invalid-state'])
+@pytest.mark.parametrize('user_state', ['test-state', None])
+def test_token_handler(context, user_state, state):
+    handler = MagicMock()
+    handler.get_argument.return_value = state
+    handler.auth = create_autospec(OAuth2)
+    handler.auth.get_user_token.return_value = 'test_token'
+    handler.database = create_autospec(Database)
+    handler.bot = context.bot
+    handler.texts = context.bot_data['texts']
+    handler.user_data = {1: {}}
+    handler.user_data[1]['bot_lang'] = context.user_data['bot_lang']
+    handler.user_data[1]['state'] = user_state
+
+    handler.request.protocol = 'https'
+    handler.request.host = 'test-app.com'
+    handler.request.uri = '/callback?code=some_code&state=' + state
+
+    TokenHandler.get(handler)
+
+    handler.get_argument.assert_called_once_with('state')
+    if state == '1_test-state' and user_state == 'test-state':
+        handler.auth.get_user_token.assert_called_once_with(
+            'https://test-app.com/callback?code=some_code&state=1_test-state')
+        handler.database.update_token.assert_called_once_with(1, 'test_token')
+        assert handler.bot.send_message.call_args[0][0] == 1
+        assert handler.user_data[1]['token'] == 'test_token'
+        assert "state" not in handler.user_data[1]
+        handler.redirect.assert_called_once()
+    else:
+        handler.set_status.assert_called_once_with(401)
+        handler.finish.assert_called_once()
+        handler.auth.get_user_token.assert_not_called()
 
 
 @pytest.mark.parametrize('token', ['test_token', None])
@@ -22,9 +72,9 @@ def test_main_menu(update_callback_query, context, token):
     # Check if bot returned correct keyboard for logged-in/out users
     if token is None:
         context.bot_data['db'].get_token.assert_called_once()
-        assert keyboard[-1][0]['callback_data'] == constants.LOGIN
+        assert keyboard[-1][0]['callback_data'] == str(constants.LOGIN)
     else:
-        assert keyboard[-1][0]['callback_data'] == constants.LOGGED_IN
+        assert keyboard[-1][0]['callback_data'] == str(constants.LOGGED_IN)
 
     # Check if bot answered the callback query
     update.callback_query.answer.assert_called_once()
@@ -61,12 +111,13 @@ def test_send_feedback(update_message, context):
     assert res == constants.END
 
 
+@pytest.mark.parametrize('update', [pytest.lazy_fixture('update_message'),
+                                    pytest.lazy_fixture('update_callback_query')])
 @pytest.mark.parametrize("level", [constants.MAIN_MENU,
                                    constants.ACCOUNT_MENU,
                                    constants.CUSTOMIZE_MENU,
                                    ])
-def test_end_describing(update_callback_query, context, level):
-    update = update_callback_query
+def test_end_describing(update, context, level):
     context.user_data['level'] = level
 
     main_menu = MagicMock()
@@ -76,13 +127,16 @@ def test_end_describing(update_callback_query, context, level):
             patch('geniust.functions.customize.customize_menu', customize_menu):
         res = bot.end_describing(update, context)
 
-    if level == constants.MAIN_MENU:
-        main_menu.assert_not_called()
-        customize_menu.assert_not_called()
-    elif level == constants.ACCOUNT_MENU or level == constants.CUSTOMIZE_MENU:
-        main_menu.assert_called_once()
+    if update.callback_query:
+        if level == constants.MAIN_MENU:
+            main_menu.assert_not_called()
+            customize_menu.assert_not_called()
+        elif level == constants.ACCOUNT_MENU or level == constants.CUSTOMIZE_MENU:
+            main_menu.assert_called_once()
 
-    assert res == constants.SELECT_ACTION
+        assert res == constants.SELECT_ACTION
+    else:
+        assert res == constants.END
 
 
 def test_help_message(update_message, context):

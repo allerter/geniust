@@ -45,26 +45,37 @@ def test_search_albums(update_message, context, search_dict):
     assert res == constants.END
 
 
+@pytest.fixture
+def album_dict_no_description(album_dict):
+    album_dict['album']["description_annotation"]["annotations"][0]["body"]["plain"] = ""
+    return album_dict
+
+
+@pytest.mark.parametrize('album_data', [pytest.lazy_fixture('album_dict'),
+                                        pytest.lazy_fixture('album_dict_no_description')])
 @pytest.mark.parametrize('update', [pytest.lazy_fixture('update_callback_query'),
                                     pytest.lazy_fixture('update_message'),
                                     ])
-def test_display_album(update, context, album_dict):
+def test_display_album(update, context, album_data):
     if update.callback_query:
         update.callback_query.data = 'album_1'
     else:
         context.args[0] = 'album_1'
 
     genius = context.bot_data['genius']
-    genius.album.return_value = album_dict
+    genius.album.return_value = album_data
 
     res = album.display_album(update, context)
 
     keyboard = (context.bot.send_photo
                 .call_args[1]['reply_markup']['inline_keyboard'])
 
-    # Covers - Tracks - Lyrics - Description
     assert len(keyboard) == 3
-    assert len(keyboard[0]) == 2
+    if album_data['album']["description_annotation"]["annotations"][0]["body"]["plain"]:
+        # Covers - Tracks - Lyrics - Description
+        assert len(keyboard[0]) == 2
+    else:
+        assert len(keyboard[0]) == 1
 
     # album ID = 1
     genius.album.assert_called_once_with(1)
@@ -207,15 +218,16 @@ def test_thread_get_album(update_callback_query, context, album_format):
     assert res == constants.END
 
 
-@pytest.mark.parametrize('album_format', ['pdf', 'tgf', 'zip'])
-def test_get_album(update_callback_query, context, album_format, full_album):
+@pytest.mark.parametrize('album_search', [pytest.lazy_fixture('full_album'), None])
+@pytest.mark.parametrize('album_format', ['pdf', 'tgf', 'zip', 'invalid'])
+def test_get_album(update_callback_query, context, album_format, album_search):
     update = update_callback_query
     language = context.user_data['bot_lang']
     text = context.bot_data['texts'][language]['get_album']
     album_id = 1
 
     client = MagicMock()
-    client().async_album_search.return_value = full_album
+    client().async_album_search.return_value = album_search
     convert = MagicMock()
 
     current_module = 'geniust.functions.album'
@@ -225,9 +237,14 @@ def test_get_album(update_callback_query, context, album_format, full_album):
             patch(current_module + '.create_zip', convert):
         album.get_album(update, context, album_id, album_format, text)
 
-    convert.assert_called_once_with(full_album, context.user_data)
-
-    if album_format == 'tgf':
-        context.bot.send_message.call_args[1]['text'] == convert
+    if album_search is None or album_format == 'invalid':
+        convert.assert_not_called()
     else:
+        convert.assert_called_once_with(album_search, context.user_data)
+
+    if album_format == 'tgf' and album_search is not None:
+        assert context.bot.send_message.call_args[1]['text'] == convert()
+    elif album_format in ('pdf', 'zip') and album_search is not None:
         context.bot.send_document.assert_called_once()
+    else:
+        context.bot.send_document.assert_not_called()

@@ -164,13 +164,13 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
         # A message with a photo means the user came from display_artist
         # and so we send the songs as a new message
         message = message if message.photo is None else None
-        _, artist_id, _, sort, page = update.callback_query.data.split("_")
+        _, artist_id_str, _, sort, page_str = update.callback_query.data.split("_")
     else:
         message = None
-        _, artist_id, _, sort, page = context.args[0].split("_")
+        _, artist_id_str, _, sort, page_str = context.args[0].split("_")
 
-    page = int(page)
-    artist_id = int(artist_id)
+    page = int(page_str)
+    artist_id = int(artist_id_str)
 
     if sort == "ppt":
         sort = "popularity"
@@ -210,8 +210,8 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
 
     if sort == "popularity":
         sort = "ppt"
-    elif sort == "rdt":
-        sort = "title"
+    elif sort == "release_date":
+        sort = "rdt"
     else:
         sort = "ttl"
 
@@ -233,11 +233,8 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
     else:
         next_button = IButton("⬛️", callback_data="None")
 
-    if previous_page or next_page:
-        buttons = [[previous_button, current_button, next_button]]
-        keyboard = IBKeyboard(buttons)
-    else:
-        keyboard = None
+    buttons = [[previous_button, current_button, next_button]]
+    keyboard = IBKeyboard(buttons)
 
     if message:
         update.callback_query.edit_message_caption(string, reply_markup=keyboard)

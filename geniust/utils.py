@@ -1,7 +1,7 @@
 import re
 import logging
 from functools import wraps
-from typing import Any, TypeVar, Callable, Pattern, Optional, List, Union, Tuple, Dict
+from typing import Any, TypeVar, Callable, Pattern, List, Union, Tuple, Dict
 
 from bs4 import BeautifulSoup, NavigableString, Comment
 from bs4.element import Tag
@@ -228,7 +228,7 @@ def format_annotations(
 
             for tag in annotation.descendants:
                 if hasattr(tag, "attrs"):
-                    for attribute, value in list(tag.attrs.items()):
+                    for attribute, _ in list(tag.attrs.items()):
                         if attribute != "href":
                             tag.attrs.pop(attribute)
                 if tag.name in ("div", "script", "iframe"):

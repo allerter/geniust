@@ -1,4 +1,6 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+
+import pytest
 
 from geniust import constants
 from geniust.functions import account
@@ -50,13 +52,19 @@ def test_logout(update_callback_query, context):
     assert res == constants.END
 
 
-def test_display_account(update_callback_query, context, account_dict, song_dict):
+@pytest.mark.parametrize('artist_data', [pytest.lazy_fixture('song_dict'), None])
+def test_display_account(update_callback_query, context, account_dict, artist_data):
     update = update_callback_query
     user = context.user_data
     user['token'] = 'test_token'
 
-    genius = context.bot_data['genius']
-    account_dict['artist'] = song_dict['song']['primary_artist']
+    genius = MagicMock()
+    if artist_data is None:
+        account_dict['user']['artist'] = None
+    else:
+        song = artist_data
+        account_dict['user']['artist'] = song['song']['primary_artist']
+
     genius().account.return_value = account_dict
 
     with patch('geniust.api.GeniusT', genius):

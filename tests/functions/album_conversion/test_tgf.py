@@ -32,13 +32,13 @@ def test_create_album_songs(full_album, user_data):
         lyrics = song[1]['html_content']
 
         lyrics = lyrics[lyrics.find('<aside>'):]
-        annotations_count = re.findall("<blockquote>", lyrics)
+        annotations_count = len(re.findall("<blockquote>", lyrics))
 
         if include_annotations:
-            assert len(annotations_count) == len(full_album['tracks'][i]
-                                                 ['song']['annotations'])
+            assert annotations_count == len(full_album['tracks'][i]
+                                            ['song']['annotations'])
         else:
-            annotations_count == 0
+            assert annotations_count == 0
 
 
 @pytest.mark.parametrize('user_data', users)

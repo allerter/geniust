@@ -1,8 +1,9 @@
 import pytest
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, create_autospec
 
 from bs4 import BeautifulSoup
+from telethon import TelegramClient
 
 from geniust import api
 
@@ -30,10 +31,19 @@ def lyrics(page):
 @pytest.fixture(scope='module')
 def posted_annotations(annotations):
     posted = []
-    for id_, text in annotations.items():
+    for id_, _ in annotations.items():
         posted.append((id_, f'link_{id_}'))
 
     return posted
+
+
+def test_get_channel():
+    client = create_autospec(TelegramClient)
+
+    with patch('telethon.TelegramClient', client):
+        res = api.get_channel()
+
+    assert res is not None
 
 
 def test_telegram_annotation(annotation):
@@ -68,8 +78,10 @@ def genius():
     return api.GeniusT()
 
 
-def test_lyrics_no_annotations(genius, song_id, song_url, page):
-    page = MagicMock(return_value=page)
+@pytest.mark.parametrize('html', [pytest.lazy_fixture("page"),
+                                  "None"])
+def test_lyrics_no_annotations(genius, song_id, song_url, html):
+    page = MagicMock(return_value=html)
 
     current_module = 'geniust.api'
     with patch(current_module + '.GeniusT._make_request', page):
@@ -79,6 +91,8 @@ def test_lyrics_no_annotations(genius, song_id, song_url, page):
                                             telegram_song=False)
     assert isinstance(lyrics, str), "Lyrics wasn't a string"
     assert annotations == {}, "Annotations weren't empty"
+    if html == "None":
+        assert lyrics == "None"
 
 
 def test_lyrics_telegram_song(genius, song_id, song_url, page, annotations):

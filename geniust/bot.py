@@ -2,7 +2,7 @@ import logging
 import sys
 import threading
 import traceback
-from typing import Optional, Awaitable
+from typing import Dict, Any
 
 import tornado.ioloop
 import tornado.web
@@ -37,6 +37,7 @@ from geniust.functions import (
 from geniust import get_user, texts, auth, database, username, genius
 from geniust.utils import log
 from geniust.db import Database
+from geniust.api import GeniusT
 
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
@@ -70,9 +71,6 @@ logger.setLevel(logging.DEBUG)
 class CronHandler(RequestHandler):
     """Handles cron-job requests"""
 
-    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
-        pass
-
     def get(self):
         """Responds to GET request to make cron job successful"""
         self.write("OK")
@@ -88,49 +86,84 @@ class TokenHandler(RequestHandler):
     """
 
     def initialize(
-        self, auth: OAuth2, database: Database, bot: Bot, texts: dict
+        self, auth: OAuth2, database: Database, bot: Bot, texts: dict, user_data: dict
     ) -> None:
         self.auth = auth
         self.database = database
         self.bot = bot
         self.texts = texts
+        self.user_data = user_data
 
     def get(self):
         """Receives and processes callback data from Genius"""
+        state = self.get_argument("state")
+
+        if len(state.split("_")) == 2:
+            chat_id_str, received_value = state.split("_")
+        else:
+            chat_id_str = "0"
+            received_value = state
+
+        try:
+            chat_id = int(chat_id_str)
+        except ValueError:
+            chat_id = 0
+
+        original_value = (
+            self.user_data[chat_id].pop("state", None)
+            if chat_id in self.user_data
+            else None
+        )
+
+        # ensure state parameter is correct
+        if original_value != received_value:
+            self.set_status(401)
+            self.finish("Invalid state parameter.")
+            logger.debug(
+                'Invalid state "%s" for user %s', repr(received_value), chat_id
+            )
+            return
+
+        # get token and update in db
         redirected_url = "{}://{}{}".format(
             self.request.protocol, self.request.host, self.request.uri
         )
-        token = self.auth.get_user_token(redirected_url)
-        chat_id = self.get_argument("state")
 
+        token = self.auth.get_user_token(redirected_url)
         self.database.update_token(chat_id, token)
+        self.user_data[chat_id]["token"] = token
 
         # redirect user to bot
         self.redirect(f"https://t.me/{username}")
 
-        language = self.database.get_language(chat_id)
-
+        # inform user
+        language = self.user_data[chat_id].get("bot_lang", "en")
         text = self.texts[language]["login"]["successful"]
-
         self.bot.send_message(chat_id, text)
 
 
-class WebhookThread(threading.Thread):
+class WebhookThread(threading.Thread):  # pragma: no cover
     """Starts a web-hook server
 
     This webhook is intended to respond to cron jobs that keep the bot from
     going to sleep in Heroku's free plan and receive tokens from Genius.
     """
 
-    def __init__(self):
+    def __init__(self, user_data):
         super().__init__()
         app = tornado.web.Application(
             [
                 url(r"/notify", CronHandler),
                 url(
-                    r"/callback.*",
+                    r"/callback\?code=.*&state=.*",
                     TokenHandler,
-                    dict(auth=auth, database=database, bot=Bot(BOT_TOKEN), texts=texts),
+                    dict(
+                        auth=auth,
+                        database=database,
+                        bot=Bot(BOT_TOKEN),
+                        texts=texts,
+                        user_data=user_data,
+                    ),
                 ),
             ]
         )
@@ -183,9 +216,9 @@ def main_menu(update: Update, context: CallbackContext) -> int:
         context.user_data["token"] = token
 
     if token is None:
-        buttons.append([IButton(text["login"], callback_data=LOGIN)])
+        buttons.append([IButton(text["login"], callback_data=str(LOGIN))])
     else:
-        buttons.append([IButton(text["logged_in"], callback_data=LOGGED_IN)])
+        buttons.append([IButton(text["logged_in"], callback_data=str(LOGGED_IN))])
 
     keyboard = IBKeyboard(buttons)
 
@@ -344,9 +377,9 @@ def main():
     )
 
     dp = updater.dispatcher
-    dp.bot_data["texts"] = texts
-    dp.bot_data["db"] = database
-    dp.bot_data["genius"] = genius
+    dp.bot_data["texts"]: Dict[Any, str] = texts
+    dp.bot_data["db"]: Database = database
+    dp.bot_data["genius"]: GeniusT = genius
     my_states = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),
         CallbackQueryHandler(album.type_album, pattern="^" + str(TYPING_ALBUM) + "$"),
@@ -565,7 +598,7 @@ def main():
     # web hook server to respond to GET cron jobs at /notify
     # and receive user tokens at /callback
     if SERVER_PORT:
-        webhook_thread = WebhookThread()
+        webhook_thread = WebhookThread(dp.user_data)
         webhook_thread.start()
     # if SERVER_PORT:
     #

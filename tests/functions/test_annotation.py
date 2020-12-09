@@ -17,7 +17,7 @@ def annotation_dict_fixture(data_path):
         return json.load(f)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def voters_dict(data_path):
     with open(join(data_path, 'annotation_voters.json'), 'r') as f:
         return json.load(f)
@@ -87,10 +87,10 @@ def voters_but_voted(account_dict, voters_dict):
 
 
 @pytest.mark.parametrize('voters, token',
-                        [
-                         (pytest.lazy_fixture('voters_dict'), 'test_token'),
-                         (pytest.lazy_fixture('voters_but_voted'), 'test_token'),
-                         (pytest.lazy_fixture('voters_dict'), None),
+                         [
+                             (pytest.lazy_fixture('voters_dict'), 'test_token'),
+                             (pytest.lazy_fixture('voters_but_voted'), 'test_token'),
+                             (pytest.lazy_fixture('voters_dict'), None),
                          ])
 def test_upvote_annotation(update_callback_query, context, account_dict, voters, token):
     update = update_callback_query
@@ -128,10 +128,10 @@ def test_upvote_annotation(update_callback_query, context, account_dict, voters,
 
 
 @pytest.mark.parametrize('voters, token',
-                        [
-                         (pytest.lazy_fixture('voters_dict'), 'test_token'),
-                         (pytest.lazy_fixture('voters_but_voted'), 'test_token'),
-                         (pytest.lazy_fixture('voters_dict'), None),
+                         [
+                             (pytest.lazy_fixture('voters_dict'), 'test_token'),
+                             (pytest.lazy_fixture('voters_but_voted'), 'test_token'),
+                             (pytest.lazy_fixture('voters_dict'), None),
                          ])
 def test_downvote_annotation(update_callback_query,
                              context,

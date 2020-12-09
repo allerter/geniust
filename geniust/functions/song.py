@@ -1,7 +1,7 @@
 import logging
 import threading
 import re
-from typing import Any, Dict
+from typing import Dict, Any
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -192,10 +192,10 @@ def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
 
 @log
 def song_caption(
-    update: Update,
+    Update: Update,
     context: CallbackContext,
-    song: Dict[str, Any],
-    caption: Dict[str, str],
+    song,
+    caption,
     language: str,
 ) -> str:
     """Generates caption for artist.
@@ -267,10 +267,11 @@ def song_caption(
 
     hot = context.bot_data["texts"][language][song["stats"]["hot"]]
 
-    if song["tags"]:
-        tags = ", ".join(tag["name"] for tag in song["tags"])
-    else:
-        tags = ""
+    tags = (
+        ", ".join(caption.get(tag["name"].lower(), tag["name"]) for tag in song["tags"])
+        if song["tags"]
+        else ""
+    )
 
     views = song["stats"].get("pageviews", "?")
     if isinstance(views, int):
@@ -289,12 +290,22 @@ def song_caption(
         + album
         + producers
         + writers
-        + relationships
         + external_links
+        + relationships
     )
     string = string.strip()
 
-    if len(string) > 1024:
-        return string[: string.rfind("<b>")]
-    else:
-        return string
+    return check_length(string)
+
+
+def check_length(caption: str, limit: int = 1024) -> str:
+    soup = BeautifulSoup(caption, "html.parser")
+    text = soup.get_text()
+    length = len(text)
+
+    while length >= limit:
+        caption = caption[: caption.rfind("<b>") - 3]
+        soup = BeautifulSoup(caption, "html.parser")
+        length = len(soup.get_text())
+
+    return str(soup)

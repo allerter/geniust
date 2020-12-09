@@ -51,6 +51,18 @@ def test_deep_link():
     assert res == final_link
 
 
+def test_deep_link_invalid():
+    username = 'test_bot'
+    entity = {'name': 'test_name',
+              'api_path': 'invalid',
+              'id': 1,
+              }
+
+    with patch('geniust.username', username), \
+            pytest.raises(ValueError):
+        utils.deep_link(entity)
+
+
 def test_remove_unsupported_tags():
     html = ('<a>t</a>'
             '<b>t</b>'
@@ -169,7 +181,9 @@ def test_format_title(artist, title):
 @pytest.mark.parametrize('entity', [pytest.lazy_fixture('album_dict'),
                                     pytest.lazy_fixture('artist_dict'),
                                     pytest.lazy_fixture('song_dict'),
-                                    {'entity': {}}])
+                                    {'entity': {}},
+                                    {'entity': {"description_annotation": {"annotations": [{"body": {"plain": ""}}]}}}
+                                    ])
 def test_get_description(entity):
     entity = entity[list(entity)[0]]
 

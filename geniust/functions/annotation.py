@@ -93,9 +93,8 @@ def upvote_annotation(update: Update, context: CallbackContext) -> int:
         update.callback_query.answer(texts["voted"])
         change = 1
 
-    upvotes = message.reply_markup.inline_keyboard[0][0].text
-    match = re.search(r"\d+", upvotes)
-    upvotes = int(match[0]) if match else 0
+    match = re.search(r"\d+", message.reply_markup.inline_keyboard[0][0].text)
+    upvotes: int = int(match[0]) if match else 0
     new_text = "👍 " + str(upvotes + change)
     message.reply_markup.inline_keyboard[0][0].text = new_text
 
@@ -133,9 +132,8 @@ def downvote_annotation(update: Update, context: CallbackContext) -> int:
         update.callback_query.answer(texts["voted"])
         change = 1
 
-    downvotes = message.reply_markup.inline_keyboard[0][-1].text
-    match = re.search(r"\d+", downvotes)
-    downvotes = int(match[0]) if match else 0
+    match = re.search(r"\d+", message.reply_markup.inline_keyboard[0][-1].text)
+    downvotes: int = int(match[0]) if match else 0
     new_text = "👎 " + str(downvotes + change)
     message.reply_markup.inline_keyboard[0][-1].text = new_text
 

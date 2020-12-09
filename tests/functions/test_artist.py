@@ -44,17 +44,25 @@ def test_search_artists(update_message, context, search_dict):
     assert res == constants.END
 
 
+@pytest.fixture
+def artist_dict_no_description(artist_dict):
+    artist_dict['artist']["description_annotation"]["annotations"][0]["body"]["plain"] = ""
+    return artist_dict
+
+
+@pytest.mark.parametrize('artist_data', [pytest.lazy_fixture('artist_dict'),
+                                         pytest.lazy_fixture('artist_dict_no_description')])
 @pytest.mark.parametrize('update', [pytest.lazy_fixture('update_callback_query'),
                                     pytest.lazy_fixture('update_message'),
                                     ])
-def test_display_artist(update, context, artist_dict):
+def test_display_artist(update, context, artist_data):
     if update.callback_query:
         update.callback_query.data = 'artist_1'
     else:
         context.args[0] = 'artist_1'
 
     genius = context.bot_data['genius']
-    genius.artist.return_value = artist_dict
+    genius.artist.return_value = artist_data
 
     res = artist.display_artist(update, context)
 
@@ -62,7 +70,10 @@ def test_display_artist(update, context, artist_dict):
                 .call_args[1]['reply_markup']['inline_keyboard'])
 
     assert len(keyboard) == 4
-    assert len(keyboard[0]) == 2
+    if artist_data['artist']["description_annotation"]["annotations"][0]["body"]["plain"]:
+        assert len(keyboard[0]) == 2
+    else:
+        assert len(keyboard[0]) == 1
 
     # artist ID = 1
     genius.artist.assert_called_once_with(1)
@@ -114,31 +125,48 @@ def test_display_artist_albums(update, context, artist_dict, artist_albums_dict)
     assert res == constants.END
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def songs_dict(data_path):
     with open(join(data_path, 'artist_songs.json'), 'r') as f:
         return json.load(f)
 
 
-@pytest.mark.parametrize('update, artist_songs_dict',
+@pytest.mark.parametrize('page', [1, 3, 10])
+@pytest.mark.parametrize('update, artist_songs_dict, sort',
                          [
                              (pytest.lazy_fixture('update_callback_query'),
-                              pytest.lazy_fixture('songs_dict')),
-
+                              pytest.lazy_fixture('songs_dict'),
+                              'ppt'),
+                             (pytest.lazy_fixture('update_callback_query'),
+                              pytest.lazy_fixture('songs_dict'),
+                              'rdt'),
+                             (pytest.lazy_fixture('update_callback_query'),
+                              pytest.lazy_fixture('songs_dict'),
+                              'rdt'),
                              (pytest.lazy_fixture('update_message'),
-                              {'songs': [], 'next_page': None}),
+                              {'songs': [], 'next_page': None},
+                              None),
                          ])
-def test_display_artist_songs(update, context, artist_dict, artist_songs_dict):
+def test_display_artist_songs(update, context, artist_dict,
+                              artist_songs_dict, sort, page):
     if update.callback_query:
-        update.callback_query.data = 'artist_1_songs_ppt_1'
+        update.callback_query.data = f'artist_1_songs_{sort}_{page}'
     else:
-        context.args[0] = 'artist_1_songs_ptt_1'
+        context.args[0] = f'artist_1_songs_{sort}_{page}'
+    if page == 10:
+        next_page = None
+    else:
+        next_page = page + 1
+
+    artist_songs_dict['next_page'] = next_page
 
     genius = context.bot_data['genius']
     genius.artist.return_value = artist_dict
     genius.artist_songs.return_value = artist_songs_dict
-    if update.callback_query:
+    if update.callback_query and sort != 'ttl':
         update.callback_query.message.configure_mock(photo='Photo object')
+    elif update.callback_query:
+        update.callback_query.message.configure_mock(photo=None)
 
     res = artist.display_artist_songs(update, context)
 
@@ -154,9 +182,18 @@ def test_display_artist_songs(update, context, artist_dict, artist_songs_dict):
                     ['reply_markup']['inline_keyboard'])
         assert len(reply.split('\n')) >= len(artist_songs_dict['songs'])
         assert len(keyboard[0]) == 3
-        assert keyboard[0][0].text == '⬛️'
-        assert keyboard[0][1].text == '1'
-        assert keyboard[0][2].callback_data == 'artist_1_songs_ppt_2'
+        if page == 1:
+            assert keyboard[0][0].text == '⬛️'
+            assert keyboard[0][1].text == '1'
+            assert keyboard[0][2].callback_data == f'artist_1_songs_{sort}_2'
+        elif page == 3:
+            assert keyboard[0][0].callback_data == f'artist_1_songs_{sort}_2'
+            assert keyboard[0][1].text == '3'
+            assert keyboard[0][2].callback_data == f'artist_1_songs_{sort}_4'
+        else:
+            assert keyboard[0][0].callback_data == f'artist_1_songs_{sort}_9'
+            assert keyboard[0][1].text == '10'
+            assert keyboard[0][2].text == '⬛️'
     else:
         genius.artist.assert_called_once_with(1)
 

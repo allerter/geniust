@@ -5,7 +5,7 @@ from typing import Any, Dict
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto
-from telegram import Update
+from telegram import Update, Message
 from telegram.ext import CallbackContext
 from telegram.error import TimedOut, NetworkError
 
@@ -206,7 +206,7 @@ def thread_get_album(update: Update, context: CallbackContext) -> int:
 
     update.callback_query.answer()
     _, album_id, _, album_format = update.callback_query.data.split("_")
-    album_id = int(album_id)
+    album_id = int(album_id)  # type: ignore[assignment]
 
     p = threading.Thread(
         target=get_album,
@@ -249,7 +249,13 @@ def get_album(
     genius_t = api.GeniusT()
     chat_id = update.effective_chat.id
 
-    progress = update.callback_query.edit_message_text(msg)
+    progress: Message = update.callback_query.edit_message_text(
+        msg
+    )  # type: ignore[assignment]
+
+    if album_format not in ("zip", "pdf", "tgf"):
+        progress.edit_text("Unknown album format.")
+        return
 
     # get album
     album = genius_t.async_album_search(
@@ -259,7 +265,7 @@ def get_album(
     # result should be a dict if the operation was successful
     if not isinstance(album, dict):
         msg = text["failed"]
-        progress.edit_message_text(msg)
+        progress.edit_text(msg)
         logging.error(
             f"Couldn't get album:\n" f"Album ID:{album_id}\n" f"Returned: {album}"
         )
@@ -267,28 +273,26 @@ def get_album(
 
     # convert
     msg = text["converting"]
-    progress.edit_message_text(msg)
+    progress.edit_text(msg)
 
     if album_format == "pdf":
         file = create_pdf(album, context.user_data)
     elif album_format == "zip":
         file = create_zip(album, context.user_data)
-    elif album_format == "tgf":  # TELEGRA.PH
+    else:  # TELEGRA.PH
         link = create_pages(album, context.user_data)
         context.bot.send_message(chat_id=chat_id, text=link)
-        progress.delete_message()
+        progress.delete()
         return
-    else:
-        raise ValueError(f"Unknown album format: {album_format}")
 
     msg = text["uploading"]
     update.effective_chat.send_chat_action("upload_document")
-    progress.edit_message_text(msg)
+    progress.edit_text(msg)
 
     # send the file
     i = 1
     while True:
-        if i != 0 and i < 6:
+        if i <= 5:
             try:
                 context.bot.send_document(
                     chat_id=chat_id,
@@ -300,7 +304,7 @@ def get_album(
             except (TimedOut, NetworkError):
                 i += 1
 
-    progress.delete_message()
+    progress.delete()
 
 
 @log
@@ -323,13 +327,11 @@ def album_caption(
     Returns:
         str: Formatted caption.
     """
-    release_date: Any = ""
+    release_date: Any = "?"
     features = ""
     labels = ""
 
-    if album.get("release_date"):
-        release_date = album["release_date"]
-    elif album.get("release_date_components"):
+    if album.get("release_date_components"):
         release_date = album["release_date_components"]
         year = release_date.get("year")
         month = release_date.get("month")

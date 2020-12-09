@@ -359,6 +359,25 @@ display_song:
     producers: "\n<b>Producers:</b>\n{}"
     writers: "\n<b>Writers:</b>\n{}"
     verified: "\n<b>Verified Lyrics:</b>\n{}"
+
+    samples: Samples
+    sampled_in: Sampled In
+    interpolates: Interpolates
+    interpolated_by: Interpolated By
+    cover_of: Cover Of
+    covered_by: Covered By
+    remix_of: Remix Of
+    remixed_by: Remixed By
+    live_version_of: Liver Version Of
+
+    rap: Rap
+    pop: Pop
+    alternative: Alternative
+    rock: Rock
+    r&b: R&B
+    country: Country
+    non-music: Non-Music
+
   description: Description
   lyrics: Lyrics
 

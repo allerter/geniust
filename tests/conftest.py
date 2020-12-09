@@ -50,17 +50,17 @@ def search_artists_dict(data_path):
 
 @pytest.fixture(scope='session')
 def search_songs_dict(data_path):
-    with open(join(data_path, 'search_songs.json'), 'r') as f:
+    with open(join(data_path, 'search_songs.json'), 'r', encoding='utf-8-sig') as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def album_dict(data_path):
     with open(join(data_path, 'album.json'), 'r') as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def artist_dict(data_path):
     with open(join(data_path, 'artist.json'), 'r') as f:
         return json.load(f)
@@ -72,7 +72,7 @@ def annotation(data_path):
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def song_dict(data_path):
     with open(join(data_path, 'song.json'), 'r') as f:
         return json.load(f)

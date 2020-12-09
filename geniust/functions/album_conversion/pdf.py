@@ -329,8 +329,12 @@ def create_pdf(data: Dict[str, Any], user_data: Dict[str, Any]) -> BytesIO:
         lyrics = utils.format_language(lyrics, lyrics_language)
         if lyrics.find("div"):
             lyrics.find("div").unwrap()
+        elif lyrics.find("p"):
+            lyrics.find("p").unwrap()
+
         for tag in lyrics:
-            utils.remove_unsupported_tags(tag, supported=valid_tags)
+            if not isinstance(tag, str):
+                utils.remove_unsupported_tags(tag, supported=valid_tags)
             if tag.name == "a":
                 line = check_persian(str(tag)).strip().replace("\n", "<br/>")
                 Story.append(Paragraph(line, styles["Song Annotated"]))
@@ -358,3 +362,10 @@ def test(json_file: str, lyrics_language: str, include_annotations: bool) -> Non
     )
     with open("test.pdf", "wb") as f:  # type:ignore
         f.write(file.getvalue())  # type: ignore
+
+
+test(
+    r"C:\Users\Hazhir\PycharmProjects\geniust\tests\data\full_album.json",
+    "English + Non-English",
+    True,
+)

@@ -1,4 +1,5 @@
 import logging
+import secrets
 from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
@@ -20,9 +21,12 @@ def login(update: Update, context: CallbackContext) -> int:
     """Prompts user to log into Genius.com"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["login"]
+    chat_id = update.effective_chat.id
 
-    auth.state = update.effective_chat.id
+    unique_value = secrets.token_urlsafe().replace("_", "-")
+    auth.state = str(chat_id) + "_" + unique_value
     url = auth.url
+    context.user_data["state"] = unique_value
 
     buttons = [[IButton(text["button"], url)]]
     keyboard = IBKeyboard(buttons)
@@ -68,6 +72,7 @@ def logout(update: Update, context: CallbackContext) -> int:
     text = bd["texts"][language]["logout"]
 
     bd["db"].delete_token(chat_id)
+    ud["token"] = None
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
 
@@ -85,10 +90,10 @@ def display_account(update: Update, context: CallbackContext) -> int:
     language = ud["bot_lang"]
     texts = bd["texts"][language]["display_account"]
 
-    if update.callback_query:
-        update.callback_query.message.delete()
+    update.callback_query.message.delete()
 
     account = api.GeniusT(ud["token"]).account()["user"]
+
     avatar = account["avatar"]["medium"]["url"]
     caption = account_caption(update, context, account, texts["caption"])
     context.bot.send_photo(chat_id, avatar, caption)

@@ -12,7 +12,6 @@ from telegram import (
 from telegram.ext import CallbackContext
 from telegram.utils.helpers import create_deep_linked_url
 
-from geniust.constants import END
 from geniust import username, utils, get_user
 from geniust.utils import log
 
@@ -29,7 +28,7 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
 
     articles = [
         InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=text["search_albums"]["body"],
             description=text["search_albums"]["description"],
             input_message_content=InputTextMessageContent(
@@ -47,7 +46,7 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
             ),
         ),
         InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=text["search_artists"]["body"],
             description=text["search_artists"]["description"],
             input_message_content=InputTextMessageContent(
@@ -65,7 +64,7 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
             ),
         ),
         InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=text["search_songs"]["body"],
             description=text["search_songs"]["description"],
             input_message_content=InputTextMessageContent(
@@ -133,7 +132,7 @@ def search_albums(update: Update, context: CallbackContext) -> None:
         ]
         keyboard = IBKeyboard(buttons)
         answer = InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=title,
             thumb_url=album["cover_art_thumbnail_url"],
             input_message_content=InputTextMessageContent(
@@ -146,7 +145,7 @@ def search_albums(update: Update, context: CallbackContext) -> None:
         # of the song cover art, but that requires using InlineQueryResultPhoto
         # and user might not be able to choose the right song this way,
         # since all they get is only the cover arts of the hits.
-        # answer = InlineQueryResultPhoto(id=uuid4(),
+        # answer = InlineQueryResultPhoto(id=str(uuid4()),
         #    photo_url=search_hit['song_art_image_url'],
         #    thumb_url=search_hit['song_art_image_thumbnail_url'],
         #    reply_markup=keyboard, description=description)
@@ -204,7 +203,7 @@ def search_artists(update: Update, context: CallbackContext) -> None:
         ]
         keyboard = IBKeyboard(buttons)
         answer = InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=title,
             thumb_url=artist["image_url"],
             input_message_content=InputTextMessageContent(
@@ -217,7 +216,7 @@ def search_artists(update: Update, context: CallbackContext) -> None:
         # of the song cover art, but that requires using InlineQueryResultPhoto
         # and user might not be able to choose the right song this way,
         # since all they get is only the cover arts of the hits.
-        # answer = InlineQueryResultPhoto(id=uuid4(),
+        # answer = InlineQueryResultPhoto(id=str(uuid4()),
         #    photo_url=search_hit['song_art_image_url'],
         #    thumb_url=search_hit['song_art_image_thumbnail_url'],
         #    reply_markup=keyboard, description=description)
@@ -251,7 +250,7 @@ def search_songs(update: Update, context: CallbackContext) -> None:
         answer_title = utils.format_title(artist, title)
         song_id = song["id"]
 
-        if "Genius" in title:
+        if "Genius" in song["full_title"]:
             description = texts["inline_menu"]["translation"]
         else:
             description = ""
@@ -265,7 +264,7 @@ def search_songs(update: Update, context: CallbackContext) -> None:
         ]
         keyboard = IBKeyboard(buttons)
         answer = InlineQueryResultArticle(
-            id=uuid4(),
+            id=str(uuid4()),
             title=answer_title,
             thumb_url=song["song_art_image_thumbnail_url"],
             input_message_content=InputTextMessageContent(
@@ -278,7 +277,7 @@ def search_songs(update: Update, context: CallbackContext) -> None:
         # of the song cover art, but that requires using InlineQueryResultPhoto
         # and user might not be able to choose the right song this way,
         # since all they get is only the cover arts of the hits.
-        # answer = InlineQueryResultPhoto(id=uuid4(),
+        # answer = InlineQueryResultPhoto(id=str(uuid4()),
         #    photo_url=search_hit['song_art_image_url'],
         #    thumb_url=search_hit['song_art_image_thumbnail_url'],
         #    reply_markup=keyboard, description=description)

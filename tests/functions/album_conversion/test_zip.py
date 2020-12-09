@@ -39,6 +39,6 @@ def test_create_zip(full_album, files):
             annotations_count = lyrics.count('!--!')
             if include_annotations:
                 assert annotations_count == len(full_album['tracks'][i]['song']
-                                               ['annotations'])
+                                                ['annotations'])
             else:
-                annotations_count == 0
+                assert annotations_count == 0

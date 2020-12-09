@@ -362,6 +362,25 @@ display_song:
     producers: "\n<b>تهیه‌کننده:</b>\n{}"
     writers: "\n<b>نویسنده:</b>\n{}"
     verified: "\n<b>متن تأییدشده:</b>\n{}"
+
+    samples: نمونه‌برداری می‌کند از
+    sampled_in: نمونه‌برداری شده در
+    interpolates: استفاده کرده از
+    interpolated_by: استفاده شده در
+    cover_of: کاورشده از
+    covered_by: کاورشده در
+    remix_of: رمیکس‌شده از
+    remixed_by: رمیکس‌شده در
+    live_version_of: نسخه‌ی زنده‌یِ
+
+    rap: رپ
+    pop: پاپ
+    alternative: آلترناتیو
+    rock: راک
+    r&b: آر اَند بی
+    country: کانتری
+    non-music: غیر موسیقی
+
   description: شرح
   lyrics: متن آهنگ
 

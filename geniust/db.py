@@ -114,6 +114,7 @@ class Database:
                 }
             else:
                 res = {column: res[0]}
+
         return res
 
     @log

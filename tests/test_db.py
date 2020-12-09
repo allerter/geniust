@@ -1,8 +1,8 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, create_autospec
 
 import pytest
 
-from geniust import db, constants
+from geniust import db, constants, get_user
 
 
 @pytest.fixture(scope='module')
@@ -13,11 +13,34 @@ def database():
 @patch('psycopg2.connect')
 def test_get_cursor(connection):
     func = MagicMock()
+
     res = db.get_cursor(func)
     res(1, 2, a=1)
 
     connection.assert_called_once_with(constants.DATABASE_URL,
                                        sslmode='require')
+    cursor = connection().__enter__().cursor().__enter__()
+    func.assert_called_once_with(1, 2, a=1, cursor=cursor)
+
+
+@pytest.mark.parametrize('user_data', [{'bot_lang': 'en'}, {}])
+def test_get_user(update_message, context, user_data):
+    update = update_message
+    context.user_data = user_data
+    func = MagicMock()
+    user = create_autospec(db.Database.user)
+
+    with patch('geniust.db.Database.user', user):
+        res = get_user(func)
+        res(update, context)
+
+    func.assert_called_once_with(update, context)
+
+    if user_data == {}:
+        assert user.call_args[0][1] == update.effective_chat.id
+        assert user.call_args[0][2] == context.user_data
+    else:
+        user.assert_not_called()
 
 
 def test_user_in_db(database):
@@ -66,16 +89,21 @@ def test_insert(connection, database):
 
 
 @patch('psycopg2.connect')
-def test_select(connection, database):
+@pytest.mark.parametrize('value', ['en', None])
+def test_select(connection, database, value):
     chat_id = 1
     key = 'bot_lang'
-    value = 'en'
+    if value is not None:
+        value = (value,)
 
-    connection().__enter__().cursor().__enter__().fetchone.return_value = (value,)
+    connection().__enter__().cursor().__enter__().fetchone.return_value = value
 
     res = database.select(chat_id, column=key)
 
-    assert res == {key: value}
+    if value is not None:
+        assert res == {key: value[0]}
+    else:
+        assert res is None
 
 
 @patch('psycopg2.connect')

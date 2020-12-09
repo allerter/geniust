@@ -97,16 +97,18 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
 
         return LYRICS_LANG
 
-    data = int(update.callback_query.data)
-    if data == OPTION1:
+    data = update.callback_query.data
+    if data == str(OPTION1):
         ud["lyrics_lang"] = "English"
         language_display = "only_english"
-    elif data == OPTION2:
+    elif data == str(OPTION2):
         ud["lyrics_lang"] = "Non-English"
         language_display = "only_non_english"
-    else:
+    elif data == str(OPTION3):
         language_display = "enligh_and_non_english"
         ud["lyrics_lang"] = "English + Non-English"
+    else:
+        return END
 
     context.bot_data["db"].update_lyrics_language(chat_id, ud["lyrics_lang"])
 

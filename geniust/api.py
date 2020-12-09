@@ -30,19 +30,14 @@ def get_channel() -> types.TypeInputPeer:
     Returns:
         types.TypeInputPeer
     """
-    client = telethon.TelegramClient(
+
+    with telethon.TelegramClient(
         StringSession(TELETHON_SESSION_STRING),
         TELETHON_API_ID,
         TELETHON_API_HASH,
         loop=asyncio.new_event_loop(),
-    )
-    client.start()
-
-    channel = client.loop.run_until_complete(
-        client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
-    )
-    client.disconnect()
-    return channel
+    ) as client:
+        return client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
 
 
 annotations_channel = None  # get_channel()
@@ -116,7 +111,7 @@ def telegram_annotation(a: str) -> Tuple[str, bool]:
 
 def replace_hrefs(
     lyrics: BeautifulSoup,
-    posted_annotations: List[Tuple[int, str]] = [],
+    posted_annotations: Optional[List[Tuple[int, str]]] = None,
     telegram_song: bool = False,
 ) -> None:
     """Replaced the href of <a> tags with annotation IDs or links
@@ -134,6 +129,8 @@ def replace_hrefs(
         telegram_song (bool, optional): Indicates if it's the lyrics is meant
             for Telegram. Defaults to False.
     """
+    if posted_annotations is None:
+        posted_annotations = []
     # annotation IDs are formatted in two ways in the lyrics:
     # the old lyrics page: somethings#note-12345
     # the new lyrics page: /12345/somethings
@@ -334,13 +331,16 @@ class GeniusT(Genius):
 
         # Determine the class of the div
         lyrics = html.find_all("div", class_=re.compile("^lyrics$|Lyrics__Container"))
-        if lyrics is None:
+        if not lyrics:
             logger.error(
                 "Couldn't find the lyrics section. "
                 "Please report this if the song has lyrics.\n"
                 "Song URL: https://genius.com/{}".format(path)
             )
-            return "None"
+            if telegram_song:
+                return "None"
+            else:
+                return "None", annotations
 
         if lyrics[0].get("class")[0] == "lyrics":
             lyrics = lyrics[0]
@@ -532,4 +532,5 @@ class GeniusT(Genius):
             self.search_album(album_id, include_annotations, q)
         )
         new_loop.run_until_complete(future)
+        new_loop.close()
         return q.get()

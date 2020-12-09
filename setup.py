@@ -14,7 +14,8 @@ with open(here / 'runtime.txt', 'r') as f:
 extras_require = {
     'checks': [
         'mypy==0.790',
-        'black==20.8b1'
+        'black==20.8b1',
+        'pydocstyle==5.1.1',
     ],
     'tests': [
         'pytest==6.1.2',

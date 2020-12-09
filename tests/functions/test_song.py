@@ -38,22 +38,30 @@ def test_search_songs(update_message, context, search_dict):
     if search_dict['sections'][0]['hits']:
         keyboard = (update.message.reply_text
                     .call_args[1]['reply_markup']['inline_keyboard'])
-        assert len(keyboard) == 9
+        assert len(keyboard) == 10
 
     assert res == constants.END
 
 
+@pytest.fixture
+def song_dict_no_description(song_dict):
+    song_dict['song']["description_annotation"]["annotations"][0]["body"]["plain"] = ""
+    return song_dict
+
+
+@pytest.mark.parametrize('song_data', [pytest.lazy_fixture('song_dict'),
+                                       pytest.lazy_fixture('song_dict_no_description')])
 @pytest.mark.parametrize('update', [pytest.lazy_fixture('update_callback_query'),
                                     pytest.lazy_fixture('update_message'),
                                     ])
-def test_display_song(update, context, song_dict):
+def test_display_song(update, context, song_data):
     if update.callback_query:
         update.callback_query.data = 'song_1'
     else:
         context.args[0] = 'song_1'
 
     genius = context.bot_data['genius']
-    genius.song.return_value = song_dict
+    genius.song.return_value = song_data
 
     res = song.display_song(update, context)
 
@@ -61,7 +69,10 @@ def test_display_song(update, context, song_dict):
                 .call_args[1]['reply_markup']['inline_keyboard'])
 
     assert len(keyboard) == 1
-    assert len(keyboard[0]) == 2
+    if song_data['song']["description_annotation"]["annotations"][0]["body"]["plain"]:
+        assert len(keyboard[0]) == 2
+    else:
+        assert len(keyboard[0]) == 1
 
     # song ID = 1
     genius.song.assert_called_once_with(1)
@@ -72,9 +83,14 @@ def test_display_song(update, context, song_dict):
     assert res == constants.END
 
 
-def test_thread_display_lyrics(update_callback_query, context):
-    update = update_callback_query
-    update.callback_query.data = 'song_1_lyrics'
+@pytest.mark.parametrize('update', [pytest.lazy_fixture('update_callback_query'),
+                                    pytest.lazy_fixture('update_message'),
+                                    ])
+def test_thread_display_lyrics(update, context):
+    if update.callback_query:
+        update.callback_query.data = 'song_1_lyrics'
+    else:
+        context.args[0] = 'song_1_lyrics'
 
     thread = MagicMock()
     with patch('threading.Thread', thread):

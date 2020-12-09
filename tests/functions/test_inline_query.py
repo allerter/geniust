@@ -1,11 +1,8 @@
-import json
-from os.path import join
 from unittest.mock import create_autospec
 
 import pytest
 from telegram import InlineQuery, Update
 
-from geniust import constants
 from geniust.functions import inline_query
 
 
@@ -69,4 +66,4 @@ def test_search_songs_inline(update, context, query, search_songs_dict):
         update.inline_query.answer.assert_not_called()
     else:
         articles = update.inline_query.answer.call_args[0][0]
-        assert len(articles) == 9
+        assert len(articles) == 10
