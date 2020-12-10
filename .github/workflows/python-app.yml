@@ -66,6 +66,4 @@ jobs:
 
     steps:
       - name: Black formatting
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - uses: psf/black@stable
+        uses: psf/black@stable
