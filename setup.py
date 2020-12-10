@@ -15,12 +15,14 @@ extras_require = {
     'checks': [
         'mypy==0.790',
         'black==20.8b1',
-        'pydocstyle==5.1.1',
+        'flake8==3.8.4',
+        'flake8-bugbear==20.11.1',
+        'coverage==5.3'
+
     ],
     'tests': [
         'pytest==6.1.2',
         'pytest-lazy-fixture==0.6.3',
-        'pytest-asyncio==0.14.0'
     ]}
 
 extras_require['dev'] = extras_require['checks'] + extras_require['tests']
