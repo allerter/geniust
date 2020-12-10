@@ -132,8 +132,8 @@ async def test_search_album(album_dict, album_tracks):
 
     assert res is None
     assert queue.put.call_args[0][0] == album
-    client.album.call_args[0][0] == album["id"]
-    client.album_tracks.call_args[0][0] == album["id"]
+    assert client.album.call_args[0][0] == album["id"]
+    assert client.album_tracks.call_args[0][0] == album["id"]
     assert client.fetch.call_count == len(album_tracks["tracks"])
 
 

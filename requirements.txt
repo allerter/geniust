@@ -9,7 +9,7 @@ cryptg~=0.2
 decorator==4.4.2
 future==0.18.2
 idna==2.9
-lyricsgenius @ git+https://github.com/johnwmillr/LyricsGenius.git
+git+https://github.com/johnwmillr/LyricsGenius.git
 Pillow==7.1.2
 psycopg2==2.8.6
 pyaes==1.6.1
@@ -26,6 +26,6 @@ six==1.15.0
 soupsieve==2.0.1
 telegraph==1.4.1
 Telethon==1.18.2
-tornado==6.0.4
+tornado==6.1
 urllib3==1.25.9
 ujson==4.0.1

@@ -1,1 +1,1 @@
-include requirements.txt, runtime.txt, mypy.ini
+include requirements.txt runtime.txt mypy.ini
