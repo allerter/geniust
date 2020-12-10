@@ -4,9 +4,6 @@ from setuptools import setup, find_packages
 
 here = pathlib.Path(__file__).parent.resolve()
 
-with open(here / "requirements.txt", "r") as f:
-    requirements = f.read().split()
-
 with open(here / "runtime.txt", "r") as f:
     runtime = f.read().replace("python-", "")
 
@@ -35,7 +32,6 @@ setup(
             "tests.*",
         )
     ),
-    install_requires=requirements,
     extras_require=extras_require,
     python_requires=">=" + runtime,
 )
