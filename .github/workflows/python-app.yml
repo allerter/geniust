@@ -46,7 +46,7 @@ jobs:
         GENIUS_CLIENT_ID: ${{ secrets.GENIUS_CLIENT_ID }}
         GENIUS_REDIRECT_URI: ${{ secrets.GENIUS_REDIRECT_URI }}
         GENIUS_CLIENT_SECRET: ${{ secrets.GENIUS_CLIENT_SECRET }}
-      run: pass
+      run: tox
 
   report:
     
@@ -58,5 +58,14 @@ jobs:
       uses: paambaati/codeclimate-action@v2.7.5
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
-      
- 
+
+  lint:
+
+    runs-on: ubuntu-latest
+    needs: [build, test]
+
+    steps:
+      - name: Black formatting
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: psf/black@stable
