@@ -15,88 +15,88 @@ from geniust import db
 from geniust import text
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def song_id():
     return 4589365
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def song_url():
-    return 'https://genius.com/Machine-gun-kelly-glass-house-lyrics'
+    return "https://genius.com/Machine-gun-kelly-glass-house-lyrics"
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def data_path():
-    return join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    return join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def full_album(data_path):
-    with open(join(data_path, 'full_album.json'), 'r') as f:
+    with open(join(data_path, "full_album.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def search_albums_dict(data_path):
-    with open(join(data_path, 'search_albums.json'), 'r') as f:
+    with open(join(data_path, "search_albums.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def search_artists_dict(data_path):
-    with open(join(data_path, 'search_artists.json'), 'r') as f:
+    with open(join(data_path, "search_artists.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def search_songs_dict(data_path):
-    with open(join(data_path, 'search_songs.json'), 'r', encoding='utf-8-sig') as f:
+    with open(join(data_path, "search_songs.json"), "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def album_dict(data_path):
-    with open(join(data_path, 'album.json'), 'r') as f:
+    with open(join(data_path, "album.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def artist_dict(data_path):
-    with open(join(data_path, 'artist.json'), 'r') as f:
+    with open(join(data_path, "artist.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def annotation(data_path):
-    with open(join(data_path, 'annotation.json'), 'r') as f:
+    with open(join(data_path, "annotation.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def song_dict(data_path):
-    with open(join(data_path, 'song.json'), 'r') as f:
+    with open(join(data_path, "song.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def annotations(data_path):
-    with open(join(data_path, 'annotations.json'), 'r') as f:
+    with open(join(data_path, "annotations.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def page(data_path):
-    with open(join(data_path, 'song_page.html'), 'r', encoding='utf8') as f:
+    with open(join(data_path, "song_page.html"), "r", encoding="utf8") as f:
         return f.read()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def account_dict(data_path):
-    with open(join(data_path, 'account.json'), 'r') as f:
+    with open(join(data_path, "account.json"), "r") as f:
         return json.load(f)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def update_callback_query():
     update = create_autospec(Update)
     update.effective_chat.id = 123
@@ -106,7 +106,7 @@ def update_callback_query():
     return update
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def update_message():
     update = create_autospec(Update)
     update.effective_chat.id = 123
@@ -116,25 +116,28 @@ def update_message():
 
 
 path = pathlib.Path(text.__file__).parent.resolve()
-files = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith('.yaml')]
+files = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith(".yaml")]
 languages = []
 texts = {}
 for file in files:
-    with open(join(path, file), 'r', encoding='utf8') as f:
+    with open(join(path, file), "r", encoding="utf8") as f:
         language = file[:2]
         languages.append(language)
         texts[language] = yaml.full_load(f)
 
 users = [
-    {'include_annotations': True,
-     'lyrics_lang': 'English + Non-English',
-     'bot_lang': languages[0],
-     'token': None},
-
-    {'include_annotations': True,
-     'lyrics_lang': 'English + Non-English',
-     'bot_lang': languages[1],
-     'token': None}
+    {
+        "include_annotations": True,
+        "lyrics_lang": "English + Non-English",
+        "bot_lang": languages[0],
+        "token": None,
+    },
+    {
+        "include_annotations": True,
+        "lyrics_lang": "English + Non-English",
+        "bot_lang": languages[1],
+        "token": None,
+    },
 ]
 
 
@@ -161,14 +164,14 @@ users = [
 #                  'token': None})
 
 
-@pytest.fixture(scope='function', params=users)
+@pytest.fixture(scope="function", params=users)
 def context(request):
     context = create_autospec(CallbackContext)
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
     context.bot_data = {}
-    context.bot_data['db'] = create_autospec(db.Database, spec_set=True)
-    context.bot_data['texts'] = texts
-    context.bot_data['genius'] = create_autospec(api.GeniusT, spec_set=True)
+    context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
+    context.bot_data["texts"] = texts
+    context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
     context.user_data = request.param
     return context
