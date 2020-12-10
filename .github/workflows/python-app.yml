@@ -60,9 +60,6 @@ jobs:
       with:
         name: code-coverage-report
     - name: Code Climate Coverage Action
-      with:
-        coverageLocations: coverage.json 
-        debug: true
       uses: paambaati/codeclimate-action@v2.7.5
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
