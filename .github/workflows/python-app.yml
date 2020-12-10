@@ -61,8 +61,6 @@ jobs:
         name: code-coverage-report
     - name: Code Climate Coverage Action
       uses: paambaati/codeclimate-action@v2.7.5
-      with:
-        coverageLocations: ${{github.workspace}}/coverage.json
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
 
