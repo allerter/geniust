@@ -278,15 +278,6 @@ class GeniusT(Genius):
                 raise ValueError("You need an access token for the developers API.")
             return super().search_songs(search_term, per_page, page)
 
-    def song_page_data(self, path: str) -> Dict[str, Any]:
-        endpoint = "page_data/song"
-
-        params = {"page_path": "/songs/" + path}
-
-        res = self._make_request(endpoint, params_=params, public_api=True)
-
-        return res["page_data"]
-
     def lyrics(
         self,
         song_id: int,
@@ -437,7 +428,7 @@ class GeniusT(Genius):
 
         """
         text_format = text_format or self.response_format
-        assert len(text_format.split(",")), 1
+        assert len(text_format.split(",")) == 1
 
         referents = self.referents(
             song_id=song_id, text_format=text_format, per_page=50
@@ -505,7 +496,7 @@ class GeniusT(Genius):
         # Get number of available cores
         try:
             threads = len(os.sched_getaffinity(0))  # type: ignore
-        except AttributeError:  # isn't available in non-Unix systems
+        except AttributeError:  # pragma: no cover - isn't available in non-Unix systems
             cpu_count = os.cpu_count()
             threads = cpu_count if cpu_count is not None else 4
         with ThreadPoolExecutor(threads * 2) as executor:

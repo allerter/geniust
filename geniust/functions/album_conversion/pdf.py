@@ -362,10 +362,3 @@ def test(json_file: str, lyrics_language: str, include_annotations: bool) -> Non
     )
     with open("test.pdf", "wb") as f:  # type:ignore
         f.write(file.getvalue())  # type: ignore
-
-
-test(
-    r"C:\Users\Hazhir\PycharmProjects\geniust\tests\data\full_album.json",
-    "English + Non-English",
-    True,
-)

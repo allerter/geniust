@@ -1,11 +1,13 @@
 from unittest.mock import patch, MagicMock, create_autospec
 
 import pytest
+import warnings
+from telegram.ext import Updater
+from lyricsgenius import OAuth2
 
 from geniust import constants, bot
 from geniust.bot import CronHandler, TokenHandler
 from geniust.db import Database
-from lyricsgenius import OAuth2
 
 
 def test_cron_handler():
@@ -53,6 +55,29 @@ def test_token_handler(context, user_state, state):
         handler.set_status.assert_called_once_with(401)
         handler.finish.assert_called_once()
         handler.auth.get_user_token.assert_not_called()
+
+
+def test_token_handler_initialize():
+    handler = MagicMock()
+    auth = 'auth'
+    bot = 'bot'
+    database = 'database'
+    texts = 'texts'
+    user_data = 'user_data'
+
+    res = TokenHandler.initialize(handler,
+                                  auth=auth,
+                                  database=database,
+                                  bot=bot,
+                                  texts=texts,
+                                  user_data=user_data,)
+
+    assert res is None
+    assert handler.auth == auth
+    assert handler.database == database
+    assert handler.bot == bot
+    assert handler.texts == texts
+    assert handler.user_data == user_data
 
 
 @pytest.mark.parametrize('token', ['test_token', None])
@@ -155,3 +180,22 @@ def test_contact_us(update_message, context):
 
     update.message.reply_text.assert_called_once()
     assert res == constants.TYPING_FEEDBACK
+
+
+def test_main():
+    webhoook = MagicMock()
+    updater = MagicMock(spec=Updater)
+
+    current_module = 'geniust.bot'
+    with patch(current_module + '.SERVER_PORT', 5000), \
+            patch(current_module + '.WebhookThread', webhoook), \
+            patch(current_module + '.Updater', updater), \
+            warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning)
+        bot.main()
+
+    updater = updater()
+    webhoook = webhoook()
+    webhoook.start.assert_called_once()
+    updater.start_polling.assert_called_once()
+    updater.idle.assert_called_once()

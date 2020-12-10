@@ -20,6 +20,7 @@ extras_require = {
     'tests': [
         'pytest==6.1.2',
         'pytest-lazy-fixture==0.6.3',
+        'pytest-asyncio==0.14.0'
     ]}
 
 extras_require['dev'] = extras_require['checks'] + extras_require['tests']

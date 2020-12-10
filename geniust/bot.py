@@ -368,7 +368,6 @@ def error(update: Update, context: CallbackContext) -> None:
 
 def main():
     """Main function that holds the handlers and starts the bot"""
-
     updater = Updater(
         token=BOT_TOKEN,
         defaults=Defaults(

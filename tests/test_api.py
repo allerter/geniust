@@ -1,6 +1,8 @@
 import pytest
 import re
-from unittest.mock import MagicMock, patch, create_autospec
+import json
+from unittest.mock import AsyncMock, MagicMock, patch, create_autospec
+from os.path import join
 
 from bs4 import BeautifulSoup
 from telethon import TelegramClient
@@ -37,6 +39,70 @@ def posted_annotations(annotations):
     return posted
 
 
+@pytest.fixture
+def referents(data_path):
+    with open(join(data_path, 'referents.json'), 'r') as f:
+        return json.load(f)
+
+
+@pytest.mark.parametrize('text_format', ['html', 'html,plain'])
+def test_song_annotations(referents, text_format):
+    client = MagicMock()
+    client.referents.return_value = referents
+
+    if text_format == 'html,plain':
+        with pytest.raises(AssertionError):
+            api.GeniusT.song_annotations(client, 1, text_format)
+        return
+    else:
+        res = api.GeniusT.song_annotations(client, 1, text_format)
+
+    assert client.referents.call_args[1]['song_id'] == 1
+    assert client.referents.call_args[1]['text_format'] == text_format
+
+    assert isinstance(res, dict)
+
+    for key, value in res.items():
+        assert isinstance(key, int)
+        assert isinstance(value, str)
+
+    for referent in referents['referents']:
+        assert referent['id'] in res.keys()
+
+
+@pytest.mark.parametrize('include_annotations', [True, False])
+@pytest.mark.parametrize('lyrics_state', ['complete', 'instrumental', 'unreleased'])
+def test_fetch(song_dict, lyrics_state, include_annotations):
+    client = MagicMock()
+    if include_annotations and lyrics_state == 'complete':
+        annotations = {'annotations': []}
+    else:
+        annotations = {}
+    client.lyrics.return_value = "lyrics", annotations
+    client.song.return_value = {'song': {}}
+    song = song_dict['song']
+    song['instrumental'] = True if lyrics_state == 'instrumental' else False
+    song['lyrics_state'] = lyrics_state
+
+    res = api.GeniusT.fetch(client, song_dict, include_annotations)
+
+    assert res is None
+    assert client.song.called_once_with(song['id'])
+    assert client.lyrics.called_once_with(song['id'],
+                                          song['url'],
+                                          include_annotations=include_annotations)
+
+    if lyrics_state == 'instrumental':
+        lyrics = '[Instrumental]'
+    elif lyrics_state == 'unreleased':
+        lyrics = ''
+    else:
+        lyrics = 'lyrics'
+
+    assert song['lyrics'] == lyrics
+    assert song['annotations'] == annotations
+
+
 def test_get_channel():
     client = create_autospec(TelegramClient)
 
@@ -44,6 +110,51 @@ def test_get_channel():
         res = api.get_channel()
 
     assert res is not None
+
+
+@pytest.fixture
+def album_tracks(data_path):
+    with open(join(data_path, 'album_tracks.json'), 'r') as f:
+        return json.load(f)
+
+
+@pytest.mark.asyncio
+async def test_search_album(album_dict, album_tracks):
+    client = MagicMock()
+    client.album.return_value = album_dict
+    client.album_tracks.return_value = album_tracks
+    queue = MagicMock()
+    album = album_dict['album']
+
+    res = await api.GeniusT.search_album(client,
+                                   album['id'],
+                                   include_annotations=True,
+                                   queue=queue)
+
+    assert res is None
+    assert queue.put.call_args[0][0] == album
+    client.album.call_args[0][0] == album['id']
+    client.album_tracks.call_args[0][0] == album['id']
+    assert client.fetch.call_count == len(album_tracks['tracks'])
+
+
+def test_async_album_search(album_dict):
+
+    client = MagicMock()
+    album = album_dict['album']
+    client.search_album.return_value = AsyncMock()()
+    queue = MagicMock()
+    queue().get.return_value = album
+
+    with patch('queue.Queue', queue):
+        res = api.GeniusT.async_album_search(client,
+                                             album['id'],
+                                             include_annotations=True)
+
+    assert res == album
+    queue = queue()
+    queue.get.assert_called_once()
+    client.search_album.assert_called_once_with(album['id'], True, queue)
 
 
 def test_telegram_annotation(annotation):
