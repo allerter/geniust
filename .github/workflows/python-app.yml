@@ -61,7 +61,7 @@ jobs:
         name: code-coverage-report
     - name: Code Climate Coverage Action
       with:
-        coverageLocations: coverage.json:coveragepy 
+        coverageLocations: coverage.json:CoveragePy 
         debug: true
       uses: paambaati/codeclimate-action@v2.7.5
       env:
