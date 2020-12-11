@@ -96,8 +96,8 @@ def account_dict(data_path):
         return json.load(f)
 
 
-@pytest.fixture(scope="function")
-def update_callback_query():
+@pytest.fixture(scope="session")
+def update_callback_query_class():
     update = create_autospec(Update)
     update.effective_chat.id = 123
     update.message = None
@@ -107,11 +107,26 @@ def update_callback_query():
 
 
 @pytest.fixture(scope="function")
-def update_message():
+def update_callback_query(update_callback_query_class):
+    update = update_callback_query_class
+    update.callback_query.reset_mock()
+    update.callback_query.message.reset_mock()
+    return update
+
+
+@pytest.fixture(scope="session")
+def update_message_class():
     update = create_autospec(Update)
     update.effective_chat.id = 123
     update.callback_query = None
     update.message = MagicMock()
+    return update
+
+
+@pytest.fixture(scope="function")
+def update_message(update_message_class):
+    update = update_message_class
+    update.message.reset_mock()
     return update
 
 
@@ -164,8 +179,8 @@ users = [
 #                  'token': None})
 
 
-@pytest.fixture(scope="function", params=users)
-def context(request):
+@pytest.fixture(scope="session")
+def context_class():
     context = create_autospec(CallbackContext)
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
@@ -173,5 +188,13 @@ def context(request):
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
     context.bot_data["texts"] = texts
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
-    context.user_data = request.param
     return context
+
+
+@pytest.fixture(scope="function", params=users)
+def context(context_class, request):
+    context_class.bot.reset_mock()
+    context_class.bot_data["db"].reset_mock()
+    context_class.bot_data["genius"].reset_mock()
+    context_class.user_data = request.param
+    return context_class
