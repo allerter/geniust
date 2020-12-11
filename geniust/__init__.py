@@ -4,14 +4,14 @@ from os import listdir
 from os.path import isfile, join
 from typing import TypeVar, Callable
 
-from telegram import Bot
+# from telegram import Bot
 from lyricsgenius import OAuth2
 import yaml
 
 from geniust.db import Database
 from geniust.api import GeniusT
 from geniust.constants import (
-    BOT_TOKEN,
+    # BOT_TOKEN,
     GENIUS_CLIENT_ID,
     GENIUS_REDIRECT_URI,
     GENIUS_CLIENT_SECRET,

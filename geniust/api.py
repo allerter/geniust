@@ -40,9 +40,6 @@ def get_channel() -> types.TypeInputPeer:
         return client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
 
 
-annotations_channel = None  # get_channel()
-
-
 def telegram_annotation(a: str) -> Tuple[str, bool]:
     """Formats the annotation for Telegram
 
@@ -359,6 +356,8 @@ class GeniusT(Genius):
             )
 
             client.start()
+            annotations_channel = get_channel()
+
             for annotation_id, annotation_body in annotations.items():
                 annotation, preview = telegram_annotation(annotation_body)
 
