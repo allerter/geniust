@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload results to Code Climate
         run: |
-          ./cc-test-reporter upload-coverage
+          ./cc-test-reporter after-build -t=coverage.py
 
   lint:
     runs-on: ubuntu-latest
