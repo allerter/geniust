@@ -212,10 +212,11 @@ def test_lyrics_telegram_song(genius, song_id, song_url, page, annotations):
     annotations = MagicMock(return_value=annotations)
 
     current_module = "geniust.api"
-    with patch(current_module + ".GeniusT._make_request", page), \
-        patch(current_module + ".GeniusT.song_annotations", annotations), \
-        patch("telethon.TelegramClient", client), \
-            patch(current_module + '.get_channel', MagicMock()):
+    with patch(current_module + ".GeniusT._make_request", page), patch(
+        current_module + ".GeniusT.song_annotations", annotations
+    ), patch("telethon.TelegramClient", client), patch(
+        current_module + ".get_channel", MagicMock()
+    ):
         lyrics = genius.lyrics(
             song_id=song_id,
             song_url=song_url,

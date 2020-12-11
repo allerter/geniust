@@ -1,1 +1,4 @@
-include requirements.txt runtime.txt mypy.ini
+include requirements.txt
+include runtime.txt
+include mypy.ini
+include geniust/VERSION
