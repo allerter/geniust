@@ -1,7 +1,8 @@
+import warnings
 from unittest.mock import patch, MagicMock, create_autospec
 
 import pytest
-import warnings
+from requests import HTTPError
 from telegram.ext import Updater
 from lyricsgenius import OAuth2
 
@@ -28,12 +29,16 @@ def test_cron_handler():
         "invalid-state",
     ],
 )
+@pytest.mark.parametrize("code", ["some_code", "invalid_code"])
 @pytest.mark.parametrize("user_state", ["test-state", None])
-def test_token_handler(context, user_state, state):
+def test_token_handler(context, user_state, code, state):
     handler = MagicMock()
     handler.get_argument.return_value = state
     handler.auth = create_autospec(OAuth2)
-    handler.auth.get_user_token.return_value = "test_token"
+    if code == "some_code":
+        handler.auth.get_user_token.return_value = "test_token"
+    else:
+        handler.auth.get_user_token.side_effect = HTTPError()
     handler.database = create_autospec(Database)
     handler.bot = context.bot
     handler.texts = context.bot_data["texts"]
@@ -43,12 +48,12 @@ def test_token_handler(context, user_state, state):
 
     handler.request.protocol = "https"
     handler.request.host = "test-app.com"
-    handler.request.uri = "/callback?code=some_code&state=" + state
+    handler.request.uri = f"/callback?code={code}&state={state}"
 
     TokenHandler.get(handler)
 
     handler.get_argument.assert_called_once_with("state")
-    if state == "1_test-state" and user_state == "test-state":
+    if state == "1_test-state" and user_state == "test-state" and code == "some_code":
         handler.auth.get_user_token.assert_called_once_with(
             "https://test-app.com/callback?code=some_code&state=1_test-state"
         )
@@ -57,6 +62,8 @@ def test_token_handler(context, user_state, state):
         assert handler.user_data[1]["token"] == "test_token"
         assert "state" not in handler.user_data[1]
         handler.redirect.assert_called_once()
+    elif code == "invalid_code":
+        handler.database.update_token.assert_not_called()
     else:
         handler.set_status.assert_called_once_with(401)
         handler.finish.assert_called_once()

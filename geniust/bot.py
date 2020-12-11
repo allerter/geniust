@@ -7,6 +7,7 @@ from typing import Dict, Any
 import tornado.ioloop
 import tornado.web
 from lyricsgenius import OAuth2
+from requests import HTTPError
 from telegram import Bot, Update
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
@@ -120,16 +121,23 @@ class TokenHandler(RequestHandler):
             self.set_status(401)
             self.finish("Invalid state parameter.")
             logger.debug(
-                'Invalid state "%s" for user %s', repr(received_value), chat_id
+                'Invalid state "%s" for user %s',
+                repr(received_value),
+                chat_id
             )
             return
 
         # get token and update in db
         redirected_url = "{}://{}{}".format(
-            self.request.protocol, self.request.host, self.request.uri
+            self.request.protocol,
+            self.request.host,
+            self.request.uri
         )
-
-        token = self.auth.get_user_token(redirected_url)
+        try:
+            token = self.auth.get_user_token(redirected_url)
+        except HTTPError as e:
+            logger.debug('%s for %s', str(e), state)
+            return
         self.database.update_token(chat_id, token)
         self.user_data[chat_id]["token"] = token
 
