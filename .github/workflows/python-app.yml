@@ -58,6 +58,7 @@ jobs:
     needs: build-and-test
 
     steps:
+      - uses: actions/checkout@v2
       - name: Set ENV for codeclimate
         run: |
           echo "{GIT_BRANCH}={$GITHUB_REF}" >> $GITHUB_ENV
