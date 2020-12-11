@@ -15,7 +15,6 @@ extras_require = {
         "black==20.8b1",
         "flake8==3.8.4",
         "flake8-bugbear==20.11.1",
-
     ],
     "tests": [
         "pytest==6.1.2",
