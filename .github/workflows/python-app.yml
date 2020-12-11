@@ -74,9 +74,12 @@ jobs:
         with:
           name: code-coverage-report
 
-      - name: Aggregate & upload results to Code Climate
+      - name: Check coverage file
+        run: find coverage.json
+
+      - name: Upload results to Code Climate
         run: |
-          ./cc-test-reporter upload-coverage -i coverage.json
+          ./cc-test-reporter after-build
 
   lint:
     runs-on: ubuntu-latest
