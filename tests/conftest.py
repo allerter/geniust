@@ -149,20 +149,16 @@ for file in files:
         languages.append(language)
         texts[language] = yaml.full_load(f)
 
-users = [
-    {
-        "include_annotations": True,
-        "lyrics_lang": "English + Non-English",
-        "bot_lang": languages[0],
-        "token": None,
-    },
-    {
-        "include_annotations": True,
-        "lyrics_lang": "English + Non-English",
-        "bot_lang": languages[1],
-        "token": None,
-    },
-]
+users = []
+for language in languages:
+    users.append(
+        {
+            "include_annotations": True,
+            "lyrics_lang": "English + Non-English",
+            "bot_lang": language,
+            "token": None,
+        }
+    )
 
 
 # for language in languages:
