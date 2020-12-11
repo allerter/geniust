@@ -56,8 +56,5 @@ for file in files:
         texts[language] = yaml.full_load(f)
 
 auth = OAuth2.full_code_exchange(
-    GENIUS_CLIENT_ID,
-    GENIUS_REDIRECT_URI,
-    GENIUS_CLIENT_SECRET,
-    scope=("me", "vote")
+    GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET, scope=("me", "vote")
 )
