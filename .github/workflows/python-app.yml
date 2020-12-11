@@ -46,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: code-coverage-report
-        path: coverage.xml
+        path: coverage.json
 
 
   report:
@@ -62,8 +62,7 @@ jobs:
     - name: Code Climate Coverage Action
       uses: paambaati/codeclimate-action@v2.7.5
       with:
-        coverageLocations: coverage.xml:coverage.py
-        debug: true
+        coverageLocations: coverage.json:coverage.py
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
 
