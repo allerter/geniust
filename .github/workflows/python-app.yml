@@ -46,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: code-coverage-report
-        path: coverage.json
+        path: codeclimate.json
 
   upload_coverage:
     runs-on: ubuntu-18.04
@@ -74,9 +74,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: code-coverage-report
+          path: coverage
 
       - name: Check coverage file
-        run: find coverage.json
+        run: |
+          ls
+          ls coverage
 
       - name: Upload results to Code Climate
         run: |
