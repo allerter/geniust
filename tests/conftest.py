@@ -25,6 +25,9 @@ def song_url():
     return "https://genius.com/Machine-gun-kelly-glass-house-lyrics"
 
 
+# ----------------- Data Files Fixtures -----------------
+
+
 @pytest.fixture(scope="session")
 def data_path():
     return join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -96,6 +99,9 @@ def account_dict(data_path):
         return json.load(f)
 
 
+# ----------------- Update Fixtures -----------------
+
+
 @pytest.fixture(scope="session")
 def update_callback_query_class():
     update = create_autospec(Update)
@@ -128,6 +134,9 @@ def update_message(update_message_class):
     update = update_message_class
     update.message.reset_mock()
     return update
+
+
+# ----------------- Context Fixture -----------------
 
 
 path = pathlib.Path(text.__file__).parent.resolve()
