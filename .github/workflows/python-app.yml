@@ -42,18 +42,10 @@ jobs:
         GENIUS_CLIENT_SECRET: ${{ secrets.GENIUS_CLIENT_SECRET }}
       run: tox
 
-
-    - name: Set ENV for codeclimate (pull_request)
+    - name: Set ENV for codeclimate
       run: |
-        git fetch --no-tags --prune --depth=1 origin +refs/heads/$GITHUB_HEAD_REF:refs/remotes/origin/$GITHUB_HEAD_REF
-        echo "::set-env name=GIT_BRANCH::$GITHUB_HEAD_REF"
-        echo "::set-env name=GIT_COMMIT_SHA::$(git rev-parse origin/$GITHUB_HEAD_REF)"
-      if: github.event_name == 'pull_request'
-
-    - name: Set ENV for codeclimate (push)
-      run: |
-        echo "::set-env name=GIT_BRANCH::$GITHUB_REF"
-        echo "::set-env name=GIT_COMMIT_SHA::$GITHUB_SHA"
+        echo "{GIT_BRANCH}={$GITHUB_REF}" >> $GITHUB_ENV
+        echo "{GIT_COMMIT_SHA}={$GITHUB_SHA}" >> $GITHUB_ENV
       if: github.event_name == 'push'
 
 
@@ -62,3 +54,4 @@ jobs:
       with:
         name: code-coverage-report
         path: coverage.json
+      if: github.event_name == 'push'
