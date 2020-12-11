@@ -42,13 +42,6 @@ jobs:
         GENIUS_CLIENT_SECRET: ${{ secrets.GENIUS_CLIENT_SECRET }}
       run: tox
 
-    - name: Set ENV for codeclimate
-      run: |
-        echo "{GIT_BRANCH}={$GITHUB_REF}" >> $GITHUB_ENV
-        echo "{GIT_COMMIT_SHA}={$GITHUB_SHA}" >> $GITHUB_ENV
-      if: github.event_name == 'push'
-
-
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
