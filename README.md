@@ -1,8 +1,9 @@
 <h1 align="center"><img src="logo.png" width="200" align="center"/>Genius T</h1>
+
 ![status](https://img.shields.io/uptimerobot/status/m786636302-b2fa3edeb9237ae327f70d06)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Allerter/geniust)
 ![build](https://github.com/Allerter/geniust/workflows/build/badge.svg)
-![coverage](https://api.codeclimate.com/v1/badges/74d5611d77cb26f4ed16/test_coverage)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/74d5611d77cb26f4ed16/test_coverage)](https://codeclimate.com/github/Allerter/geniust/test_coverage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A Telegram bot that provides music data and lyrics from Genius.
@@ -46,17 +47,17 @@ Users can search Genius navigating the iline menu which can be accessed using th
   search for an album
 - **/artist**:
   search for an artist
-- **lyrics_language**:
+- **/lyrics_language**:
   set lyrics language
-- **include_annotations**:
+- **/include_annotations**:
   include annotations
-- **bot_language**:
+- **/bot_language**:
   set bot language
-- **cancel**:
+- **/cancel**:
   cancel the current task
-- **help**:
+- **/help**:
   more info about the bot
-- **contact_us**:
+- **/contact_us**:
   send us a message
 
 You can also perform searches by using the inline search feature. For example:
