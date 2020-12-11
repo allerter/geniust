@@ -153,7 +153,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
         super().__init__()
         app = tornado.web.Application(
             [
-                url(r"/notify", CronHandler),
+                url(r"/get", CronHandler),
                 url(
                     r"/callback\?code=.*&state=.*",
                     TokenHandler,
