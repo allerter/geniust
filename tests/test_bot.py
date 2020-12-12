@@ -33,7 +33,7 @@ def test_cron_handler():
 @pytest.mark.parametrize("user_state", ["test-state", None])
 def test_token_handler(context, user_state, code, state):
     handler = MagicMock()
-    handler.get_argument = lambda x: code if x == 'code' else state
+    handler.get_argument = lambda x: code if x == "code" else state
     handler.auth = create_autospec(OAuth2)
     if code == "some_code":
         handler.auth.get_user_token.return_value = "test_token"

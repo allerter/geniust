@@ -101,7 +101,7 @@ class TokenHandler(RequestHandler):
         code = self.get_argument("code")
         if not all([code, state]):
             self.set_status(400)
-            self.finish('state/code unvailable')
+            self.finish("state/code unvailable")
             return
 
         if len(state.split("_")) == 2:
