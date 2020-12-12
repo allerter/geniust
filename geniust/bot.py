@@ -98,6 +98,9 @@ class TokenHandler(RequestHandler):
     def get(self):
         """Receives and processes callback data from Genius"""
         state = self.get_argument("state")
+        code = self.get_argument("code")
+        if not all([code, state]):
+            return
 
         if len(state.split("_")) == 2:
             chat_id_str, received_value = state.split("_")
@@ -159,7 +162,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
             [
                 url(r"/get", CronHandler),
                 url(
-                    r"/callback\?code=.*&state=.*",
+                    r"/callback",
                     TokenHandler,
                     dict(
                         auth=auth,
