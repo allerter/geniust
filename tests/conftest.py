@@ -25,6 +25,9 @@ def song_url():
     return "https://genius.com/Machine-gun-kelly-glass-house-lyrics"
 
 
+# ----------------- Data Files Fixtures -----------------
+
+
 @pytest.fixture(scope="session")
 def data_path():
     return join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -96,8 +99,11 @@ def account_dict(data_path):
         return json.load(f)
 
 
-@pytest.fixture(scope="function")
-def update_callback_query():
+# ----------------- Update Fixtures -----------------
+
+
+@pytest.fixture(scope="session")
+def update_callback_query_class():
     update = create_autospec(Update)
     update.effective_chat.id = 123
     update.message = None
@@ -107,12 +113,30 @@ def update_callback_query():
 
 
 @pytest.fixture(scope="function")
-def update_message():
+def update_callback_query(update_callback_query_class):
+    update = update_callback_query_class
+    update.callback_query.reset_mock()
+    update.callback_query.message.reset_mock()
+    return update
+
+
+@pytest.fixture(scope="session")
+def update_message_class():
     update = create_autospec(Update)
     update.effective_chat.id = 123
     update.callback_query = None
     update.message = MagicMock()
     return update
+
+
+@pytest.fixture(scope="function")
+def update_message(update_message_class):
+    update = update_message_class
+    update.message.reset_mock()
+    return update
+
+
+# ----------------- Context Fixture -----------------
 
 
 path = pathlib.Path(text.__file__).parent.resolve()
@@ -125,20 +149,16 @@ for file in files:
         languages.append(language)
         texts[language] = yaml.full_load(f)
 
-users = [
-    {
-        "include_annotations": True,
-        "lyrics_lang": "English + Non-English",
-        "bot_lang": languages[0],
-        "token": None,
-    },
-    {
-        "include_annotations": True,
-        "lyrics_lang": "English + Non-English",
-        "bot_lang": languages[1],
-        "token": None,
-    },
-]
+users = []
+for language in languages:
+    users.append(
+        {
+            "include_annotations": True,
+            "lyrics_lang": "English + Non-English",
+            "bot_lang": language,
+            "token": None,
+        }
+    )
 
 
 # for language in languages:
@@ -164,8 +184,8 @@ users = [
 #                  'token': None})
 
 
-@pytest.fixture(scope="function", params=users)
-def context(request):
+@pytest.fixture(scope="session")
+def context_class():
     context = create_autospec(CallbackContext)
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
@@ -173,5 +193,13 @@ def context(request):
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
     context.bot_data["texts"] = texts
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
-    context.user_data = request.param
     return context
+
+
+@pytest.fixture(scope="function", params=users)
+def context(context_class, request):
+    context_class.bot.reset_mock()
+    context_class.bot_data["db"].reset_mock()
+    context_class.bot_data["genius"].reset_mock()
+    context_class.user_data = request.param
+    return context_class
