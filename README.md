@@ -5,6 +5,7 @@
 ![build](https://github.com/Allerter/geniust/workflows/build/badge.svg)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/74d5611d77cb26f4ed16/test_coverage)](https://codeclimate.com/github/Allerter/geniust/test_coverage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Telegram Link](https://img.shields.io/static/v1?label=Telegram&message=Click%20Here&color=blue&logo=telegram)](https://t.me/genius_the_bot)
 
 A Telegram bot that provides music data and lyrics from Genius.
 
