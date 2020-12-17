@@ -20,7 +20,7 @@ def type_artist(update: Update, context: CallbackContext) -> int:
     """Prompts user to type artist name"""
     # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
-    text = context.bot["texts"][language]["type_artist"]
+    text = context.bot_data["texts"][language]["type_artist"]
 
     if update.callback_query:
         update.callback_query.answer()
@@ -37,7 +37,7 @@ def search_artists(update: Update, context: CallbackContext) -> int:
     """Displays a list of artist names based on user input"""
     genius = context.bot_data["genius"]
     language = context.user_data["bot_lang"]
-    text = context.bot["texts"][language]["search_artists"]
+    text = context.bot_data["texts"][language]["search_artists"]
     input_text = update.message.text
 
     res = genius.search_artists(input_text)
@@ -64,7 +64,7 @@ def display_artist(update: Update, context: CallbackContext) -> int:
     """Displays artist"""
     genius = context.bot_data["genius"]
     language = context.user_data["bot_lang"]
-    text = context.bot["texts"][language]["display_artist"]
+    text = context.bot_data["texts"][language]["display_artist"]
     bot = context.bot
     chat_id = update.effective_chat.id
 
@@ -155,7 +155,7 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
     """Displays artist's songs"""
     genius = context.bot_data["genius"]
     language = context.user_data["bot_lang"]
-    text = context.bot["texts"][language]["display_artist_songs"]
+    text = context.bot_data["texts"][language]["display_artist_songs"]
     chat_id = update.effective_chat.id
 
     if update.callback_query:
@@ -290,7 +290,7 @@ def artist_caption(
 
     followers_count = utils.human_format(artist["followers_count"])
 
-    is_verified = context.bot["texts"][language][artist["is_verified"]]
+    is_verified = context.bot_data["texts"][language][artist["is_verified"]]
 
     string = (
         caption["body"]

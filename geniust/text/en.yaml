@@ -322,7 +322,7 @@ display_artist_albums:
 
 display_artist_songs:
   songs: "{artist}'s songs sorted by {sort}"
-  populaprity: popularity
+  popularity: popularity
   release_date: release date
   title: title
   no_songs: "{} has no songs."
