@@ -111,7 +111,7 @@ class Database:
             table (str): table to insert into.
             cursor (Any): database cursor.
         """
-        values = [chat_id, *data]
+        values = (chat_id, *data)
         if table == self.data_table:
             query = f"""INSERT INTO {table} VALUES (%s, %s, %s, %s)
               ON CONFLICT (chat_id) DO UPDATE
