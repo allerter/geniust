@@ -178,6 +178,7 @@ class TokenHandler(RequestHandler):
         else:
             try:
                 token = self.auths['spotify']._cred.request_user_token(code)
+                token = token.access_token
             except AssertionError:
                 self.set_status(400)
                 self.finish('Invalid state parameter')
@@ -187,8 +188,8 @@ class TokenHandler(RequestHandler):
                 self.finish(str(e))
                 return
         # add token to db and user data
-        self.database.update_token(chat_id, token, 'genius')
-        self.user_data[chat_id]["genius_token"] = token
+        self.database.update_token(chat_id, token, platform)
+        self.user_data[chat_id][f"{platform}_token"] = token
 
         # redirect user to bot
         self.redirect(f"https://t.me/{username}")
