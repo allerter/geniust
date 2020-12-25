@@ -183,6 +183,7 @@ class TokenHandler(RequestHandler):
                 self.finish('Invalid state parameter')
                 return
             except tk.BadRequest as e:
+                logger.debug('%s, %s', code, e)
                 self.set_status(e.response.status_code)
                 self.finish(str(e))
                 return
