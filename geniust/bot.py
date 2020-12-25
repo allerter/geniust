@@ -245,7 +245,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     context.user_data["command"] = False
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["main_menu"]
-    raise AssertionError('error')
+
     logger.debug(
         "ID: %s, INCLUDE: %s, LLANG: %s, BOTLANG: %s",
         chat_id,
