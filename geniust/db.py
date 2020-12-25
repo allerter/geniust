@@ -86,13 +86,13 @@ class Database:
             table (str): table to insert into.
             cursor (Any): database cursor.
         """
-        data.insert(0, chat_id)
+        values = (chat_id, *data)
         if table == self.data_table:
             query = f"""INSERT INTO {table} VALUES (%s, %s, %s, %s);"""
         else:
             query = f"""INSERT INTO {table} VALUES (%s, %s, %s);"""
 
-        cursor.execute(query, data)
+        cursor.execute(query, values)
 
     @log
     @get_cursor
