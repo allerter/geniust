@@ -12,7 +12,7 @@ from telegram.ext import CallbackContext
 
 from geniust import api
 from geniust import db
-from geniust import text
+from geniust import data
 
 
 @pytest.fixture(scope="session")
@@ -139,7 +139,7 @@ def update_message(update_message_class):
 # ----------------- Context Fixture -----------------
 
 
-path = pathlib.Path(text.__file__).parent.resolve()
+path = pathlib.Path(data.__file__).parent.resolve()
 files = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith(".yaml")]
 languages = []
 texts = {}

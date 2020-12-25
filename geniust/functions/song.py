@@ -16,7 +16,7 @@ from geniust import get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
@@ -53,7 +53,7 @@ def search_songs(update: Update, context: CallbackContext) -> int:
         title = song["title"]
         artist = song["primary_artist"]["name"]
         title = utils.format_title(artist, title)
-        callback = f"song_{song['id']}"
+        callback = f"song_{song['id']}_genius"
 
         buttons.append([IButton(text=title, callback_data=callback)])
 
@@ -69,17 +69,32 @@ def search_songs(update: Update, context: CallbackContext) -> int:
 def display_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     language = context.user_data["bot_lang"]
+    spotify = context.bot_data["spotify"]
     text = context.bot_data["texts"][language]["display_song"]
     bot = context.bot
     genius = context.bot_data["genius"]
     chat_id = update.effective_chat.id
 
     if update.callback_query:
-        song_id = int(update.callback_query.data.split("_")[1])
+        _, song_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        song_id = int(context.args[0].split("_")[1])
+        _, song_id_str, platform = context.args[0].split("_")
+
+    if platform == 'genius':
+        song_id = int(song_id_str)
+    else:
+        song_id = song_id_str
+
+    if platform == 'spotify':
+        song = spotify.song(song_id)
+        search = genius.search_songs(song.name, match=(song.artists[0], song.name))
+        if search['match'] is not None:
+            song_id = search['match']['id']
+        else:
+            context.bot.send_message(chat_id, text['not_found'])
+            return END
 
     song = genius.song(song_id)["song"]
     cover_art = song["song_art_image_url"]
@@ -96,6 +111,34 @@ def display_song(update: Update, context: CallbackContext) -> int:
         buttons[0].append(button)
 
     bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
+
+    return END
+
+
+@log
+@get_user
+def download_song(update: Update, context: CallbackContext) -> int:
+    """Displays song"""
+    language = context.user_data["bot_lang"]
+    text = context.bot_data["texts"][language]["display_song"]
+    bot = context.bot
+    famusic = context.bot_data["famusic"]
+    chat_id = update.effective_chat.id
+
+    if update.callback_query:
+        _, song_id_str, platform, _ = update.callback_query.data.split("_")
+        update.callback_query.answer()
+        update.callback_query.edit_message_reply_markup(None)
+    else:
+        _, song_id_str, platform, _ = context.args[0].split("_")
+
+    song_id = int(song_id_str)
+    song_url = famusic.download_url(song_id, platform)
+
+    if song_url is None:
+        bot.send_message(chat_id, text['not_found'])
+    else:
+        bot.send_audio(chat_id, song_url)
 
     return END
 
@@ -225,19 +268,19 @@ def song_caption(
         release_date = song["release_date_for_display"]
 
     if song.get("featured_artists"):
-        features = ", ".join([utils.deep_link(x) for x in song["featured_artists"]])
+        features = ", ".join([utils.deep_link(x['name'], x['id'], 'artist', 'genius') for x in song["featured_artists"]])
         features = caption["features"].replace("{}", features)
 
     if song.get("albums"):
-        album = ", ".join(utils.deep_link(album) for album in song["albums"])
+        album = ", ".join(utils.deep_link(album['name'], album['id'], 'album', 'genius') for album in song["albums"])
         album = caption["albums"].replace("{}", album)
 
     if song.get("producer_artists"):
-        producers = ", ".join([utils.deep_link(x) for x in song["producer_artists"]])
+        producers = ", ".join([utils.deep_link(x['name'], x['id'], 'artist', 'genius') for x in song["producer_artists"]])
         producers = caption["producers"].replace("{}", producers)
 
     if song.get("writer_artists"):
-        writers = ", ".join([utils.deep_link(x) for x in song["writer_artists"]])
+        writers = ", ".join([utils.deep_link(x['name'], x['id'], 'artist', 'genius') for x in song["writer_artists"]])
         writers = caption["writers"].replace("{}", writers)
 
     if song.get("song_relationships"):
@@ -247,7 +290,7 @@ def song_caption(
                 type_ = caption[relation["type"]]
             else:
                 type_ = " ".join([x.capitalize() for x in relation["type"].split("_")])
-            songs = ", ".join([utils.deep_link(x) for x in relation["songs"]])
+            songs = ", ".join([utils.deep_link(x['title'], x['id'], 'song', 'genius') for x in relation["songs"]])
             string = f"\n<b>{type_}</b>:\n{songs}"
 
             relationships.append(string)
@@ -276,12 +319,13 @@ def song_caption(
     views = song["stats"].get("pageviews", "?")
     if isinstance(views, int):
         views = utils.human_format(views)
+    artist = song["primary_artist"]
 
     string = (
         caption["body"]
         .replace("{title}", song["title"])
         .replace("{artist_name}", song["primary_artist"]["name"])
-        .replace("{artist}", utils.deep_link(song["primary_artist"]))
+        .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
         .replace("{release_date}", release_date)
         .replace("{hot}", hot)
         .replace("{tags}", tags)

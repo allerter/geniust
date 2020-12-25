@@ -38,8 +38,14 @@ newline_pattern: Pattern[str] = re.compile(r"(\n|<br\s*[/]*>){2,}(?!\[)")
 links_pattern: Pattern[str] = re.compile(r"\nhttp[s]*.*")
 
 
-def deep_link(entity: dict) -> str:
-    """Deep links given entity using <a> tag.
+def deep_link(
+    name: str,
+    id: str,
+    type: str,
+    platform: str = 'genius',
+    download: bool = False,
+) -> str:
+    """Deep links given entity using an <a> tag.
 
     This functions will wrap the entity's name
     or title in an <a> where its href attribute
@@ -47,7 +53,10 @@ def deep_link(entity: dict) -> str:
     to get information for the entity.
 
     Args:
-        entity (dict): Entity data.
+        name (str): Text of the tag.
+        id (str): ID of the entity.
+        type (str): Type of the entity.
+        platform (str, optional): Platform which the entity is from.
 
     Raises:
         ValueError: If it comes accross an unknown
@@ -57,19 +66,9 @@ def deep_link(entity: dict) -> str:
         str: Deep linked entity
             (e.g. <a href="link">song name</name>)
     """
-    name = entity.get("name", entity.get("title"))
-    id_ = entity["id"]
-    if "album" in entity["api_path"]:
-        type_ = "album"
-    elif "song" in entity["api_path"]:
-        type_ = "song"
-    elif "artist" in entity["api_path"]:
-        type_ = "artist"
-    else:
-        raise ValueError(f"Unknown entity {entity['api_path']}")
-
-    url = create_deep_linked_url(geniust.username, f"{type_}_{id_}")
-
+    url = create_deep_linked_url(
+        geniust.username,
+        f"{type}_{id}_{platform}{'_download' if download else ''}")
     return f"""<a href="{url}">{name}</a>"""
 
 

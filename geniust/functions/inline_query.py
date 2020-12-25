@@ -16,7 +16,7 @@ from geniust import username, utils, get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
@@ -118,7 +118,7 @@ def search_albums(update: Update, context: CallbackContext) -> None:
         else:
             description = ""
         answer_text = album_caption(update, context, album, text["caption"])
-        album_url = create_deep_linked_url(username, f"album_{album_id}")
+        album_url = create_deep_linked_url(username, f"album_{album_id}_genius")
         cover_url = create_deep_linked_url(username, f"album_{album_id}_covers")
         songlist_url = create_deep_linked_url(username, f"album_{album_id}_tracks")
         aio_url = create_deep_linked_url(username, f"album_{album_id}_lyrics")
@@ -180,7 +180,7 @@ def search_artists(update: Update, context: CallbackContext) -> None:
         artist_id = artist["id"]
 
         answer_text = artist_caption(update, context, artist, text["caption"], language)
-        artist_url = create_deep_linked_url(username, f"artist_{artist_id}")
+        artist_url = create_deep_linked_url(username, f"artist_{artist_id}_genius")
         songlist_ppl = create_deep_linked_url(
             username, f"artist_{artist_id}_songs_ppt_1"
         )
@@ -255,7 +255,7 @@ def search_songs(update: Update, context: CallbackContext) -> None:
         else:
             description = ""
         answer_text = song_caption(update, context, song, text["caption"], language)
-        song_url = create_deep_linked_url(username, f"song_{song_id}")
+        song_url = create_deep_linked_url(username, f"song_{song_id}_genius")
         lyrics_url = create_deep_linked_url(username, f"song_{song_id}_lyrics")
         buttons = [
             [IButton(texts["inline_menu"]["full_details"], url=song_url)],
@@ -316,7 +316,7 @@ def album_caption(
     string = (
         caption.replace("{name}", album["name"])
         .replace("{artist_name}", album["artist"]["name"])
-        .replace("{artist}", utils.deep_link(album["artist"]))
+        .replace("{artist}", utils.deep_link(album["artist"]['name'], album["artist"]['id'], 'artist', 'genius'))
         .replace("{release_date}", release_date)
         .replace("{url}", album["url"])
         .replace("{url}", album["cover_art_url"])
@@ -384,11 +384,12 @@ def song_caption(
         str: Formatted caption.
     """
     hot = context.bot_data["texts"][language][song["stats"]["hot"]]
+    artist = song["primary_artist"]
 
     string = (
         caption.replace("{title}", song["title"])
         .replace("{artist_name}", song["primary_artist"]["name"])
-        .replace("{artist}", utils.deep_link(song["primary_artist"]))
+        .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
         .replace("{hot}", hot)
         .replace("{views}", utils.human_format(song["stats"]["pageviews"]))
         .replace("{url}", song["url"])

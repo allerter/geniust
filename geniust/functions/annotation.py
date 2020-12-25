@@ -13,7 +13,7 @@ from geniust import api
 
 from bs4 import BeautifulSoup
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
@@ -74,9 +74,10 @@ def upvote_annotation(update: Update, context: CallbackContext) -> int:
     message = update.callback_query.message
 
     annotation_id = int(update.callback_query.data.split("_")[1])
-    token = context.user_data["token"]
+    token = context.user_data["genius_token"]
 
     if token is None:
+        update.callback_query.ansert()
         context.bot.send_message(chat_id, texts["login_necessary"])
         return END
 
@@ -113,7 +114,7 @@ def downvote_annotation(update: Update, context: CallbackContext) -> int:
     message = update.callback_query.message
 
     annotation_id = int(update.callback_query.data.split("_")[1])
-    token = context.user_data["token"]
+    token = context.user_data["genius_token"]
 
     if token is None:
         update.callback_query.answer()

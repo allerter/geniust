@@ -11,7 +11,7 @@ from geniust import utils, get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
@@ -46,7 +46,7 @@ def search_artists(update: Update, context: CallbackContext) -> int:
         artist = hit["result"]
         artist_id = artist["id"]
         title = artist["name"]
-        callback_data = f"artist_{artist_id}"
+        callback_data = f"artist_{artist_id}_genius"
 
         buttons.append([IButton(title, callback_data=callback_data)])
 
@@ -63,17 +63,35 @@ def search_artists(update: Update, context: CallbackContext) -> int:
 def display_artist(update: Update, context: CallbackContext) -> int:
     """Displays artist"""
     genius = context.bot_data["genius"]
+    spotify = context.bot_data["spotify"]
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["display_artist"]
     bot = context.bot
     chat_id = update.effective_chat.id
 
     if update.callback_query:
-        artist_id = int(update.callback_query.data.split("_")[1])
+        _, artist_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        artist_id = int(context.args[0].split("_")[1])
+        _, artist_id_str, platform = context.args[0].split("_")
+
+    if platform == 'genius':
+        artist_id = int(artist_id_str)
+    else:
+        artist_id = artist_id_str
+
+    if platform == 'spotify':
+        artist = spotify.artist(artist_id)
+        search = genius.search_artists(artist.name)['sections'][0]
+        for hit in search['hits']:
+            hit_artist = hit['result']
+            if hit_artist['name'] == artist.name:
+                artist_id = hit_artist
+                break
+        else:
+            context.bot.send_message(chat_id, text['not_found'])
+            return END
 
     artist = genius.artist(artist_id)["artist"]
     cover_art = artist["image_url"]
@@ -132,7 +150,7 @@ def display_artist_albums(update: Update, context: CallbackContext) -> int:
 
     albums_list = genius.artist_albums(artist_id, per_page=50)
     for album in albums_list["albums"]:
-        name = text["album"].replace("{}", utils.deep_link(album))
+        name = text["album"].replace("{}", utils.deep_link(album['name'], album['id'], 'album', 'genius'))
         albums.append(name)
 
     if albums:
@@ -187,7 +205,7 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
 
     for i, song in enumerate(songs_list["songs"]):
         num = per_page * (page - 1) + i + 1
-        title = f"\n{num:02} - {utils.deep_link(song)}"
+        title = f"\n{num:02} - {utils.deep_link(song['title'], song['id'], 'song', 'genius')}"
 
         views = song["stats"].get("pageviews")
         if sort == "popularity" and views:

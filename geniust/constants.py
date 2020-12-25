@@ -1,6 +1,6 @@
 import os
-
 from typing import List, Optional
+from collections import namedtuple
 
 from telegram.ext import ConversationHandler
 
@@ -11,6 +11,10 @@ GENIUS_TOKEN: str = os.environ["GENIUS_TOKEN"]
 GENIUS_CLIENT_ID: str = os.environ["GENIUS_CLIENT_ID"]
 GENIUS_CLIENT_SECRET: str = os.environ["GENIUS_CLIENT_SECRET"]
 GENIUS_REDIRECT_URI: str = os.environ["GENIUS_REDIRECT_URI"]
+SPOTIFY_CLIENT_ID: str = os.environ['SPOTIFY_CLIENT_ID']
+SPOTIFY_CLIENT_SECRET: str = os.environ['SPOTIFY_CLIENT_SECRET']
+SPOTIFY_REDIRECT_URI: str = os.environ['SPOTIFY_REDIRECT_URI']
+LASTFM_API_KEY: str = os.environ['LASTFM_API_KEY']
 ANNOTATIONS_CHANNEL_HANDLE: str = os.environ["ANNOTATIONS_CHANNEL_HANDLE"]
 DEVELOPERS: List[int] = (
     [int(x) for x in os.environ["DEVELOPERS"].split(",")]
@@ -37,6 +41,9 @@ TELEGRAM_HTML_TAGS: List[str] = [
     "code",
     "pre",
 ]
+
+
+Preferences = namedtuple('Preferences', 'genres, artists', defaults=[[]])
 
 
 # State definitions for conversation
@@ -80,5 +87,7 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
 OPTION1, OPTION2, OPTION3 = num.assign(3)
 
 LOGIN, LOGGED_IN, LOGOUT = num.assign(3)
+
+SELECT_ARTISTS, SELECT_GENRES = num.assign(2)
 
 END: int = ConversationHandler.END

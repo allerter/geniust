@@ -16,7 +16,7 @@ from geniust.utils import log
 from .album_conversion import create_pdf, create_zip, create_pages
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
@@ -53,7 +53,7 @@ def search_albums(update: Update, context: CallbackContext) -> int:
         album = hit["result"]
         album_id = album["id"]
         title = utils.format_title(album["artist"]["name"], album["name"])
-        callback = f"album_{album_id}"
+        callback = f"album_{album_id}_genius"
 
         buttons.append([IButton(title, callback_data=callback)])
 
@@ -70,19 +70,37 @@ def search_albums(update: Update, context: CallbackContext) -> int:
 def display_album(update: Update, context: CallbackContext) -> int:
     """Displays album"""
     genius = context.bot_data["genius"]
+    spotify = context.bot_data["spotify"]
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["display_album"]
     bot = context.bot
     chat_id = update.effective_chat.id
 
     if update.callback_query:
-        album_id = int(update.callback_query.data.split("_")[1])
+        _, album_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        album_id = int(context.args[0].split("_")[1])
+        _, album_id_str, platform = context.args[0].split("_")
+
+    if platform == 'genius':
+        album_id = int(album_id_str)
+    else:
+        album_id = album_id_str
 
     logger.debug("album %s", album_id)
+
+    if platform == 'spotify':
+        album = spotify.album(album_id)
+        search = genius.search_albums(album.name)['sections'][0]
+        for hit in search['hits']:
+            hit_album = hit['result']
+            if hit_album['name'] == album.name and hit_album['artist']['name'] == album.artists[0].name:
+                album_id = hit_album['id']
+                break
+        else:
+            context.bot.send_message(chat_id, text['not_found'])
+            return END
 
     album = genius.album(album_id)["album"]
     cover_art = album["cover_art_url"]
@@ -155,7 +173,7 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
     for track in genius.album_tracks(album_id, per_page=50)["tracks"]:
         num = track["number"]
         song = track["song"]
-        song = utils.deep_link(song)
+        song = utils.deep_link(song['title'], song['id'], 'song', 'genius')
         text = f"""\n{num:02d}. {song}"""
 
         songs.append(text)
@@ -343,17 +361,21 @@ def album_caption(
 
     for x in album.get("song_performances", []):
         if x["label"] == "Featuring":
-            features = ", ".join([utils.deep_link(x) for x in x["artists"]])
+            features = ", ".join([utils.deep_link(x['name'], x['id'], 'artist', 'genius')
+                                  for x in x["artists"]]
+                                 )
             features = caption["features"].replace("{}", features)
         elif x["label"] == "Label":
-            labels = ", ".join([utils.deep_link(x) for x in x["artists"]])
+            labels = ", ".join([utils.deep_link(x['name'], x['id'], 'artist', 'genius')
+                                for x in x["artists"]]
+                               )
             labels = caption["labels"].replace("{}", labels)
 
     string = (
         caption["body"]
         .replace("{name}", album["name"])
         .replace("{artist_name}", album["artist"]["name"])
-        .replace("{artist}", utils.deep_link(album["artist"]))
+        .replace("{artist}", utils.deep_link(album["artist"]['name'], album["artist"]['id'],'artist', 'genius'))
         .replace("{release_date}", release_date)
         .replace("{url}", album["url"])
         .replace("{views}", total_views)

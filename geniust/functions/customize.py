@@ -20,7 +20,7 @@ from geniust import get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('geniust')
 
 
 @log
