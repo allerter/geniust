@@ -60,6 +60,6 @@ genius_auth = OAuth2.full_code_exchange(
     GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET, scope=("me", "vote")
 )
 spotify_auth = tk.UserAuth(
-    tk.Credentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI),
+    tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI),
     scope=tk.scope.user_top_read)
 auths = {'genius': genius_auth, 'spotify': spotify_auth}

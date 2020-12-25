@@ -178,7 +178,7 @@ class TokenHandler(RequestHandler):
         else:
             try:
                 token = self.auths['spotify']._cred.request_user_token(code)
-                token = token.access_token
+                token = token.refresh_token
             except AssertionError:
                 self.set_status(400)
                 self.finish('Invalid state parameter')
