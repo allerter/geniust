@@ -732,8 +732,6 @@ class FaMusic():
                             return hit['id'], source.name
                 else:
                     for hit in res[1:]:
-                        import json
-                        print(json.dumps(res))
                         if (songs_match(artist, song,
                                         hit['artisten'], hit['tracken'])
                             or songs_match(artist, song,

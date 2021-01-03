@@ -52,6 +52,8 @@ class Recommender:
         self.artists: pd.DataFrame = pd.merge(en_artists, fa_artists, how='outer')
         self.artists['description'] = self.artists['description'].str.replace(r'\n', '')
         self.artists.description.fillna('', inplace=True)
+
+        self.artists_names = self.artists.name.to_list()
         # No duplicate values
         # no_duplicates = songs['id_spotify'].dropna().duplicated(
         # ).value_counts().all(False)
@@ -82,12 +84,37 @@ class Recommender:
         self.tfidf = TfidfVectorizer(analyzer='word', stop_words=stop_words)
         self.tfidf = self.tfidf.fit_transform(self.artists['description'])
 
+        self.genres_by_age_group: Dict[int, List[str]] = {
+            19: ['pop', 'rap', 'rock'],
+            24: ['pop', 'rap', 'rock'],
+            34: ['pop', 'rock', 'rap', 'country', 'traditional'],
+            44: ['pop', 'rock', 'rap', 'country', 'traditional'],
+            54: ['rock', 'pop', 'country', 'traditional'],
+            64: ['rock', 'country', 'traditional'],
+            65: ['rock', 'country', 'traditional'],
+        }
+
+    def genres_by_age(self, age: int) -> List[str]:
+        age_group = [i for i in self.genres_by_age_group.keys() if i >= age]
+        if age_group:
+            age_group = age_group[0]
+        else:
+            age_group = list(self.genres_by_age_group)[-1]
+        return self.genres_by_age_group[age_group]
+
+    def search_artist(self, artist: str) -> List[str]:
+        return difflib.get_close_matches(
+            artist,
+            self.artists_names,
+            n=5,
+        )
+
     def binarize(self, genres: List[str]) -> np.ndarray:
         return self.binarizer.transform([genres]).toarray()
 
     def shuffle(self,
                 user_preferences: Preferences,
-                language: Union['fa', 'en'] = 'all',
+                language: str = 'all',
                 ) -> List[Tuple[Union[None, str], str, str]]:
         genres = self.binarize(user_preferences.genres)
         similarity = np.sqrt(np.sum(

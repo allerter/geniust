@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 import threading
@@ -23,6 +24,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler,
     MessageFilter,
+    Preferences,
 )
 from telegram.utils.helpers import mention_html
 from telegram.utils.webhookhandler import WebhookServer
@@ -200,6 +202,139 @@ class TokenHandler(RequestHandler):
         self.bot.send_message(chat_id, text)
 
 
+class GenresHandler(RequestHandler):
+
+    def initialize(
+        self, recommender
+    ) -> None:
+        self.recommender = recommender
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')
+
+    @log
+    def get(self):
+        age = self.get_argument("age", default=None)
+        response = {'response': {'status_code': 200}}
+        r = response['response']
+        if age is None:
+            r['genres'] = self.recommender.genres
+        else:
+            try:
+                age = int(age)
+            except Exception as e:
+                logger.debug(e)
+                self.set_status(400)
+                r['error'] = 'invalid value for age parameter.'
+                r['status_code'] = 400
+            else:
+                r['genres'] = self.recommender.genres_by_age(age)
+                r['age'] = age
+
+        res = json.dumps(response)
+        self.write(res)
+
+
+class SearchHandler(RequestHandler):
+
+    def initialize(
+        self, recommender
+    ) -> None:
+        self.recommender = recommender
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')
+
+    @log
+    def get(self):
+        artist = self.get_argument("artist", default=None)
+        response = {'response': {'status_code': 200}}
+        r = response['response']
+        if artist is None:
+            self.set_status(404)
+            r['error'] = '404 Not Found'
+            r['status_code'] = 404
+        else:
+            r['artists'] = self.recommender.search_artist(artist)
+            r['artist'] = artist
+
+        res = json.dumps(response)
+        self.write(res)
+
+
+class RecommendationsHandler(RequestHandler):
+
+    def initialize(
+        self, recommender
+    ) -> None:
+        self.recommender = recommender
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')
+
+    @log
+    def get(self):
+        genres = self.get_argument("genres", default=None)
+        artists = self.get_argument("artists", default=None)
+        response = {'response': {'status_code': 200}}
+        r = response['response']
+
+        # genres are required
+        if genres is None:
+            self.set_status(400)
+            r['error'] = 'genres parameter required.'
+            r['status_code'] = 400
+            res = json.dumps(response)
+            self.write(res)
+            return
+
+        # genres must be valid
+        genres = genres.split(',')
+        invalid_genre = False
+        for genre in genres:
+            if genre not in self.recommender.genres:
+                invalid_genre = True
+                break
+        if invalid_genre:
+            self.set_status(400)
+            r['error'] = 'invalid genre in genres.'
+            r['status_code'] = 400
+            print(type(response), response)
+            res = json.dumps(response)
+            self.write(res)
+            return
+
+        # artists must be valid
+        if artists is not None:
+            artists = artists.split(',')
+            invalid_artist = False
+            for request_artist in artists:
+                if request_artist not in self.recommender.artists_names:
+                    invalid_artist = True
+                    break
+            if invalid_artist:
+                self.set_status(400)
+                r['error'] = 'invalid artist in artists.'
+                r['status_code'] = 400
+                res = json.dumps(response)
+                self.write(res)
+                return
+        else:
+            artists = []
+
+        user_preferences = Preferences(genres=genres, artists=artists)
+        tracks = [{'artist': x.artist,
+                   'title': x['name'],
+                   'id_spotify': x.id_spotify,
+                   'cover_art': None,
+                   'download_link': None}
+                  for x in self.recommender.shuffle(user_preferences)]
+
+        response['tracks'] = tracks
+        res = json.dumps(response)
+        self.write(res)
+
+
 class WebhookThread(threading.Thread):  # pragma: no cover
     """Starts a web-hook server
 
@@ -207,8 +342,9 @@ class WebhookThread(threading.Thread):  # pragma: no cover
     going to sleep in Heroku's free plan and receive tokens from Genius.
     """
 
-    def __init__(self, user_data):
+    def __init__(self, dispatcher):
         super().__init__()
+        recommender = dispatcher.recommender
         app = tornado.web.Application(
             [
                 url(r"/get", CronHandler),
@@ -220,9 +356,13 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                         database=database,
                         bot=Bot(BOT_TOKEN),
                         texts=texts,
-                        user_data=user_data,
+                        user_data=dispatcher.user_data,
                     ),
                 ),
+                url(r"/api/genres", GenresHandler, dict(recommender=recommender)),
+                url(r"/api/search", SearchHandler, dict(recommender=recommender)),
+                url(r"/api/recommendations", RecommendationsHandler,
+                    dict(recommender=recommender))
             ]
         )
         # noinspection PyTypeChecker
@@ -475,7 +615,8 @@ def main():
             song.thread_display_lyrics, pattern=r"^song_[0-9]+_lyrics$"
         ),
         CallbackQueryHandler(
-            song.download_song, pattern=r"^song_[0-9]+_(radiojavan|navahang|nex1music)_download$"
+            song.download_song,
+            pattern=r"^song_[0-9]+_(radiojavan|navahang|nex1music)_download$"
         ),
         CallbackQueryHandler(
             customize.customize_menu, pattern="^" + str(CUSTOMIZE_MENU) + "$"
@@ -646,7 +787,8 @@ def main():
         CommandHandler(
             "start",
             song.download_song,
-            Filters.regex(r"^/start song_[0-9]+_(radiojavan|navahang|nex1music)_download$"),
+            Filters.regex(
+                r"^/start song_[0-9]+_(radiojavan|navahang|nex1music)_download$"),
             pass_args=True,
         ),
         CommandHandler(
@@ -732,7 +874,7 @@ def main():
     # web hook server to respond to GET cron jobs at /notify
     # and receive user tokens at /callback
     if SERVER_PORT:
-        webhook_thread = WebhookThread(dp.user_data)
+        webhook_thread = WebhookThread(dp)
         webhook_thread.start()
     # if SERVER_PORT:
     #
