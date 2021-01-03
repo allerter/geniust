@@ -344,7 +344,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
 
     def __init__(self, dispatcher):
         super().__init__()
-        recommender = dispatcher.recommender
+        recommender = dispatcher.bot_data['recommender']
         app = tornado.web.Application(
             [
                 url(r"/get", CronHandler),
