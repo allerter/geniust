@@ -24,7 +24,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler,
     MessageFilter,
-    Preferences,
 )
 from telegram.utils.helpers import mention_html
 from telegram.utils.webhookhandler import WebhookServer
@@ -68,6 +67,7 @@ from geniust.constants import (
     END,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
+    Preferences,
 )
 
 # Enable logging
