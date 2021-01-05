@@ -54,6 +54,7 @@ class Recommender:
         self.artists.description.fillna('', inplace=True)
 
         self.artists_names = self.artists.name.to_list()
+        self.lowered_artists_names = [x.lower() for x in self.artists_names]
         # No duplicate values
         # no_duplicates = songs['id_spotify'].dropna().duplicated(
         # ).value_counts().all(False)
@@ -104,9 +105,10 @@ class Recommender:
 
     def search_artist(self, artist: str) -> List[str]:
         return difflib.get_close_matches(
-            artist,
-            self.artists_names,
+            artist.lower(),
+            self.lowered_artists_names,
             n=5,
+            cutoff=0.3,
         )
 
     def binarize(self, genres: List[str]) -> np.ndarray:
