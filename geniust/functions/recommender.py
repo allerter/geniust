@@ -160,9 +160,17 @@ class Recommender:
             hits = []
             for row in cosine_similarities:
                 song = self.songs.iloc[selected[row[0]]]
-                if not has_download_url:
-                    hits.append(song)
-                elif has_download_url and song.download_url:
+                if has_preview_url and has_download_url:
+                    if song.preview_url is not np.nan and song.download_url is not np.nan:
+                        hits.append(song)
+                elif has_preview_url:
+                    if song.preview_url is not np.nan:
+                        hits.append(song)
+                elif has_download_url:
+                    if song.download_url is not np.nan:
+                        hits.append(song)
+                elif not has_download_url and not has_preview_url:  # no restrictions
+                    # TODO: should the var be called "must_have_download_url"?
                     hits.append(song)
                 if len(hits) == 5:
                     break
@@ -171,13 +179,13 @@ class Recommender:
             for index in selected:
                 song = self.songs.iloc[index]
                 if has_preview_url and has_download_url:
-                    if song.preview_url and song.download_url:
+                    if song.preview_url is not np.nan and song.download_url is not np.nan:
                         hits.append(song)
                 elif has_preview_url:
-                    if song.preview_url:
+                    if song.preview_url is not np.nan:
                         hits.append(song)
                 elif has_download_url:
-                    if song.download_url:
+                    if song.download_url is not np.nan:
                         hits.append(song)
                 elif not has_download_url and not has_preview_url:  # no restrictions
                     # TODO: should the var be called "must_have_download_url"?
