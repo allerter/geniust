@@ -307,7 +307,6 @@ class RecommendationsHandler(RequestHandler):
             self.set_status(400)
             r['error'] = 'invalid genre in genres.'
             r['status_code'] = 400
-            print(type(response), response)
             res = json.dumps(response)
             self.write(res)
             return
@@ -347,7 +346,7 @@ class RecommendationsHandler(RequestHandler):
             has_download_url=has_download_url)
         ]
 
-        response['tracks'] = tracks
+        r['tracks'] = tracks
         res = json.dumps(response)
         self.write(res)
 
