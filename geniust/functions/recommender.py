@@ -72,7 +72,7 @@ class Recommender:
         self.binarizer = mlb
 
         # Convert df to numpy array
-        numpy_df = df.drop(columns=['id_spotify', 'artist', 'name'])
+        numpy_df = df.drop(columns=['id_spotify', 'artist', 'name', 'download_url', 'preview_url', 'isrc', 'cover_art'])
         self.numpy_songs = numpy_df.to_numpy()
         self.genres = list(numpy_df.columns)
         self.genres_by_number = {}
@@ -117,6 +117,8 @@ class Recommender:
     def shuffle(self,
                 user_preferences: Preferences,
                 language: str = 'all',
+                has_preview_url: bool = False,
+                has_download_url: bool = False,
                 ) -> List[Tuple[Union[None, str], str, str]]:
         genres = self.binarize(user_preferences.genres)
         similarity = np.sqrt(np.sum(
@@ -155,11 +157,34 @@ class Recommender:
                     (index, cosine_similarity)
                 )
             cosine_similarities.sort(key=lambda x: x[1], reverse=True)
-            hits = [self.songs.iloc[selected[row[0]]]
-                    for row in cosine_similarities[:5]]
+            hits = []
+            for row in cosine_similarities:
+                song = self.songs.iloc[selected[row[0]]]
+                if not has_download_url:
+                    hits.append(song)
+                elif has_download_url and song.download_url:
+                    hits.append(song)
+                if len(hits) == 5:
+                    break
         else:
-            hits = [self.songs.iloc[index]
-                    for index in selected[:5]]
+            hits = []
+            for index in selected:
+                song = self.songs.iloc[index]
+                if has_preview_url and has_download_url:
+                    if song.preview_url and song.download_url:
+                        hits.append(song)
+                elif has_preview_url:
+                    if song.preview_url:
+                        hits.append(song)
+                elif has_download_url:
+                    if song.download_url:
+                        hits.append(song)
+                elif not has_download_url and not has_preview_url:  # no restrictions
+                    # TODO: should the var be called "must_have_download_url"?
+                    hits.append(song)
+
+                if len(hits) == 5:
+                    break
 
         return hits
 

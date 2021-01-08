@@ -276,6 +276,14 @@ class RecommendationsHandler(RequestHandler):
     def get(self):
         genres = self.get_argument("genres", default=None)
         artists = self.get_argument("artists", default=None)
+        has_preview_url = self.get_argument('has_preview_url', default=False)
+        has_download_url = self.get_argument('has_download_url', default=False)
+        has_preview_url = True if has_preview_url == 'True' else False
+        has_download_url = True if has_download_url == 'True' else False
+        # TODO: doesn't has_download_url=False imply that
+        # the song shouldn't have download url?
+        # but it here False means it doesn't matter
+        # should these two be: url >> ['download', 'preview', 'preview,download']
         response = {'response': {'status_code': 200}}
         r = response['response']
 
@@ -323,12 +331,21 @@ class RecommendationsHandler(RequestHandler):
             artists = []
 
         user_preferences = Preferences(genres=genres, artists=artists)
-        tracks = [{'artist': x.artist,
-                   'title': x['name'],
-                   'id_spotify': x.id_spotify,
-                   'cover_art': None,
-                   'download_link': None}
-                  for x in self.recommender.shuffle(user_preferences)]
+        # tracks = [{'artist': x.artist,
+        #           'title': x['name'],
+        #           'id_spotify': x.id_spotify,
+        #           'isrc': x.isrc,
+        #           'cover_art': x.cover_art,
+        #           'preview_url': x.preview_url,
+        #           'download_url': x.download_url,
+        #           }
+        #          for x in self.recommender.shuffle(user_preferences)]
+        tracks = [x.to_dict()
+                  for x in self.recommender.shuffle(
+            user_preferences,
+            has_preview_url=has_preview_url,
+            has_download_url=has_download_url)
+        ]
 
         response['tracks'] = tracks
         res = json.dumps(response)
