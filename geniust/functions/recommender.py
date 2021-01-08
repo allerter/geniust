@@ -43,7 +43,7 @@ class Recommender:
         # Read tracks
         en = pd.read_csv(join(data_path, 'tracks en.csv'))
         fa = pd.read_csv(join(data_path, 'tracks fa.csv'))
-        self.songs: pd.DataFrame = pd.merge(en, fa, how='outer')
+        self.songs: pd.DataFrame = pd.merge(en.drop(columns=['download_url']), fa, how='outer')
         self.songs.id_spotify.replace({np.NaN: None}, inplace=True)
 
         # Read artists
