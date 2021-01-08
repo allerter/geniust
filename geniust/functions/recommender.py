@@ -44,7 +44,7 @@ class Recommender:
         en = pd.read_csv(join(data_path, 'tracks en.csv'))
         fa = pd.read_csv(join(data_path, 'tracks fa.csv'))
         self.songs: pd.DataFrame = pd.merge(en.drop(columns=['download_url']), fa, how='outer')
-        self.songs.id_spotify.replace({np.NaN: None}, inplace=True)
+        self.songs.replace({np.NaN: None}, inplace=True)
 
         # Read artists
         en_artists = pd.read_csv(join(data_path, 'artists en.csv'))
@@ -161,16 +161,15 @@ class Recommender:
             for row in cosine_similarities:
                 song = self.songs.iloc[selected[row[0]]]
                 if has_preview_url and has_download_url:
-                    if song.preview_url is not np.nan and song.download_url is not np.nan:
+                    if song.preview_url and song.download_url:
                         hits.append(song)
                 elif has_preview_url:
-                    if song.preview_url is not np.nan:
+                    if song.preview_url:
                         hits.append(song)
                 elif has_download_url:
-                    if song.download_url is not np.nan:
+                    if song.download_url:
                         hits.append(song)
                 elif not has_download_url and not has_preview_url:  # no restrictions
-                    # TODO: should the var be called "must_have_download_url"?
                     hits.append(song)
                 if len(hits) == 5:
                     break
@@ -179,13 +178,13 @@ class Recommender:
             for index in selected:
                 song = self.songs.iloc[index]
                 if has_preview_url and has_download_url:
-                    if song.preview_url is not np.nan and song.download_url is not np.nan:
+                    if song.preview_url and song.download_url:
                         hits.append(song)
                 elif has_preview_url:
-                    if song.preview_url is not np.nan:
+                    if song.preview_url:
                         hits.append(song)
                 elif has_download_url:
-                    if song.download_url is not np.nan:
+                    if song.download_url:
                         hits.append(song)
                 elif not has_download_url and not has_preview_url:  # no restrictions
                     # TODO: should the var be called "must_have_download_url"?
