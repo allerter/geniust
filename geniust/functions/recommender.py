@@ -43,7 +43,8 @@ class Recommender:
         # Read tracks
         en = pd.read_csv(join(data_path, 'tracks en.csv'))
         fa = pd.read_csv(join(data_path, 'tracks fa.csv'))
-        self.songs: pd.DataFrame = pd.merge(en.drop(columns=['download_url']), fa, how='outer')
+        self.songs: pd.DataFrame = pd.merge(
+            en.drop(columns=['download_url']), fa, how='outer')
         self.songs.replace({np.NaN: None}, inplace=True)
 
         # Read artists
@@ -72,7 +73,8 @@ class Recommender:
         self.binarizer = mlb
 
         # Convert df to numpy array
-        numpy_df = df.drop(columns=['id_spotify', 'artist', 'name', 'download_url', 'preview_url', 'isrc', 'cover_art'])
+        numpy_df = df.drop(columns=['id_spotify', 'artist', 'name',
+                                    'download_url', 'preview_url', 'isrc', 'cover_art'])
         self.numpy_songs = numpy_df.to_numpy()
         self.genres = list(numpy_df.columns)
         self.genres_by_number = {}
@@ -555,8 +557,6 @@ def reset_shuffle(update: Update, context: CallbackContext) -> int:
 @get_user
 def display_recommendations(update: Update, context: CallbackContext) -> int:
     """Displays song recommendations to the user"""
-    genius = context.bot_data["genius"]
-    famusic = context.bot_data['famusic']
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["display_recommendations"]
     recommender = context.bot_data['recommender']
@@ -573,27 +573,21 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     deep_linked = []
     for song in songs:
         full_name = f'{song.artist} - {song["name"]}'
-        if song.id_spotify:
-            deep_linked.append(utils.deep_link(full_name,
-                                               song.id_spotify,
-                                               'song',
-                                               'spotify'))
-        elif search := genius.search_songs(f'{song.artist} {song["name"]}',
-                                           match=(song.artist, song['name']))['match']:
-            deep_linked.append(utils.deep_link(full_name,
-                                               search['id'],
-                                               'song',
-                                               'genius'))
+        if song.download_url:
+            deep_linked.append(
+                utils.deep_link(full_name,
+                                song_id,  # TODO: make recommender return index
+                                'song',
+                                'famusic',
+                                download=True))
+        elif song.id_spotify:
+            deep_linked.append(
+                utils.deep_link(full_name,
+                                song.id_spotify,
+                                'song',
+                                'spotify'))
         else:
-            song_id, source = famusic.search(song.artist, song['name'])
-            if song_id:
-                deep_linked.append(utils.deep_link(full_name,
-                                                   song_id,
-                                                   'song',
-                                                   source,
-                                                   download=True))
-            else:
-                deep_linked.append(full_name)
+            deep_linked.append(full_name)
     caption = text.format('\n'.join('▪️ {}'.format(x) for x in deep_linked))
     bot.send_message(chat_id, caption)
     return END
