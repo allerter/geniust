@@ -139,12 +139,14 @@ class Recommender:
         selected = np.random.choice(similar, 20, )  # TODO: set probability array
 
         # sort songs by most similar song artists to user artists
+
         user_artists = [self.artists[self.artists.name == artist]
                         for artist in user_preferences.artists]
         if user_artists:
             song_artists = [self.artists[self.artists.name == self.songs.loc[song].artist]
                             for song in selected]
             cosine_similarities = []
+
             user_tfifd = self.tfidf[[artist.index[0] for artist in user_artists], :]
             for index, artist in enumerate(song_artists):
                 cosine_similarity = linear_kernel(
@@ -571,15 +573,19 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     songs = recommender.shuffle(user_preferences)
 
     deep_linked = []
-    for song in songs:
+    context.user_data['download_urls'] = []
+    for i, song in enumerate(songs):
         full_name = f'{song.artist} - {song["name"]}'
         if song.download_url:
             deep_linked.append(
                 utils.deep_link(full_name,
-                                song_id,  # TODO: make recommender return index
+                                i,  # TODO: make recommender return index
                                 'song',
                                 'famusic',
                                 download=True))
+            context.user_data['download_urls'].append(
+                (i, song.download_url)
+            )
         elif song.id_spotify:
             deep_linked.append(
                 utils.deep_link(full_name,

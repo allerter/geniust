@@ -119,10 +119,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
 @get_user
 def download_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
-    language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["display_song"]
     bot = context.bot
-    famusic = context.bot_data["famusic"]
     chat_id = update.effective_chat.id
 
     if update.callback_query:
@@ -133,12 +130,9 @@ def download_song(update: Update, context: CallbackContext) -> int:
         _, song_id_str, platform, _ = context.args[0].split("_")
 
     song_id = int(song_id_str)
-    song_url = famusic.download_url(song_id, platform)
+    song_url = context.user_data['download_url'][song_id]
 
-    if song_url is None:
-        bot.send_message(chat_id, text['not_found'])
-    else:
-        bot.send_audio(chat_id, song_url)
+    bot.send_audio(chat_id, song_url)
 
     return END
 
