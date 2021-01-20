@@ -116,8 +116,7 @@ class Recommender:
     def shuffle(self,
                 user_preferences: Preferences,
                 language: str = 'any',
-                has_preview_url: bool = False,
-                has_download_url: bool = False,
+                song_type='any',
                 ) -> List[Tuple[Union[None, str], str, str]]:
         # genres = self.binarize(user_preferences.genres)
         user_genres = self.binarize(user_preferences.genres)
@@ -161,36 +160,42 @@ class Recommender:
             hits = []
             for row in cosine_similarities:
                 song = self.songs.iloc[selected[row[0]]]
-                if has_preview_url and has_download_url:
-                    if song.preview_url and song.download_url:
+                if song_type == 'any':
+                    hits.append(song)
+                elif song_type == 'any_file':
+                    if song.preview_file or song.download_url:
                         hits.append(song)
-                elif has_preview_url:
+                elif song_type == 'preview':
                     if song.preview_url:
                         hits.append(song)
-                elif has_download_url:
+                elif song_type == 'full':
                     if song.download_url:
                         hits.append(song)
-                elif not has_download_url and not has_preview_url:  # no restrictions
                     hits.append(song)
+                elif song_type == 'preview,full':
+                    if song.preview_url and song.download_url:
+                        hits.append(song)
                 if len(hits) == 5:
                     break
         else:
             hits = []
             for index in selected:
                 song = self.songs.iloc[index]
-                if has_preview_url and has_download_url:
-                    if song.preview_url and song.download_url:
+                if song_type == 'any':
+                    hits.append(song)
+                elif song_type == 'any_file':
+                    if song.preview_file or song.download_url:
                         hits.append(song)
-                elif has_preview_url:
+                elif song_type == 'preview':
                     if song.preview_url:
                         hits.append(song)
-                elif has_download_url:
+                elif song_type == 'full':
                     if song.download_url:
                         hits.append(song)
-                elif not has_download_url and not has_preview_url:  # no restrictions
-                    # TODO: should the var be called "must_have_download_url"?
                     hits.append(song)
-
+                elif song_type == 'preview,full':
+                    if song.preview_url and song.download_url:
+                        hits.append(song)
                 if len(hits) == 5:
                     break
 
