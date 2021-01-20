@@ -62,24 +62,24 @@ class Recommender:
         # assert no_duplicates, True
 
         self.songs['genres'] = self.songs['genres'].str.split(',')
-
+        songs_copy = self.songs.copy()
         # One-hot encode genres
         mlb = MultiLabelBinarizer(sparse_output=True)
-        df = self.songs.join(
+        df = songs_copy.join(
             pd.DataFrame.sparse.from_spmatrix(
-                mlb.fit_transform(self.songs.pop('genres')),
-                index=self.songs.index,
+                mlb.fit_transform(songs_copy.pop('genres')),
+                index=songs_copy.index,
                 columns=mlb.classes_))
         self.binarizer = mlb
-
         # Convert df to numpy array
         numpy_df = df.drop(columns=['id_spotify', 'artist', 'name',
                                     'download_url', 'preview_url', 'isrc', 'cover_art'])
-        self.numpy_songs = numpy_df.to_numpy()
         self.genres = list(numpy_df.columns)
         self.genres_by_number = {}
         for i, genre in enumerate(self.genres):
             self.genres_by_number[i] = genre
+        # dtype=[(genre, int) for genre in self.genres]
+        self.numpy_songs = numpy_df.to_numpy()
 
         with open(join(data_path, 'persian_stopwords.txt'), 'r', encoding='utf8') as f:
             PERSIAN_STOP_WORDS = f.read().strip().split()
@@ -111,42 +111,42 @@ class Recommender:
         return [self.lowered_artists_names[m] for m in matches]
 
     def binarize(self, genres: List[str]) -> np.ndarray:
-        return self.binarizer.transform([genres]).toarray()
+        return self.binarizer.transform([genres]).toarray()[0]
 
     def shuffle(self,
                 user_preferences: Preferences,
-                language: str = 'all',
+                language: str = 'any',
                 has_preview_url: bool = False,
                 has_download_url: bool = False,
                 ) -> List[Tuple[Union[None, str], str, str]]:
-        genres = self.binarize(user_preferences.genres)
-        similarity = np.sqrt(np.sum(
-            (self.numpy_songs / self.numpy_songs.sum(axis=1)[:, np.newaxis]
-                - genres / np.sum(genres))**2,
-            axis=1)
-        )
-        # sort by most similar and remove items where similarity less than 50%
-        similar = np.argsort(similarity)[:len(similarity[similarity >= 0.5])]
-
+        # genres = self.binarize(user_preferences.genres)
+        user_genres = self.binarize(user_preferences.genres)
+        genre_value = 1 / sum(user_genres)
         persian_index = np.where(self.binarize(['persian']) == 1)[0][0]
-        if language == 'en':
-            similar = similar[similar[:, persian_index] == 0]
-        elif language == 'fa':
-            similar = similar[similar[:, persian_index] == 1]
+        similar = []
+        for index, song in enumerate(self.numpy_songs):
+            score = 0
+            for i, genre in enumerate(song):
+                if genre == 1 and user_genres[i] == 1:
+                    score += genre_value
+
+            if score == 1:
+                if ((language == 'any')
+                    or (language == 'en' and song[persian_index] == 0)
+                        or (language == 'fa' and song[persian_index] == 1)):
+                    similar.append(index)
 
         # Randomly choose 20 songs from similar songs
         # This is to avoid sending the same set of songs each time
         selected = np.random.choice(similar, 20, )  # TODO: set probability array
 
         # sort songs by most similar song artists to user artists
-
         user_artists = [self.artists[self.artists.name == artist]
                         for artist in user_preferences.artists]
         if user_artists:
             song_artists = [self.artists[self.artists.name == self.songs.loc[song].artist]
                             for song in selected]
             cosine_similarities = []
-
             user_tfifd = self.tfidf[[artist.index[0] for artist in user_artists], :]
             for index, artist in enumerate(song_artists):
                 cosine_similarity = linear_kernel(
@@ -406,8 +406,6 @@ def select_artists(update: Update, context: CallbackContext):
         ud['preferences'] = Preferences(ud.pop('genres'), ud.pop('artists'))
         db.update_preferences(chat_id, ud['preferences'])
         update.callback_query.edit_message_text(text['finished'])
-        print(ud['preferences'].artists)
-        print(ud['preferences'].genres)
         return END
     else:
         _, artist = query.data.split('_')
@@ -503,9 +501,7 @@ def process_preferences(update: Update, context: CallbackContext):
             track_genres = api.lastfm('Track.getTopTags',
                                       {'artist': track.artists[0],
                                        'track': track.name})
-            print(track_genres)
             if 'toptags' in track_genres:
-                print('success')
                 for tag in track_genres['toptags']['tag']:
                     for genre in recommender.genres:
                         if genre in tag:
@@ -525,7 +521,6 @@ def process_preferences(update: Update, context: CallbackContext):
     for artist in artists:
         found_artist = recommender.artists[
             recommender.artists.name == artist].name.values
-        print(found_artist)
         if found_artist.size > 0:
             found_artists.append(found_artist[0])
 
