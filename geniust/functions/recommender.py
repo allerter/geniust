@@ -163,7 +163,7 @@ class Recommender:
                 if song_type == 'any':
                     hits.append(song)
                 elif song_type == 'any_file':
-                    if song.preview_file or song.download_url:
+                    if song.preview_url or song.download_url:
                         hits.append(song)
                 elif song_type == 'preview':
                     if song.preview_url:
@@ -184,7 +184,7 @@ class Recommender:
                 if song_type == 'any':
                     hits.append(song)
                 elif song_type == 'any_file':
-                    if song.preview_file or song.download_url:
+                    if song.preview_url or song.download_url:
                         hits.append(song)
                 elif song_type == 'preview':
                     if song.preview_url:
