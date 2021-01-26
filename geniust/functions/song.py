@@ -9,8 +9,9 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.constants import MAX_MESSAGE_LENGTH
 from bs4 import BeautifulSoup
+from lyricsgenius import Genius
 
-from geniust.constants import END, TYPING_SONG
+from geniust.constants import END, TYPING_SONG, GENIUS_TOKEN
 from geniust import utils, api
 from geniust import get_user
 from geniust.utils import log
@@ -162,12 +163,16 @@ def display_lyrics(
 
     message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
 
-    lyrics = genius_t.lyrics(
-        song_id=song_id,
-        song_url=genius_t.song(song_id)["song"]["url"],
-        include_annotations=include_annotations,
-        telegram_song=True,
-    )
+    try:
+        lyrics = genius_t.lyrics(
+            song_id=song_id,
+            song_url=genius_t.song(song_id)["song"]["url"],
+            include_annotations=include_annotations,
+            telegram_song=True,
+        )
+    except Exception as e:
+        logger.error('error when displaying lyrics of %s: %s', song_id, e)
+        lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
 
     # formatting lyrics language
     lyrics = BeautifulSoup(lyrics, "html.parser")
