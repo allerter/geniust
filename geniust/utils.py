@@ -329,15 +329,18 @@ def human_format(num: int) -> str:
 RT = TypeVar("RT")
 
 
-def log(func: Callable[..., RT]) -> Callable[..., RT]:
-    """logs entering and exiting functions for debugging."""
-    logger = logging.getLogger(func.__module__)
+def log(sensitive_data=False):
+    def decorator(func):
+        logger = logging.getLogger(func.__module__)
 
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> RT:
-        logger.debug("Entering: %s", func.__name__)
-        result = func(*args, **kwargs)
-        logger.debug("Exiting: %s (return value: %s)", func.__name__, repr(result))
-        return result
-
-    return wrapper
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> RT:
+            logger.debug("Entering: %s", func.__name__)
+            result = func(*args, **kwargs)
+            logger.debug(
+                "Exiting: %s (return value: %s)",
+                func.__name__,
+                repr(result) if not sensitive_data else "MASKED")
+            return result
+        return wrapper
+    return decorator
