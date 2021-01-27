@@ -97,7 +97,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
         recommender_song = recommender.song(id_spotify=spotify_id)
         preview_url = recommender_song.preview_url
         download_url = recommender_song.download_url
-        search = genius.search_songs(song.name, match=(song.artists[0], song.name))
+        search = genius.search_songs(song.name, match=(song.artists[0].name, song.name))
         if search['match'] is not None:
             song_id = search['match']['id']
         else:
