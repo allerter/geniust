@@ -237,7 +237,9 @@ class Recommender:
         if id:
             row = self.songs.iloc[id]
         else:
-            row = self.songs[self.songs.id_spotify == id_spotify]
+            rows = self.songs[self.songs.id_spotify == id_spotify]
+            id = rows.index[0]
+            row = rows.iloc[0]
         return Song(
             id=id,
             **row.to_dict()
