@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from lyricsgenius import Genius
 
 from geniust.constants import END, TYPING_SONG, GENIUS_TOKEN
-from geniust import utils, api
+from geniust import utils, api, username
 from geniust import get_user
 from geniust.utils import log
 
@@ -155,10 +155,20 @@ def download_song(update: Update, context: CallbackContext) -> int:
     if platform == 'recommender':
         song = recommender.song(int(song_id_str))
         song_url = song.download_url if type == 'download' else song.preview_url
+        artist = song.artist
+        name = song.name
     else:
-        song_url = spotify.track(song_id_str).preview_url
+        song = spotify.track(song_id_str)
+        song_url = song.preview_url
+        artist = song.artists[0]
+        name = song.name
 
-    bot.send_audio(chat_id, song_url)
+    bot.send_audio(
+        chat_id,
+        song_url,
+        performer=artist,
+        title=name,
+        caption=f'@{username}')
 
     return END
 
