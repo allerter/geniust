@@ -123,7 +123,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
     if preview_url:
         buttons.append([IButton(
             text['preview'],
-            callback_data=f"song_{recommender_song.id}_recommender_download")])
+            callback_data=f"song_{recommender_song.id}_recommender_preview")])
 
     if download_url:
         buttons.append([IButton(
