@@ -102,6 +102,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
             song_id = search['match']['id']
         else:
             song_url = download_url if download_url else preview_url
+            logger.debug('Song %s not found. Sending audio %s', spotify_id, song_url)
             context.bot.send_audio(chat_id, song_url)
             return END
 
