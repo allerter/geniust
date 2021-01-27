@@ -426,6 +426,7 @@ process_preferences:
 
 display_recommendations:
   body: "Recommended songs: \n{}"
+  preview: Preview
   download: Download
 
 reset_shuffle: Reset complete.
@@ -481,6 +482,8 @@ display_song:
 
   description: Description
   lyrics: Lyrics
+  preview: Preview
+  download: Download
   not_found: Song not found.
 
 display_lyrics: getting lyrics...

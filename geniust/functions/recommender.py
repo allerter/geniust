@@ -231,8 +231,13 @@ class Recommender:
 
         return hits
 
-    def song(self, id: int) -> Song:
-        row = self.songs.iloc[id]
+    def song(self, id: int = None, id_spotify: str = None) -> Song:
+        if not any([id, id_spotify]):
+            raise AssertionError('Must supply either id or id_spotify.')
+        if id:
+            row = self.songs.iloc[id]
+        else:
+            row = self.songs[self.songs.id_spotify == id_spotify]
         return Song(
             id=id,
             **row.to_dict()
@@ -611,21 +616,28 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
 
     deep_linked = []
     for i, song in enumerate(songs):
+        urls = []
         full_name = f'{song.artist} - {song.name}'
-        if song.download_url and not song.id_spotify:
+        if song.preview_url:
+            url = utils.deep_link(
+                text['preview'],
+                song.id,
+                'song',
+                'recommender_preview',
+            )
+            urls.append(url)
+        if song.download_url:
             item = utils.deep_link(
                 text['download'],
-                song.index[0],
+                song.id,
                 'song',
-                'famusic',
-                download=True)
-            item = f'{full_name} ({item})'
-        elif song.id_spotify:
-            item = utils.deep_link(
-                full_name,
-                song.id_spotify,
-                'song',
-                'spotify')
+                'recommender_download',
+            )
+            url = f'{full_name} ({item})'
+            urls.append(url)
+        if urls:
+            urls = '|'.join(urls)
+            item = f"{full_name} ({urls})"
         else:
             item = full_name
         deep_linked.append(item)

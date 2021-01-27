@@ -430,6 +430,7 @@ process_preferences:
 
 display_recommendations:
   body: "آهنگ‌های پیشنهادی:  \n{}"
+  preview: پیش‌نمایش
   download: دانلود
 
 reset_shuffle: بازنشانی به اتمام رسید.
@@ -485,6 +486,8 @@ display_song:
 
   description: شرح
   lyrics: متن آهنگ
+  preview: پیش‌نمایش
+  download: دانلود
   not_found: آهنگ پیدا نشد.
 
 display_lyrics: در حال دریافت متن...

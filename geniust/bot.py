@@ -623,7 +623,7 @@ def main():
         ),
         CallbackQueryHandler(
             song.download_song,
-            pattern=r"^song_[0-9]+_(radiojavan|navahang|nex1music)_download$"
+            pattern=r"^song_[\d\S]+_(recommender|spotify)_(preview|download)$"
         ),
         CallbackQueryHandler(
             customize.customize_menu, pattern="^" + str(CUSTOMIZE_MENU) + "$"
@@ -644,6 +644,7 @@ def main():
         CallbackQueryHandler(
             annotation.downvote_annotation, pattern=r"^annotation_[0-9]+_downvote$"
         ),
+
         CallbackQueryHandler(account.login, pattern=r"^login_(spotify|genius)$"),
         CallbackQueryHandler(account.logged_in, pattern="^" + str(LOGGED_IN) + "$"),
         CallbackQueryHandler(account.logout, pattern="^" + str(LOGOUT) + "$"),
@@ -795,7 +796,7 @@ def main():
             "start",
             song.download_song,
             Filters.regex(
-                r"^/start song_[0-9]+_(radiojavan|navahang|nex1music)_download$"),
+                r"^/start song_[\d\S]+_(recommender|spotify)_(preview|download)$"),
             pass_args=True,
         ),
         CommandHandler(
