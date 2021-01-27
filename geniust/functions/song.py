@@ -160,7 +160,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
     else:
         song = spotify.track(song_id_str)
         song_url = song.preview_url
-        artist = song.artists[0]
+        artist = ' & '.join([artist.name for artist in song.artists])
         name = song.name
 
     bot.send_audio(
