@@ -126,7 +126,7 @@ class Database:
 
         cursor.execute(query, values)
 
-    @log(sensitive_data=True)
+    @log
     @get_cursor
     def select(
         self,
