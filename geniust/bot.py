@@ -332,15 +332,6 @@ class RecommendationsHandler(RequestHandler):
             return
 
         user_preferences = Preferences(genres=genres, artists=artists)
-        # tracks = [{'artist': x.artist,
-        #           'title': x['name'],
-        #           'id_spotify': x.id_spotify,
-        #           'isrc': x.isrc,
-        #           'cover_art': x.cover_art,
-        #           'preview_url': x.preview_url,
-        #           'download_url': x.download_url,
-        #           }
-        #          for x in self.recommender.shuffle(user_preferences)]
         tracks = [x.to_dict()
                   for x in self.recommender.shuffle(
             user_preferences,
@@ -574,7 +565,6 @@ def error(update: Update, context: CallbackContext) -> None:
         context.bot.send_message(dev_id, text, parse_mode="HTML")
     # we raise the error again, so the logger module catches it.
     # If you don't use the logger module, use it.
-    print('here')
     raise  # type: ignore
 
 

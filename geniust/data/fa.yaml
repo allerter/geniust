@@ -428,7 +428,9 @@ process_preferences:
   insufficient_data: نتونستم اطلاعات کافی از {} به دست بیارم. می‌تونی یه روش دیگه رو امتحان کنی.
   done: لیست علایق ایجاد شد. حالا دیگه می‌تونی از  /shuffle استفاده کنی.
 
-display_recommendations: "آهنگ‌های پیشنهادی:  \n{}"
+display_recommendations:
+  body: "آهنگ‌های پیشنهادی:  \n{}"
+  download: دانلود
 
 reset_shuffle: بازنشانی به اتمام رسید.
 

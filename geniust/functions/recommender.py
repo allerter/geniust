@@ -3,6 +3,7 @@ import difflib
 from os.path import join
 from itertools import zip_longest
 from typing import Tuple, List, Union, Dict
+from dataclasses import dataclass, asdict
 
 import tekore as tk
 import pandas as pd
@@ -35,6 +36,26 @@ genres_by_age_group: Dict[int, List[str]] = {
     64: ['rock', 'country', 'traditional'],
     65: ['rock', 'country', 'traditional'],
 }
+
+
+@dataclass
+class Song:
+    """A Song from the Recommender"""
+    id: int
+    artist: str
+    name: str
+    genres: list
+    id_spotify: str = None
+    isrc: str = None
+    cover_art: str = None
+    preview_url: str = None
+    download_url: str = None
+
+    def to_dict(self):
+        return asdict(self)
+
+    def __repr__(self):
+        return f"Song(id={self.id})"
 
 
 class Recommender:
@@ -115,29 +136,38 @@ class Recommender:
 
     def shuffle(self,
                 user_preferences: Preferences,
-                language: str = 'any',
+                # language: str = 'any',
                 song_type='any',
-                ) -> List[Tuple[Union[None, str], str, str]]:
-        # genres = self.binarize(user_preferences.genres)
+                ) -> List[Song]:
         user_genres = self.binarize(user_preferences.genres)
         genre_value = 1 / sum(user_genres)
         persian_index = np.where(self.binarize(['persian']) == 1)[0][0]
+        persian_user = True if user_genres[persian_index] == 1 else False
         similar = []
         for index, song in enumerate(self.numpy_songs):
             score = 0
+
+            # skip song if it doesn't match user language
+            if bool(song[persian_index]) != persian_user:
+                continue
             for i, genre in enumerate(song):
                 if genre == 1 and user_genres[i] == 1:
                     score += genre_value
 
             if score == 1:
-                if ((language == 'any')
-                    or (language == 'en' and song[persian_index] == 0)
-                        or (language == 'fa' and song[persian_index] == 1)):
-                    similar.append(index)
+                # no need for language parameter since
+                # the first if statement enforeces the valuse of "persian" genre
+                #        if ((language == 'any')
+                #            or (language == 'en' and song[persian_index] == 0)
+                #                or (language == 'fa' and song[persian_index] == 1)):
+                similar.append(index)
 
         # Randomly choose 20 songs from similar songs
         # This is to avoid sending the same set of songs each time
-        selected = np.random.choice(similar, 20, )  # TODO: set probability array
+        if similar:
+            selected = np.random.choice(similar, 20, )  # TODO: set probability array
+        else:
+            return []
 
         # sort songs by most similar song artists to user artists
         user_artists = [self.artists[self.artists.name == artist]
@@ -159,7 +189,7 @@ class Recommender:
             cosine_similarities.sort(key=lambda x: x[1], reverse=True)
             hits = []
             for row in cosine_similarities:
-                song = self.songs.iloc[selected[row[0]]]
+                song = self.song(selected[row[0]])
                 if song_type == 'any':
                     hits.append(song)
                 elif song_type == 'any_file':
@@ -180,7 +210,7 @@ class Recommender:
         else:
             hits = []
             for index in selected:
-                song = self.songs.iloc[index]
+                song = self.song(index)
                 if song_type == 'any':
                     hits.append(song)
                 elif song_type == 'any_file':
@@ -200,6 +230,13 @@ class Recommender:
                     break
 
         return hits
+
+    def song(self, id: int) -> Song:
+        row = self.songs.iloc[id]
+        return Song(
+            id=id,
+            **row.to_dict()
+        )
 
 
 @log
@@ -573,27 +610,25 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     songs = recommender.shuffle(user_preferences)
 
     deep_linked = []
-    context.user_data['download_urls'] = []
     for i, song in enumerate(songs):
-        full_name = f'{song.artist} - {song["name"]}'
-        if song.download_url:
-            deep_linked.append(
-                utils.deep_link(full_name,
-                                i,  # TODO: make recommender return index
-                                'song',
-                                'famusic',
-                                download=True))
-            context.user_data['download_urls'].append(
-                (i, song.download_url)
-            )
+        full_name = f'{song.artist} - {song.name}'
+        if song.download_url and not song.id_spotify:
+            item = utils.deep_link(
+                text['download'],
+                song.index[0],
+                'song',
+                'famusic',
+                download=True)
+            item = f'{full_name} ({item})'
         elif song.id_spotify:
-            deep_linked.append(
-                utils.deep_link(full_name,
-                                song.id_spotify,
-                                'song',
-                                'spotify'))
+            item = utils.deep_link(
+                full_name,
+                song.id_spotify,
+                'song',
+                'spotify')
         else:
-            deep_linked.append(full_name)
-    caption = text.format('\n'.join('▪️ {}'.format(x) for x in deep_linked))
+            item = full_name
+        deep_linked.append(item)
+    caption = text['body'].format('\n'.join('▪️ {}'.format(x) for x in deep_linked))
     bot.send_message(chat_id, caption)
     return END

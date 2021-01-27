@@ -122,6 +122,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     bot = context.bot
     chat_id = update.effective_chat.id
+    recommender = context.bot_data['recommender']
 
     if update.callback_query:
         _, song_id_str, platform, _ = update.callback_query.data.split("_")
@@ -131,7 +132,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
         _, song_id_str, platform, _ = context.args[0].split("_")
 
     song_id = int(song_id_str)
-    song_url = context.user_data['download_url'][song_id]
+    song_url = recommender.song(song_id).download_url
 
     bot.send_audio(chat_id, song_url)
 

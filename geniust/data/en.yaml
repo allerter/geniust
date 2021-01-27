@@ -424,7 +424,9 @@ process_preferences:
   insufficient_data: Couldn't get enough data from {}. Maybe try something else?
   done: Preferences created. You can use /shuffle now.
 
-display_recommendations: "Recommended songs: \n{}"
+display_recommendations:
+  body: "Recommended songs: \n{}"
+  download: Download
 
 reset_shuffle: Reset complete.
 
