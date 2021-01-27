@@ -620,6 +620,8 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     for i, song in enumerate(songs):
         urls = []
         full_name = f'{song.artist} - {song.name}'
+        if song.id_spotify:
+            full_name = utils.deep_link(full_name, song.id_spotify, 'song', 'spotify')
         if song.preview_url:
             url = utils.deep_link(
                 text['preview'],
@@ -629,13 +631,12 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
             )
             urls.append(url)
         if song.download_url:
-            item = utils.deep_link(
+            url = utils.deep_link(
                 text['download'],
                 song.id,
                 'song',
                 'recommender_download',
             )
-            url = f'{full_name} ({item})'
             urls.append(url)
         if urls:
             urls = '|'.join(urls)
