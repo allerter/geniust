@@ -869,9 +869,9 @@ def main():
 
         },
         fallbacks=[
-            CallbackQueryHandler(end_describing, pattern="^" + str(END) + "$"),
             CommandHandler("cancel", end_describing),
             CommandHandler("stop", stop),
+            CallbackQueryHandler(end_describing),
         ],
     )
     dp.add_handler(shuffle_preferences_conv_handler)
