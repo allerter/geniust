@@ -343,6 +343,8 @@ def select_genres(update: Update, context: CallbackContext):
     query = update.callback_query
     selected_genre = None
     if query.data == 'genre':
+        if language == 'fa':
+            context.user_data['genres'] = ['persian']
         query.edit_message_text(text['choose_genres'])
     elif query.data == 'done':
         return begin_artist(update, context)
@@ -643,4 +645,5 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
         deep_linked.append(item)
     caption = text['body'].format('\n'.join('▪️ {}'.format(x) for x in deep_linked))
     bot.send_message(chat_id, caption)
+
     return END
