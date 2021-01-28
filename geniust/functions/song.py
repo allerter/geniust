@@ -219,6 +219,7 @@ def display_lyrics(
         logger.error('error when displaying lyrics of %s: %s', song_id, e)
         lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
 
+    logger.debug('%s lyrics: %s', song_id, lyrics)
     # formatting lyrics language
     lyrics = BeautifulSoup(lyrics, "html.parser")
     lyrics = utils.format_language(lyrics, lyrics_language)
