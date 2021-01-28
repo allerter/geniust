@@ -252,12 +252,12 @@ display_account:
 display_annotation: Found nothing :(
 
 upvote_annotation:
-  login_necessary: You need to log in before voting. Log in using /account
+  login_necessary: You need to log in before voting. Log in using /login
   voted: 👍 Upvoted
   unvoted: Unvoted!
 
 downvote_annotation:
-  login_necessary: You need to log in before voting. Log in using /account
+  login_necessary: You need to log in before voting. Log in using /login
   voted: 👎 Downvoted
   unvoted: Unvoted!
 
