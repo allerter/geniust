@@ -108,13 +108,6 @@ def display_song(update: Update, context: CallbackContext) -> int:
     cover_art = song["song_art_image_url"]
     caption = song_caption(update, context, song, text["caption"], language)
 
-    if spotify_id is None:
-        query = f"{song['title']} artist:{song['primary_artist']['name']}"
-        spotify_search = spotify.search(query, types='track', limit=5)
-        for track in spotify_search.items:
-            if track.name == song['title']:
-                spotify_id = track.id
-
     callback_data = f"song_{song['id']}_lyrics"
     buttons = [[IButton(text["lyrics"], callback_data=callback_data)]]
 
@@ -134,10 +127,16 @@ def display_song(update: Update, context: CallbackContext) -> int:
         buttons.append([IButton(
             text['download'],
             callback_data=f"song_{recommender_song.id}_recommender_download")])
-    elif spotify_id:
-        buttons.append([IButton(
-            text['download'],
-            url=f"http://t.me/acutebot?start=music_{spotify_id}")])
+    else:
+        query = f"{song['title']} artist:{song['primary_artist']['name']}"
+        spotify_search = spotify.search(query, types=('track',), limit=5)[0]
+        for track in spotify_search.items:
+            if track.name == song['title']:
+                spotify_id = track.id
+        if spotify_id:
+            buttons.append([IButton(
+                text['download'],
+                url=f"http://t.me/acutebot?start=music_{spotify_id}")])
 
     bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
 
