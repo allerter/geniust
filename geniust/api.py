@@ -92,7 +92,9 @@ def get_channel() -> types.TypeInputPeer:
         TELETHON_API_HASH,
         loop=asyncio.new_event_loop(),
     ) as client:
-        return client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
+        return client.loop.run_until_complete(
+            client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
+        )
 
 
 def telegram_annotation(a: str) -> Tuple[str, bool]:
@@ -243,6 +245,7 @@ class GeniusT(Genius):
         self.retries = 3
         self.timeout = 5
         self.public_api = True
+        self.annotations_channel = None
 
     def artist(
         self,
@@ -429,7 +432,9 @@ class GeniusT(Genius):
             )
 
             client.start()
-            annotations_channel = get_channel()
+            if self.annotations_channel is None:
+                self.annotations_channel = get_channel()
+            annotations_channel = self.annotations_channel
 
             for annotation_id, annotation_body in annotations.items():
                 annotation, preview = telegram_annotation(annotation_body)
