@@ -241,7 +241,7 @@ class Recommender:
             id = rows.index[0]
             row = rows.iloc[0]
         return Song(
-            id=id,
+            id=int(id),
             **row.to_dict()
         )
 
