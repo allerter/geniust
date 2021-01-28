@@ -129,7 +129,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
             callback_data=f"song_{recommender_song.id}_recommender_download")])
     else:
         artist = song['primary_artist']['name']
-        title = song['title']
+        title = song['title'].replace('\u200b', '')
         query = f"{title} artist:{artist}"
         spotify_search = spotify.search(query, types=('track',), limit=5)[0]
         for track in spotify_search.items:
