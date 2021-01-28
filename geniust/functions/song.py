@@ -128,10 +128,12 @@ def display_song(update: Update, context: CallbackContext) -> int:
             text['download'],
             callback_data=f"song_{recommender_song.id}_recommender_download")])
     else:
-        query = f"{song['title']} artist:{song['primary_artist']['name']}"
+        artist = song['primary_artist']['name']
+        title = song['title']
+        query = f"{title} artist:{artist}"
         spotify_search = spotify.search(query, types=('track',), limit=5)[0]
         for track in spotify_search.items:
-            if track.name == song['title']:
+            if title in track.name and artist == track.artists[0].name:
                 spotify_id = track.id
         if spotify_id:
             buttons.append([IButton(
