@@ -77,7 +77,7 @@ def upvote_annotation(update: Update, context: CallbackContext) -> int:
     token = context.user_data["genius_token"]
 
     if token is None:
-        update.callback_query.ansert()
+        update.callback_query.answer()
         context.bot.send_message(chat_id, texts["login_necessary"])
         return END
 
