@@ -90,7 +90,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
         song_id = int(song_id_str)
         spotify_id = None
     else:
-        spotify_id = song_id
+        spotify_id = song_id_str
         song = spotify.track(spotify_id)
         recommender_song = recommender.song(id_spotify=spotify_id)
         preview_url = recommender_song.preview_url
