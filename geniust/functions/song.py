@@ -219,9 +219,9 @@ def display_lyrics(
         logger.error('error when displaying lyrics of %s: %s', song_id, e)
         lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
 
-    logger.debug('%s lyrics: %s', song_id, lyrics)
+    logger.debug('%s lyrics: %s', song_id, repr(lyrics))
     # formatting lyrics language
-    lyrics = BeautifulSoup(lyrics, "html.parser")
+    # lyrics = BeautifulSoup(lyrics, "html.parser")
     lyrics = utils.format_language(lyrics, lyrics_language)
     lyrics = utils.remove_unsupported_tags(lyrics)
     lyrics = re.sub(r"<[/]*(br|div|p).*[/]*?>", "", str(lyrics))
