@@ -741,13 +741,13 @@ def main():
     for handler in inline_query_handlers:
         dp.add_handler(handler)
 
-    # ----------------- ARGUMENTED START -----------------
+    # ----------------- ARGUMENTED START (DEEP LINKING) -----------------
 
     argumented_start_handlers = [
         CommandHandler(
             "start",
             album.display_album,
-            Filters.regex(r"^/start albums_.*_(genius|spotify)$"),
+            Filters.regex(r"^/start album_.*_(genius|spotify)$"),
             pass_args=True,
         ),
         CommandHandler(
