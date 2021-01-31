@@ -170,6 +170,7 @@ def account_caption(
         .replace("{pyongs}", str(account["stats"]["pyongs_count"]))
         .replace("{questions}", str(account["stats"]["questions_count"]))
         .replace("{transcriptions}", str(account["stats"]["transcriptions_count"]))
+        .replace("{all_activities_count}", str(sum(account["stats"].values())))
     )
     if artist := account["artist"]:
         artist = utils.deep_link(artist['name'], artist['id'], 'artist', 'genius')

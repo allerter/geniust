@@ -241,6 +241,8 @@ display_account:
       {questions}
       <b>آهنگ‌ها:</b>
       {transcriptions}
+      <b>تعداد تمام فعالیت‌ها:</b>
+      {all_activities_count}
     artist: <b>خواننده:</b> {}
 
 # ----------- Annotation -----------

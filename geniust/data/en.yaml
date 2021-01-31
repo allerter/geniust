@@ -245,6 +245,8 @@ display_account:
       {questions}
       <b>Transcriptions:</b>
       {transcriptions}
+      <b>All Activities Count:</b>
+      {all_activities_count}
     artist: "\n<b>Artist:</b> {}"
 
 # ----------- Annotation -----------
