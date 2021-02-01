@@ -36,8 +36,12 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> RT:
-        chat_id = args[0].effective_chat.id
+        update = args[0]
         context = args[1]
+        if update.effective_chat:
+            chat_id = update.effective_chat.id
+        else:
+            chat_id = update.inline_query.from_user.id
         if "bot_lang" not in context.user_data:
             database.user(chat_id, context.user_data)
         result = func(*args, **kwargs)
