@@ -3,7 +3,9 @@ main_menu:
   body: یک گزینه را انتخاب کنید
   album: آلبوم
   artist: خواننده
+  lyrics: جستجوی آهنگ بر اساس متن آهنگ
   song: آهنگ
+  user: کاربر
   customize_lyrics: شخصی‌سازی متن آهنگ
   change_language: تغییر زبان ربات
   # login: لاگین‌کردن در جینیس
@@ -459,6 +461,10 @@ reset_shuffle: بازنشانی به اتمام رسید.
 # ----------- Song -----------
 
 type_song: نام آهنگ را وارد کنید.
+type_lyrics: متن آهنگ را وارد کنید.
+
+search_lyrics:
+  no_lyrics: آهنگی با این متن پیدا نشد.
 
 search_songs:
   choose: یک آهنگ را انتخاب کنید.

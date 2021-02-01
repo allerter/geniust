@@ -60,6 +60,7 @@ from geniust.constants import (
     TYPING_FEEDBACK,
     TYPING_ARTIST,
     TYPING_USER,
+    TYPING_LYRICS,
     MAIN_MENU,
     DEVELOPERS,
     CUSTOMIZE_MENU,
@@ -412,6 +413,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
             IButton(text["song"], callback_data=str(TYPING_SONG)),
             IButton(text["user"], callback_data=str(TYPING_USER)),
         ],
+        [IButton(text["lyrics"], callback_data=str(TYPING_LYRICS))],
         [
             IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
             IButton(text["change_language"], callback_data=str(BOT_LANG)),
@@ -618,6 +620,7 @@ def main():
             artist.display_artist_songs,
             pattern=r"^artist_[0-9]+_songs_(ppt|rdt|ttl)_[0-9]+$",
         ),
+        CallbackQueryHandler(song.type_lyrics, pattern=f"^{TYPING_LYRICS}$"),
         CallbackQueryHandler(song.type_song, pattern=f"^{TYPING_SONG}$"),
         CallbackQueryHandler(
             song.display_song, pattern=r"^song_[\d\S]+_(genius|spotify)$"),
@@ -652,6 +655,8 @@ def main():
         CallbackQueryHandler(account.logged_in, pattern="^" + str(LOGGED_IN) + "$"),
         CallbackQueryHandler(account.logout, pattern="^" + str(LOGOUT) + "$"),
         CallbackQueryHandler(account.display_account, pattern=r"^account$"),
+        # User
+        CallbackQueryHandler(user.type_user, pattern=f"^{TYPING_USER}$"),
         CallbackQueryHandler(user.display_user, pattern=r"^user_[0-9]+$"),
         CallbackQueryHandler(user.display_user_description,
                              pattern=r"^user_[0-9]+_description$"),
@@ -669,9 +674,19 @@ def main():
                 artist.type_artist, pattern="^(?!" + str(END) + ").*$"
             ),
         ],
+        TYPING_LYRICS: [
+            MessageHandler(Filters.text & (~Filters.command), song.search_lyrics),
+            CallbackQueryHandler(song.type_lyrics, pattern="^(?!" + str(END) + ").*$"),
+        ],
         TYPING_SONG: [
             MessageHandler(Filters.text & (~Filters.command), song.search_songs),
             CallbackQueryHandler(song.type_song, pattern="^(?!" + str(END) + ").*$"),
+        ],
+        TYPING_USER: [
+            MessageHandler(Filters.text & (~Filters.command), user.type_user),
+            CallbackQueryHandler(
+                user.type_user, pattern="^(?!" + str(END) + ").*$"
+            ),
         ],
         TYPING_FEEDBACK: [
             MessageHandler(Filters.text & (~Filters.command), send_feedback)
@@ -739,6 +754,7 @@ def main():
     inline_query_handlers = [
         InlineQueryHandler(inline_query.search_albums, pattern=r"^\.album"),
         InlineQueryHandler(inline_query.search_artists, pattern=r"^\.artist"),
+        InlineQueryHandler(inline_query.search_lyrics, pattern=r"^\.lyrics"),
         InlineQueryHandler(inline_query.search_songs, pattern=r"^\.song"),
         InlineQueryHandler(inline_query.search_users, pattern=r"^\.user"),
         InlineQueryHandler(

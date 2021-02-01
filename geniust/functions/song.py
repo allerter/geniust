@@ -11,13 +11,30 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius
 
-from geniust.constants import END, TYPING_SONG, GENIUS_TOKEN
+from geniust.constants import END, TYPING_SONG, TYPING_LYRICS, GENIUS_TOKEN
 from geniust import utils, api, username
 from geniust import get_user
 from geniust.utils import log
 
 
 logger = logging.getLogger('geniust')
+
+
+@log
+@get_user
+def type_lyrics(update: Update, context: CallbackContext) -> int:
+    """Prompts user to type lyrics"""
+    # user has entered the function through the main menu
+    language = context.user_data["bot_lang"]
+    msg = context.bot_data["texts"][language]["type_lyrics"]
+
+    if update.callback_query:
+        update.callback_query.answer()
+        update.callback_query.edit_message_text(msg)
+    else:
+        update.message.reply_text(msg)
+
+    return TYPING_LYRICS
 
 
 @log
@@ -35,6 +52,35 @@ def type_song(update: Update, context: CallbackContext) -> int:
         update.message.reply_text(msg)
 
     return TYPING_SONG
+
+
+@log
+@get_user
+def search_lyrics(update: Update, context: CallbackContext) -> int:
+    """Displays a list of song titles based on user input"""
+    genius = context.bot_data["genius"]
+    language = context.user_data["bot_lang"]
+    text = context.bot_data["texts"][language]["search_lyrics"]
+    input_text = update.message.text
+
+    # get <= 10 hits for user input from Genius API search
+    json_search = genius.search_lyrics(input_text)
+    caption = ""
+    for i, hit in enumerate(json_search["sections"][0]["hits"][:10]):
+        song = hit["result"]
+        title = song["title"]
+        artist = song["primary_artist"]["name"]
+        full_title = utils.format_title(artist, title)
+        full_title = utils.deep_link(full_title, song['id'], 'song', 'genius')
+        highlight = hit['highlights'][0]['value']
+
+        caption += f'''\n\n◽️{i:02d}.{full_title}\n"{highlight}"'''
+
+    if caption:
+        update.message.reply_text(caption)
+    else:
+        update.message.reply_text(text["no_lyrics"])
+    return END
 
 
 @log

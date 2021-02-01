@@ -3,6 +3,7 @@ main_menu:
   body: What would you like to do?
   album: Album
   artist: Artist
+  lyrics: Search Songs by Lyrics
   song: Song
   user: User
   customize_lyrics: Customize Lyrics
@@ -154,6 +155,27 @@ inline_menu:
       <a href={image_url}>&#8204;</a>
     description: Search songs by their lyrics.
     initial_caption: Click on the button below to search lyrics.
+
+  search_lyrics:
+    body: Search Songs by Lyrics
+    caption: |-
+      {title} by {artist_name}
+
+      <b>Title:</b>
+      {title}
+      <b>Artist:</b>
+      {artist}
+      <b>Instrumental:</b>
+      {instrumental}
+      <b>Hot:</b>
+      {hot}
+      <b>Views:</b>
+      {views}
+
+      <a href={url}>View on Genius</a>
+      <a href={image_url}>&#8204;</a>
+    description: song info and matching lyrics.
+    initial_caption: Click on the button below to search songs by lyrics.
 
   search_songs:
     body: Search songs
@@ -456,6 +478,10 @@ reset_shuffle: Reset complete.
 # ----------- Song -----------
 
 type_song: Enter song name.
+type_lyrics: Enter song lyrics.
+
+search_lyrics:
+  no_lyrics: No matching songs fround.
 
 search_songs:
   choose: Choose a song.

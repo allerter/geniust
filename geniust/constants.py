@@ -75,6 +75,7 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
 (
     TYPING_ALBUM,
     TYPING_ARTIST,
+    TYPING_LYRICS,
     TYPING_SONG,
     TYPING_USER,
     TYPING_FEEDBACK,
@@ -82,7 +83,7 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     LYRICS_LANG,
     BOT_LANG,
     SELECT_ACTION,
-) = num.assign(9)
+) = num.assign(10)
 
 # Input Options
 OPTION1, OPTION2, OPTION3 = num.assign(3)

@@ -245,6 +245,64 @@ def search_artists(update: Update, context: CallbackContext) -> None:
 
 @log
 @get_user
+def search_lyrics(update: Update, context: CallbackContext) -> None:
+    """Displays a list of song titles based on user input"""
+    genius = context.bot_data["genius"]
+    language = context.user_data["bot_lang"]
+    texts = context.bot_data["texts"][language]
+    text = texts["inline_menu"]["search_lyrics"]
+    input_text = update.inline_query.query.split(".lyrics ")[1].strip()
+    if not input_text:
+        return
+
+    search_more = [
+        IButton(text=f"...{text['body']}...",
+                switch_inline_query_current_chat=".lyrics ")
+    ]
+
+    res = genius.search_lyrics(input_text, per_page=10)
+    articles = []
+    for hit in res["sections"][0]["hits"][:10]:
+        song = hit["result"]
+        title = song["title"]
+        artist = song["primary_artist"]["name"]
+        answer_title = utils.format_title(artist, title)
+        song_id = song["id"]
+
+        answer_text = song_caption(update, context, song, text["caption"], language)
+        song_url = create_deep_linked_url(username, f"song_{song_id}_genius")
+        lyrics_url = create_deep_linked_url(username, f"song_{song_id}_lyrics")
+        buttons = [
+            [IButton(texts["inline_menu"]["full_details"], url=song_url)],
+            [IButton(texts["display_song"]["lyrics"], url=lyrics_url)],
+            search_more,
+        ]
+        keyboard = IBKeyboard(buttons)
+        answer = InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=answer_title,
+            thumb_url=song["song_art_image_thumbnail_url"],
+            input_message_content=InputTextMessageContent(
+                answer_text, disable_web_page_preview=False
+            ),
+            reply_markup=keyboard,
+            description=hit['highlights'][0]['value'],
+        )
+        # It's possible to provide results that are captioned photos
+        # of the song cover art, but that requires using InlineQueryResultPhoto
+        # and user might not be able to choose the right song this way,
+        # since all they get is only the cover arts of the hits.
+        # answer = InlineQueryResultPhoto(id=str(uuid4()),
+        #    photo_url=search_hit['song_art_image_url'],
+        #    thumb_url=search_hit['song_art_image_thumbnail_url'],
+        #    reply_markup=keyboard, description=description)
+        articles.append(answer)
+
+    update.inline_query.answer(articles)
+
+
+@log
+@get_user
 def search_songs(update: Update, context: CallbackContext) -> None:
     """Displays a list of song titles based on user input"""
     genius = context.bot_data["genius"]
