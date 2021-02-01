@@ -72,7 +72,7 @@ def display_user(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, user_id_str = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.edit_message_reply_markup(None)
+        update.callback_query.delete()
     else:
         _, user_id_str = context.args[0].split("_")
 
@@ -109,7 +109,6 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, user_id_str, _ = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.message.delete()
     else:
         _, user_id_str, _ = context.args[0].split("_")
 
@@ -139,7 +138,6 @@ def display_user_header(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, user_id_str, _ = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.message.delete()
     else:
         _, user_id_str, _ = context.args[0].split("_")
 

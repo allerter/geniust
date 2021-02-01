@@ -79,7 +79,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, album_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.edit_message_reply_markup(None)
+        update.callback_query.delete()
     else:
         _, album_id_str, platform = context.args[0].split("_")
 

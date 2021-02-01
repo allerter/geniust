@@ -126,7 +126,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, song_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.edit_message_reply_markup(None)
+        update.callback_query.delete()
     else:
         _, song_id_str, platform = context.args[0].split("_")
 
@@ -203,8 +203,6 @@ def download_song(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, song_id_str, platform, type = update.callback_query.data.split("_")
         update.callback_query.answer()
-        update.callback_query.edit_message_reply_markup(None)
-
     else:
         _, song_id_str, platform, type = context.args[0].split("_")
 
