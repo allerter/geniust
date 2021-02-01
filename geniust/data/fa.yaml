@@ -175,10 +175,6 @@ inline_menu:
 
       <a href="{image_url}">&#8204;</a><b>آی‌کیو در جینیس:</b>
       {iq}
-      <b>دنبال‌کنندگان:</b>
-      {followers}
-      <b>دنبال‌شده‌ها:</b>
-      {following}
       <b>نقش:</b>
       {role}
 

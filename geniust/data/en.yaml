@@ -184,10 +184,6 @@ inline_menu:
 
       <a href="{image_url}">&#8204;</a><b>IQ on Genius:</b>
       {iq}
-      <b>Followers:</b>
-      {followers}
-      <b>Following:</b>
-      {following}
       <b>Role:</b>
       {role}
 

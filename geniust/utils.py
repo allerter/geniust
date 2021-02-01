@@ -337,7 +337,7 @@ def log(func: Callable[..., RT]) -> Callable[..., RT]:
     def wrapper(*args, **kwargs) -> RT:
         logger.debug("Entering: %s", func.__name__)
         result = func(*args, **kwargs)
-        logger.debug(repr(result))
+        # logger.debug(repr(result))
         logger.debug("Exiting: %s", func.__name__)
         return result
 

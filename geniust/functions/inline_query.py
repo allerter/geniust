@@ -401,7 +401,7 @@ def search_users(update: Update, context: CallbackContext) -> None:
         IButton(text=f"...{text['body']}...", switch_inline_query_current_chat=".user ")
     ]
 
-    res = genius.search_songs(input_text, per_page=10)
+    res = genius.search_users(input_text, per_page=10)
     articles = []
     for hit in res["sections"][0]["hits"][:10]:
         user = hit['result']
@@ -476,7 +476,7 @@ def album_caption(
         .replace("{artist}", utils.deep_link(album["artist"]['name'], album["artist"]['id'], 'artist', 'genius'))
         .replace("{release_date}", release_date)
         .replace("{url}", album["url"])
-        .replace("{url}", album["cover_art_url"])
+        .replace("{image_url}", album["cover_art_url"])
     )
 
     return string.strip()
@@ -577,13 +577,11 @@ def user_caption(
         str: Formatted caption.
     """
     string = (
-        caption["body"]  # type: ignore
+        caption
         .replace("{name}", user["name"])
-        .replace("{iq}", user["iq_for_display"])
+        .replace("{iq}", utils.human_format(user["iq"]))
         .replace("{url}", user["url"])
-        .replace("{followers}", str(user["followers_count"]))
-        .replace("{following}", str(user["followed_users_count"]))
-        .replace("{role}", user['role_for_display'].capitalize())
+        .replace("{role}", user['human_readable_role_for_display'])
         .replace("{image_url}", user['avatar']['medium']['url'])
     )
     return string
