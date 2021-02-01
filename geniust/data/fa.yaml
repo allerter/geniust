@@ -143,7 +143,7 @@ inline_menu:
       {artist}
       <b>بی‌کلام:</b>
       {instrumental}
-      <b>پربازدید:</b>
+      <b>داغ:</b>
       {hot}
       <b>بازدید:</b>
       {views}
@@ -163,7 +163,7 @@ inline_menu:
       {artist}
       <b>بی‌کلام:</b>
       {instrumental}
-      <b>پربازدید:</b>
+      <b>داغ:</b>
       {hot}
       <b>بازدیدها:</b>
       {views}
