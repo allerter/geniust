@@ -135,14 +135,18 @@ inline_menu:
   search_lyrics:
     body: جستجوی متن
     caption: |-
-      {artist} از {title}
+      {artist_name} از {title}
 
       <a href="{image_url}">&#8204;</a><b>نام:</b>
       {title}
+      <b>خواننده:</b>
+      {artist}
       <b>بی‌کلام:</b>
       {instrumental}
-      <b>متن یافته‌شده:</b>
-      {}
+      <b>پربازدید:</b>
+      {hot}
+      <b>بازدید:</b>
+      {views}
 
       <a href="{url}">مشاهده‌ آهنگ در جینیس</a>
     description: جستجوی آهنگ از طریق متن آهنگ.
