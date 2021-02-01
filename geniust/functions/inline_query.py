@@ -542,13 +542,14 @@ def song_caption(
     """
     hot = context.bot_data["texts"][language][song["stats"]["hot"]]
     artist = song["primary_artist"]
+    views = song["stats"].get("pageviews", '?')
 
     string = (
         caption.replace("{title}", song["title"])
         .replace("{artist_name}", song["primary_artist"]["name"])
         .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
         .replace("{hot}", hot)
-        .replace("{views}", utils.human_format(song["stats"]["pageviews"]))
+        .replace("{views}", utils.human_format(views) if isinstance(views, int) else views)
         .replace("{url}", song["url"])
         .replace("{image_url}", song["song_art_image_url"])
     )
