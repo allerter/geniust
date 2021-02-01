@@ -108,6 +108,10 @@ class CronHandler(RequestHandler):
         """Responds to GET request to make cron job successful"""
         self.write("OK")
 
+    def head(self):
+        """ Satisfy UptimeRobot that this url exists"""
+        self.finish()
+
 
 class TokenHandler(RequestHandler):
     """Handles redirected URLs from Genius
