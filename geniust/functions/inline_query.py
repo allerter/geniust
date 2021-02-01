@@ -130,7 +130,8 @@ def search_albums(update: Update, context: CallbackContext) -> None:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     text = texts["inline_menu"]["search_albums"]
-    input_text = update.inline_query.query.split(".album ")[1].strip()
+    input_text = update.inline_query.query.split(".album ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
     if not input_text:
         return
 
@@ -198,7 +199,8 @@ def search_artists(update: Update, context: CallbackContext) -> None:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     text = texts["inline_menu"]["search_artists"]
-    input_text = update.inline_query.query.split(".artist ")[1].strip()
+    input_text = update.inline_query.query.split(".artist ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
     if not input_text:
         return
 
@@ -269,7 +271,8 @@ def search_lyrics(update: Update, context: CallbackContext) -> None:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     text = texts["inline_menu"]["search_lyrics"]
-    input_text = update.inline_query.query.split(".lyrics ")[1].strip()
+    input_text = update.inline_query.query.split(".lyrics ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
     if not input_text:
         return
 
@@ -327,7 +330,8 @@ def search_songs(update: Update, context: CallbackContext) -> None:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     text = texts["inline_menu"]["search_songs"]
-    input_text = update.inline_query.query.split(".song ")[1].strip()
+    input_text = update.inline_query.query.split(".song ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
     if not input_text:
         return
 
@@ -388,7 +392,8 @@ def search_users(update: Update, context: CallbackContext) -> None:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     text = texts["inline_menu"]["search_users"]
-    input_text = update.inline_query.query.split(".user ")[1].strip()
+    input_text = update.inline_query.query.split(".user ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
     if not input_text:
         return
 
