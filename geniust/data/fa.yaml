@@ -516,14 +516,6 @@ display_user:
     body: |-
       {name}
 
-      <b>یام‌های نخوانده در گروه:</b>
-      {unread_group}
-      <b>پیام‌های نخوانده در فید اصلی:</b>
-      {unread_main}
-      <b>پیام‌های شخصی نخوانده:</b>
-      {unread_messages}
-      <b>پیام‌های نخوانده در نیوزفید:</b>
-      {unread_newsfeed}
       <b>آی‌کیو در<a href="{url}">جینیس</a>:</b>
       {iq}
       <b>دنبال‌کنندگان:</b>
@@ -531,7 +523,7 @@ display_user:
       <b>دنبال‌شده‌ها:</b>
       {following}
       <b>نقش:</b>
-      {role}
+      {roles}
       <b>انوتیشن‌ها:</b>
       {annotations}
       <b>پاسخ‌ها:</b>
