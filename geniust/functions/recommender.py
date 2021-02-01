@@ -140,27 +140,22 @@ class Recommender:
                 song_type='any',
                 ) -> List[Song]:
         user_genres = self.binarize(user_preferences.genres)
-        genre_value = 1 / sum(user_genres)
         persian_index = np.where(self.binarize(['persian']) == 1)[0][0]
         persian_user = True if user_genres[persian_index] == 1 else False
         similar = []
         for index, song in enumerate(self.numpy_songs):
-            score = 0
-
             # skip song if it doesn't match user language
             if bool(song[persian_index]) != persian_user:
                 continue
             for i, genre in enumerate(song):
-                if genre == 1 and user_genres[i] == 1:
-                    score += genre_value
-
-            if score == 1:
-                # no need for language parameter since
-                # the first if statement enforeces the valuse of "persian" genre
-                #        if ((language == 'any')
-                #            or (language == 'en' and song[persian_index] == 0)
-                #                or (language == 'fa' and song[persian_index] == 1)):
-                similar.append(index)
+                if i != persian_index and genre == 1 and user_genres[i] == 1:
+                    similar.append(index)
+                    break
+            # no need for language parameter since
+            # the first if statement enforeces the value of "persian" genre
+            #        if ((language == 'any')
+            #            or (language == 'en' and song[persian_index] == 0)
+            #                or (language == 'fa' and song[persian_index] == 1)):
 
         # Randomly choose 20 songs from similar songs
         # This is to avoid sending the same set of songs each time
