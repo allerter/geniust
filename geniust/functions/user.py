@@ -69,11 +69,11 @@ def display_user(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
 
     if update.callback_query:
-        _, user_id_str, _ = update.callback_query.data.split("_")
+        _, user_id_str = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.edit_message_reply_markup(None)
     else:
-        _, user_id_str, _ = context.args[0].split("_")
+        _, user_id_str = context.args[0].split("_")
 
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
