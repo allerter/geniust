@@ -38,6 +38,7 @@ from geniust.functions import (
     customize,
     inline_query,
     annotation,
+    user,
 )
 from geniust import get_user, texts, auths, database, username
 from geniust.utils import log
@@ -649,6 +650,10 @@ def main():
         CallbackQueryHandler(account.logged_in, pattern="^" + str(LOGGED_IN) + "$"),
         CallbackQueryHandler(account.logout, pattern="^" + str(LOGOUT) + "$"),
         CallbackQueryHandler(account.display_account, pattern=r"^account$"),
+        CallbackQueryHandler(user.display_user, pattern=r"^user_[0-9]+$"),
+        CallbackQueryHandler(user.display_user_description,
+                             pattern=r"^user_[0-9]+_description$"),
+        CallbackQueryHandler(user.display_user_header, pattern=r"^user_[0-9]+_header$"),
     ]
 
     user_input = {
@@ -733,6 +738,7 @@ def main():
         InlineQueryHandler(inline_query.search_albums, pattern=r"^\.album"),
         InlineQueryHandler(inline_query.search_artists, pattern=r"^\.artist"),
         InlineQueryHandler(inline_query.search_songs, pattern=r"^\.song"),
+        InlineQueryHandler(inline_query.search_users, pattern=r"^\.user"),
         InlineQueryHandler(
             inline_query.inline_menu,
         ),
@@ -809,6 +815,25 @@ def main():
             "start",
             annotation.display_annotation,
             Filters.regex(r"^/start annotation_[0-9]+$"),
+            pass_args=True,
+        ),
+        # User
+        CommandHandler(
+            "start",
+            user.display_user,
+            Filters.regex(r"^/start user_[0-9]+$"),
+            pass_args=True,
+        ),
+        CommandHandler(
+            "start",
+            user.display_user_description,
+            Filters.regex(r"^/start user_[0-9]+_description$"),
+            pass_args=True,
+        ),
+        CommandHandler(
+            "start",
+            user.display_user_header,
+            Filters.regex(r"^/start user_[0-9]+_header$"),
             pass_args=True,
         ),
     ]

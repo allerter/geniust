@@ -81,6 +81,24 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
                 ]
             ),
         ),
+        InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=text["search_users"]["body"],
+            description=text["search_users"]["description"],
+            input_message_content=InputTextMessageContent(
+                text["search_users"]["initial_caption"]
+            ),
+            reply_markup=IBKeyboard(
+                [
+                    [
+                        IButton(
+                            text=text["button"],
+                            switch_inline_query_current_chat=".user ",
+                        )
+                    ]
+                ]
+            ),
+        ),
     ]
 
     update.inline_query.answer(articles)
@@ -287,6 +305,64 @@ def search_songs(update: Update, context: CallbackContext) -> None:
 
 
 @log
+@get_user
+def search_users(update: Update, context: CallbackContext) -> None:
+    """Displays a list of usernames based on user input"""
+    genius = context.bot_data["genius"]
+    language = context.user_data["bot_lang"]
+    texts = context.bot_data["texts"][language]
+    text = texts["inline_menu"]["search_users"]
+    input_text = update.inline_query.query.split(".user ")[1].strip()
+    if not input_text:
+        return
+
+    search_more = [
+        IButton(text=f"...{text['body']}...", switch_inline_query_current_chat=".user ")
+    ]
+
+    res = genius.search_songs(input_text, per_page=10)
+    articles = []
+    for hit in res["sections"][0]["hits"][:10]:
+        user = hit['result']
+        user_username = user['name']
+        user_id = user["id"]
+
+        answer_text = user_caption(update, context, user, text["caption"])
+        user_url = create_deep_linked_url(username, f"user_{user_id}")
+        description_url = create_deep_linked_url(username,
+                                                 f"user_{user_id}_description")
+        header_url = create_deep_linked_url(username, f"user_{user_id}_header")
+        buttons = [
+            [IButton(texts["inline_menu"]["full_details"], url=user_url)],
+            [IButton(texts["display_user"]["description"], url=description_url),
+             IButton(texts["display_user"]["header"], url=header_url)],
+            search_more,
+        ]
+        keyboard = IBKeyboard(buttons)
+        answer = InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=user_username,
+            thumb_url=user["avatar"]['thumb']['url'],
+            input_message_content=InputTextMessageContent(
+                answer_text, disable_web_page_preview=False
+            ),
+            reply_markup=keyboard,
+            description=user['about_me_summary'],
+        )
+        # It's possible to provide results that are captioned photos
+        # of the song cover art, but that requires using InlineQueryResultPhoto
+        # and user might not be able to choose the right song this way,
+        # since all they get is only the cover arts of the hits.
+        # answer = InlineQueryResultPhoto(id=str(uuid4()),
+        #    photo_url=search_hit['song_art_image_url'],
+        #    thumb_url=search_hit['song_art_image_thumbnail_url'],
+        #    reply_markup=keyboard, description=description)
+        articles.append(answer)
+
+    update.inline_query.answer(articles)
+
+
+@log
 def album_caption(
     update: Update, context: CallbackContext, album: Dict[str, Any], caption: str
 ) -> str:
@@ -397,3 +473,33 @@ def song_caption(
     )
 
     return string.strip()
+
+
+@log
+def user_caption(
+    update: Update, context: CallbackContext, user: Dict[str, Any], caption: str
+) -> str:
+    """Generates caption for user data.
+
+    Args:
+        update (Update): Update object to make the update available
+            to the error handler in case of errors.
+        context (CallbackContext): Update object to make the context available
+            to the error handler in case of errors.
+        user (Dict[str, Any]): User data.
+        caption (str): Caption template.
+
+    Returns:
+        str: Formatted caption.
+    """
+    string = (
+        caption["body"]  # type: ignore
+        .replace("{name}", user["name"])
+        .replace("{iq}", user["iq_for_display"])
+        .replace("{url}", user["url"])
+        .replace("{followers}", str(user["followers_count"]))
+        .replace("{following}", str(user["followed_users_count"]))
+        .replace("{role}", user['role_for_display'].capitalize())
+        .replace("{image_url}", user['avatar']['medium']['url'])
+    )
+    return string

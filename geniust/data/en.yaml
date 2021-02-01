@@ -175,6 +175,25 @@ inline_menu:
     description: song info and lyrics.
     initial_caption: Click on the button below to search songs.
 
+  search_users:
+    body: Search users
+    caption: |-
+      {name}
+
+      <b>IQ on Genius:</b>
+      {iq}
+      <b>Followers:</b>
+      {followers}
+      <b>Following:</b>
+      {following}
+      <b>Role:</b>
+      {role}
+
+      <a href={url}>View on Genius</a>
+      <a href={image_url}>&#8204;</a>
+    description: User info.
+    initial_caption: Click on the button below to search users.
+
   full_details: Full Details
   button: Click Here
   translation: Translation
@@ -489,5 +508,47 @@ display_song:
   not_found: Song not found.
 
 display_lyrics: getting lyrics...
+
+# ----------- User -----------
+
+display_user:
+  caption:
+    body: |-
+      {name}
+
+      <b>IQ on <a href="{url}">Genius</a>:</b>
+      {iq}
+      <b>Followers:</b>
+      {followers}
+      <b>Following:</b>
+      {following}
+      <b>Roles:</b>
+      {roles}
+      <b>Annotations:</b>
+      {annotations}
+      <b>Answers:</b>
+      {answers}
+      <b>Comments:</b>
+      {comments}
+      <b>Forum Posts:</b>
+      {forum_posts}
+      <b>Pyongs:</b>
+      {pyongs}
+      <b>Questions:</b>
+      {questions}
+      <b>Transcriptions:</b>
+      {transcriptions}
+      <b>All Activities Count:</b>
+      {all_activities_count}
+    artist: "\n<b>Artist:</b> {}"
+  description: Description
+  header: Header Image
+
+display_user_description: "{username}'s Description\n\n{description}"
+display_user_header: "{username}'s Header Image"
+type_user: Enter username.
+search_users:
+  choose: Choose a user.
+  no_users: No users found.
 
 ...

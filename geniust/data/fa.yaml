@@ -171,6 +171,25 @@ inline_menu:
     description: متن و اطلاعات آهنگ.
     initial_caption: برای جستجو بین آهنگ‌ها روی دکمه‌ی زیر کلیک کن.
 
+  search_users:
+    body: جستجوی کاربران
+    caption: |-
+      {name}
+
+      <b>آی‌کیو در جینیس:</b>
+      {iq}
+      <b>دنبال‌کنندگان:</b>
+      {followers}
+      <b>دنبال‌شده‌ها:</b>
+      {following}
+      <b>نقش:</b>
+      {role}
+
+      <a href={url}>مشاهده در جینیس</a>
+      <a href={image_url}>&#8204;</a>
+    description: اطلاعات کاربر
+    initial_caption: برای جستجوی کاربران روی دکمه‌ی زیر کلیک کن.
+
   full_details: اطلاعات کامل
   button: کلیک کنید
   translation: ترجمه
@@ -493,5 +512,55 @@ display_song:
   not_found: آهنگ پیدا نشد.
 
 display_lyrics: در حال دریافت متن...
+
+# ----------- User -----------
+
+display_user:
+  caption:
+    body: |-
+      {name}
+
+      <b>یام‌های نخوانده در گروه:</b>
+      {unread_group}
+      <b>پیام‌های نخوانده در فید اصلی:</b>
+      {unread_main}
+      <b>پیام‌های شخصی نخوانده:</b>
+      {unread_messages}
+      <b>پیام‌های نخوانده در نیوزفید:</b>
+      {unread_newsfeed}
+      <b>آی‌کیو در<a href="{url}">جینیس</a>:</b>
+      {iq}
+      <b>دنبال‌کنندگان:</b>
+      {followers}
+      <b>دنبال‌شده‌ها:</b>
+      {following}
+      <b>نقش:</b>
+      {role}
+      <b>انوتیشن‌ها:</b>
+      {annotations}
+      <b>پاسخ‌ها:</b>
+      {answers}
+      <b>کامنت‌ها:</b>
+      {comments}
+      <b>پست‌های انجمن:</b>
+      {forum_posts}
+      <b>پیونگ‌ها:</b>
+      {pyongs}
+      <b>سؤالات:</b>
+      {questions}
+      <b>آهنگ‌ها:</b>
+      {transcriptions}
+      <b>تعداد تمام فعالیت‌ها:</b>
+      {all_activities_count}
+    artist: "\n<b>خواننده:</b> {}"
+  description: درباره
+  header: تصویر هدر
+
+display_user_description: "درباره {username}\n\n{description}"
+display_user_header: "تصویر هدر {username}"
+type_user: نام کاربر را وارد کنید.
+search_users:
+  choose: یک کاربر را انتخاب کنید.
+  no_users: کاربری پیدا نشد.
 
 ...
