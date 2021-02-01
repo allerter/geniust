@@ -116,8 +116,8 @@ inline_menu:
       <b>تاریخ انتشار:</b>
       {release_date}
 
-      <a href={url}>مشاهده در جینیس</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">مشاهده در جینیس</a>
+      <a href="{image_url}">&#8204;</a>
     description: اطلاعات و متن آلبوم.
     initial_caption: برای جستجو بین آلبوم‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -131,7 +131,7 @@ inline_menu:
       <b>حساب رسمی در <a href="{url}">جینیس</a>:</b>
       {verified}
 
-      <a href={image_url}>&#8204;</a>
+      <a href="{image_url}">&#8204;</a>
     description: اطلاعات، آهنگ‌ و آلبوم‌های خواننده.
     initial_caption: برای جستجو بین خواننده‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -147,8 +147,8 @@ inline_menu:
       <b>متن یافته‌شده:</b>
       {}
 
-      <a href={url}>مشاهده‌ آهنگ در جینیس</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">مشاهده‌ آهنگ در جینیس</a>
+      <a href="{image_url}">&#8204;</a>
     description: جستجوی آهنگ از طریق متن آهنگ.
     initial_caption: برای جستجو بر اساس متن روی دکمه‌ی زیر کلیک کن.
 
@@ -168,8 +168,8 @@ inline_menu:
       <b>بازدیدها:</b>
       {views}
 
-      <a href={url}>مشاهده در جینیس</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">مشاهده در جینیس</a>
+      <a href="{image_url}">&#8204;</a>
     description: متن و اطلاعات آهنگ.
     initial_caption: برای جستجو بین آهنگ‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -187,8 +187,8 @@ inline_menu:
       <b>نقش:</b>
       {role}
 
-      <a href={url}>مشاهده در جینیس</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">مشاهده در جینیس</a>
+      <a href="{image_url}">&#8204;</a>
     description: اطلاعات کاربر
     initial_caption: برای جستجوی کاربران روی دکمه‌ی زیر کلیک کن.
 

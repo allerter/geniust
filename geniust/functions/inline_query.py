@@ -541,6 +541,7 @@ def song_caption(
         str: Formatted caption.
     """
     hot = context.bot_data["texts"][language][song["stats"]["hot"]]
+    instrumental = context.bot_data["texts"][language][song["instrumental"]]
     artist = song["primary_artist"]
     views = song["stats"].get("pageviews", '?')
 
@@ -550,6 +551,7 @@ def song_caption(
         .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
         .replace("{hot}", hot)
         .replace("{views}", utils.human_format(views) if isinstance(views, int) else views)
+        .replace("{instrumental}", instrumental)
         .replace("{url}", song["url"])
         .replace("{image_url}", song["song_art_image_url"])
     )

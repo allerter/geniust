@@ -120,8 +120,8 @@ inline_menu:
       <b>Release Date:</b>
       {release_date}
 
-      <a href={url}>View on Genius</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">View on Genius</a>
+      <a href="{image_url}">&#8204;</a>
     description: Album info and lyrics.
     initial_caption: Click on the button below to search albums.
 
@@ -135,26 +135,9 @@ inline_menu:
       <b>Verified on <a href="{url}">Genius</a>:</b>
       {verified}
 
-      <a href={image_url}>&#8204;</a>
+      <a href="{image_url}">&#8204;</a>
     description: Artist info, songs and albums.
     initial_caption: Click on the button below to search artists.
-
-  search_lyrics:
-    body: Search Lyrics
-    caption: |-
-      {title} by {artist}
-
-      <b>Title:</b>
-      {title}
-      <b>Instrumental:</b>
-      {instrumental}
-      <b>Highlighted Lyric:</b>
-      {}
-
-      <a href={url}>View Song on Genius</a>
-      <a href={image_url}>&#8204;</a>
-    description: Search songs by their lyrics.
-    initial_caption: Click on the button below to search lyrics.
 
   search_lyrics:
     body: Search Songs by Lyrics
@@ -172,8 +155,8 @@ inline_menu:
       <b>Views:</b>
       {views}
 
-      <a href={url}>View on Genius</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">View on Genius</a>
+      <a href="{image_url}">&#8204;</a>
     description: song info and matching lyrics.
     initial_caption: Click on the button below to search songs by lyrics.
 
@@ -193,8 +176,8 @@ inline_menu:
       <b>Views:</b>
       {views}
 
-      <a href={url}>View on Genius</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">View on Genius</a>
+      <a href="{image_url}">&#8204;</a>
     description: song info and lyrics.
     initial_caption: Click on the button below to search songs.
 
@@ -212,8 +195,8 @@ inline_menu:
       <b>Role:</b>
       {role}
 
-      <a href={url}>View on Genius</a>
-      <a href={image_url}>&#8204;</a>
+      <a href="{url}">View on Genius</a>
+      <a href="{image_url}">&#8204;</a>
     description: User info.
     initial_caption: Click on the button below to search users.
 
