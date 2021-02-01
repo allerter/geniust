@@ -78,7 +78,7 @@ def display_user(update: Update, context: CallbackContext) -> int:
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
     cover_art = user["photo_url"]
-    caption = user_caption(update, context, user, text["caption"], language)
+    caption = user_caption(update, context, user, text["caption"])
 
     buttons = [[]]
     if user['about_me']['plain']:
