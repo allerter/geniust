@@ -5,6 +5,7 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
+from bs4 import BeautifulSoup
 
 from geniust.constants import END, TYPING_USER
 from geniust import utils
@@ -115,7 +116,10 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
 
-    caption = text.format(username=user['name'], description=user['about_me']['html'])
+    description = BeautifulSoup(user['about_me']['html'], "html.parser")
+    description = str(utils.remove_unsupported_tags(description))
+
+    caption = text.format(username=user['name'], description=description)
     context.bot.send_message(chat_id, caption)
 
     return END
