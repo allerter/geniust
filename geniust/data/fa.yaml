@@ -109,7 +109,7 @@ inline_menu:
     caption: |-
       {artist_name} از {name}
 
-      <b>نام:</b>
+      <a href="{image_url}">&#8204;</a><b>نام:</b>
       {name}
       <b>خواننده:</b>
       {artist}
@@ -117,7 +117,6 @@ inline_menu:
       {release_date}
 
       <a href="{url}">مشاهده در جینیس</a>
-      <a href="{image_url}">&#8204;</a>
     description: اطلاعات و متن آلبوم.
     initial_caption: برای جستجو بین آلبوم‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -126,12 +125,10 @@ inline_menu:
     caption: |-
       {name}
 
-      <b>نام:</b>
+      <a href="{image_url}">&#8204;</a><b>نام:</b>
       {name}
       <b>حساب رسمی در <a href="{url}">جینیس</a>:</b>
       {verified}
-
-      <a href="{image_url}">&#8204;</a>
     description: اطلاعات، آهنگ‌ و آلبوم‌های خواننده.
     initial_caption: برای جستجو بین خواننده‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -140,7 +137,7 @@ inline_menu:
     caption: |-
       {artist} از {title}
 
-      <b>نام:</b>
+      <a href="{image_url}">&#8204;</a><b>نام:</b>
       {title}
       <b>بی‌کلام:</b>
       {instrumental}
@@ -148,7 +145,6 @@ inline_menu:
       {}
 
       <a href="{url}">مشاهده‌ آهنگ در جینیس</a>
-      <a href="{image_url}">&#8204;</a>
     description: جستجوی آهنگ از طریق متن آهنگ.
     initial_caption: برای جستجو بر اساس متن روی دکمه‌ی زیر کلیک کن.
 
@@ -157,7 +153,7 @@ inline_menu:
     caption: |-
       {artist_name} از {title}
 
-      <b>نام:</b>
+      <a href="{image_url}">&#8204;</a><b>نام:</b>
       {title}
       <b>خواننده:</b>
       {artist}
@@ -169,7 +165,6 @@ inline_menu:
       {views}
 
       <a href="{url}">مشاهده در جینیس</a>
-      <a href="{image_url}">&#8204;</a>
     description: متن و اطلاعات آهنگ.
     initial_caption: برای جستجو بین آهنگ‌ها روی دکمه‌ی زیر کلیک کن.
 
@@ -178,7 +173,7 @@ inline_menu:
     caption: |-
       {name}
 
-      <b>آی‌کیو در جینیس:</b>
+      <a href="{image_url}">&#8204;</a><b>آی‌کیو در جینیس:</b>
       {iq}
       <b>دنبال‌کنندگان:</b>
       {followers}
@@ -188,7 +183,6 @@ inline_menu:
       {role}
 
       <a href="{url}">مشاهده در جینیس</a>
-      <a href="{image_url}">&#8204;</a>
     description: اطلاعات کاربر
     initial_caption: برای جستجوی کاربران روی دکمه‌ی زیر کلیک کن.
 

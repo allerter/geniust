@@ -113,7 +113,7 @@ inline_menu:
     caption: |-
       {name} by {artist_name}
 
-      <b>Name:</b>
+      <a href="{image_url}">&#8204;</a><b>Name:</b>
       {name}
       <b>Artist:</b>
       {artist}
@@ -121,7 +121,6 @@ inline_menu:
       {release_date}
 
       <a href="{url}">View on Genius</a>
-      <a href="{image_url}">&#8204;</a>
     description: Album info and lyrics.
     initial_caption: Click on the button below to search albums.
 
@@ -130,12 +129,11 @@ inline_menu:
     caption: |-
       {name}
 
-      <b>Name:</b>
+      <a href="{image_url}">&#8204;</a><b>Name:</b>
       {name}
       <b>Verified on <a href="{url}">Genius</a>:</b>
       {verified}
 
-      <a href="{image_url}">&#8204;</a>
     description: Artist info, songs and albums.
     initial_caption: Click on the button below to search artists.
 
@@ -144,7 +142,7 @@ inline_menu:
     caption: |-
       {title} by {artist_name}
 
-      <b>Title:</b>
+      <a href="{image_url}">&#8204;</a><b>Title:</b>
       {title}
       <b>Artist:</b>
       {artist}
@@ -156,7 +154,6 @@ inline_menu:
       {views}
 
       <a href="{url}">View on Genius</a>
-      <a href="{image_url}">&#8204;</a>
     description: song info and matching lyrics.
     initial_caption: Click on the button below to search songs by lyrics.
 
@@ -165,7 +162,7 @@ inline_menu:
     caption: |-
       {title} by {artist_name}
 
-      <b>Title:</b>
+      <a href="{image_url}">&#8204;</a><b>Title:</b>
       {title}
       <b>Artist:</b>
       {artist}
@@ -177,7 +174,6 @@ inline_menu:
       {views}
 
       <a href="{url}">View on Genius</a>
-      <a href="{image_url}">&#8204;</a>
     description: song info and lyrics.
     initial_caption: Click on the button below to search songs.
 
@@ -186,7 +182,7 @@ inline_menu:
     caption: |-
       {name}
 
-      <b>IQ on Genius:</b>
+      <a href="{image_url}">&#8204;</a><b>IQ on Genius:</b>
       {iq}
       <b>Followers:</b>
       {followers}
@@ -196,7 +192,6 @@ inline_menu:
       {role}
 
       <a href="{url}">View on Genius</a>
-      <a href="{image_url}">&#8204;</a>
     description: User info.
     initial_caption: Click on the button below to search users.
 
