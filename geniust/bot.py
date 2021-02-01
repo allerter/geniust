@@ -59,6 +59,7 @@ from geniust.constants import (
     INCLUDE,
     TYPING_FEEDBACK,
     TYPING_ARTIST,
+    TYPING_USER,
     MAIN_MENU,
     DEVELOPERS,
     CUSTOMIZE_MENU,
@@ -409,6 +410,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
             IButton(text["album"], callback_data=str(TYPING_ALBUM)),
             IButton(text["artist"], callback_data=str(TYPING_ARTIST)),
             IButton(text["song"], callback_data=str(TYPING_SONG)),
+            IButton(text["user"], callback_data=str(TYPING_USER)),
         ],
         [
             IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),

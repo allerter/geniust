@@ -4,6 +4,7 @@ main_menu:
   album: Album
   artist: Artist
   song: Song
+  user: User
   customize_lyrics: Customize Lyrics
   change_language: Change Language
   # login: Log into Genius
