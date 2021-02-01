@@ -65,6 +65,24 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
         ),
         InlineQueryResultArticle(
             id=str(uuid4()),
+            title=text["search_lyrics"]["body"],
+            description=text["search_lyrics"]["description"],
+            input_message_content=InputTextMessageContent(
+                text["search_lyrics"]["initial_caption"]
+            ),
+            reply_markup=IBKeyboard(
+                [
+                    [
+                        IButton(
+                            text=text["button"],
+                            switch_inline_query_current_chat=".lyrics ",
+                        )
+                    ]
+                ]
+            ),
+        ),
+        InlineQueryResultArticle(
+            id=str(uuid4()),
             title=text["search_songs"]["body"],
             description=text["search_songs"]["description"],
             input_message_content=InputTextMessageContent(

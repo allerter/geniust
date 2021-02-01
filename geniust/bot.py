@@ -683,7 +683,7 @@ def main():
             CallbackQueryHandler(song.type_song, pattern="^(?!" + str(END) + ").*$"),
         ],
         TYPING_USER: [
-            MessageHandler(Filters.text & (~Filters.command), user.type_user),
+            MessageHandler(Filters.text & (~Filters.command), user.search_users),
             CallbackQueryHandler(
                 user.type_user, pattern="^(?!" + str(END) + ").*$"
             ),

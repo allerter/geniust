@@ -74,7 +74,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         full_title = utils.deep_link(full_title, song['id'], 'song', 'genius')
         highlight = hit['highlights'][0]['value']
 
-        caption += f'''\n\n◽️{i:02d}.{full_title}\n"{highlight}"'''
+        caption += f'''\n\n◽️{i + 1}.{full_title}\n"{highlight}"'''
 
     if caption:
         update.message.reply_text(caption)
