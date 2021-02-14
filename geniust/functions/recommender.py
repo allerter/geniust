@@ -341,6 +341,7 @@ def input_preferences(update: Update, context: CallbackContext):
 def input_age(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["input_age"]
+    recommender = context.bot_data['recommender']
 
     if update.callback_query:
         update.callback_query.edit_message_text(text["enter_age"])
@@ -352,12 +353,7 @@ def input_age(update: Update, context: CallbackContext):
         update.message.reply_text(text["invalid_age"])
         return SELECT_GENRES
 
-    age_group = [i for i in genres_by_age_group.keys() if i >= num]
-    if age_group:
-        age_group = age_group[0]
-    else:
-        age_group = list(genres_by_age_group)[-1]
-    genres = genres_by_age_group[age_group]
+    genres = recommender.genres_by_age(num)
     if language == "fa":
         genres.append("persian")
     context.user_data["genres"] = genres
