@@ -10,9 +10,9 @@ from telegram import Bot
 from telegram.utils.webhookhandler import WebhookServer
 from tornado.web import url, RequestHandler
 
-from db import Database
-from constants import Preferences
-from utils import log
+from geniust.db import Database
+from geniust.constants import Preferences
+from geniust.utils import log
 
 
 class CronHandler(RequestHandler):

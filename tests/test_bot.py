@@ -7,8 +7,8 @@ from telegram.ext import Updater
 from lyricsgenius import OAuth2
 
 from geniust import constants, bot
-from geniust.bot import CronHandler, TokenHandler
 from geniust.db import Database
+from geniust.server import CronHandler, TokenHandler
 
 
 def test_cron_handler():

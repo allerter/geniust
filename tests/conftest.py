@@ -181,6 +181,6 @@ def context_class():
 def context(context_class, request):
     context_class.bot.reset_mock()
     for spec in ("db", "genius", "spotify"):
-        spec.reset_mock()
+        context_class.bot_data[spec].reset_mock()
     context_class.user_data = request.param
     return context_class
