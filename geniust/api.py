@@ -23,7 +23,6 @@ from geniust.constants import (
     TELETHON_API_HASH,
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
-    LASTFM_API_KEY,
     GENIUS_TOKEN,
 )
 
@@ -31,6 +30,7 @@ logger = logging.getLogger("geniust")
 
 
 def lastfm(method: str, parameters_input: dict) -> dict:
+    raise NotImplementedError("LASTFM_API_KEY not defined.")
     # Variabls: Set local
     api_key_lastfm = LASTFM_API_KEY
     user_agent_lastfm = "GeniusT"

@@ -7,12 +7,14 @@ from unittest.mock import create_autospec, MagicMock
 
 import pytest
 import yaml
+import tekore as tk
 from telegram import Update, CallbackQuery, Bot, Message
 from telegram.ext import CallbackContext
 
 from geniust import api
 from geniust import db
 from geniust import data
+from geniust.functions import recommender
 
 
 @pytest.fixture(scope="session")
@@ -161,29 +163,6 @@ for language in languages:
     )
 
 
-# for language in languages:
-#    users.append({'chat_id': randint(1, 10),
-#                  'include_annotations': True,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': 'a'})
-#    users.append({'chat_id': randint(10, 20),
-#                  'include_annotations': False,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': 'a'})
-#    users.append({'chat_id': randint(20, 30),
-#                  'include_annotations': True,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': None})
-#    users.append({'chat_id': randint(30, 40),
-#                  'include_annotations': False,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': None})
-
-
 @pytest.fixture(scope="session")
 def context_class():
     context = create_autospec(CallbackContext)
@@ -191,15 +170,17 @@ def context_class():
     context.bot = create_autospec(Bot, spec_set=True)
     context.bot_data = {}
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
-    context.bot_data["texts"] = texts
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
+    context.bot_data['spotify'] = create_autospec(tk.Spotify, spec_set=True)
+    context.bot_data["texts"] = texts
+    context.bot_data['recommender'] = recommender.Recommender()
     return context
 
 
 @pytest.fixture(scope="function", params=users)
 def context(context_class, request):
     context_class.bot.reset_mock()
-    context_class.bot_data["db"].reset_mock()
-    context_class.bot_data["genius"].reset_mock()
+    for spec in ("db", "genius", "spotify"):
+        spec.reset_mock()
     context_class.user_data = request.param
     return context_class
