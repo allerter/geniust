@@ -173,7 +173,7 @@ class Database:
     def update(
         self,
         chat_id: int,
-        data: Union[bool, str, None],
+        data: Any,
         update: str,
         cursor: Any,
         table: str = "user_data",
@@ -188,10 +188,10 @@ class Database:
         """
         if table == "user_data":
             query = f"UPDATE {table} SET {update} = %s WHERE chat_id = {chat_id};"
-            values = (data,)
         else:
             query = f"UPDATE {table} SET genres = %s, artists = %s WHERE chat_id = {chat_id};"
-            values = data
+
+        values = (data,) if not isinstance(data, (list, tuple)) else data
 
         # connect to database
         cursor.execute(query, values)
