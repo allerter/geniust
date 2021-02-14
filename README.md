@@ -19,7 +19,7 @@ A Telegram bot that provides music data and lyrics from Genius.
 
 ## Features
 
-> -   [Genius/Music Data](#genius/music-data)
+> -   [Genius/Music Data](#geniusmusic-data)
 > -   [Genius Account](#genius-account)
 > -   [GeniusT Shuffle](#geniust-shuffle)
 > -   [Song Lyircs](#song-lyircs)
@@ -47,7 +47,11 @@ on album/song descriptions when viewing them.
 <img src="geniust/data/shuffle.jpg" alt="GeniusT Shuffle logo" width="480"/>
 GeniusT offers a basic genre-based music recommendation system that
 offers users song recommendations from about 20K songs based on their
-favorite genres. Users can either input their age (and let the bot guess
+favorite genres and artists. Users can get their preferences from their
+Genius or Spotify account or enter them manually. By logging into their
+account through OAuth2, GeniusT will try to generate user's preferences
+based on their account activity. If the user chooses to go the manual route,
+they either input their age (and let the bot guess
 the genres) or select them manually. Afterward, users can also add their
 favorite artists from the available ones or finish without any favorite
 artists (each user must have at least one favorite genre). Available
