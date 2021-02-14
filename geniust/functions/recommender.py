@@ -507,12 +507,10 @@ def select_language(update: Update, context: CallbackContext):
     text = context.bot_data["texts"][language]["select_language"]
     bd = context.bot_data
 
-    buttons = [
+    buttons: List[List] = [
         [
-            [
-                IButton(bd["texts"][language]["en"], callback_data="en"),
-                IButton(bd["texts"][language]["fa"], callback_data="fa"),
-            ]
+            IButton(bd["texts"][language]["en"], callback_data="en"),
+            IButton(bd["texts"][language]["fa"], callback_data="fa"),
         ],
         [IButton(bd["texts"][language]["both"], callback_data="both")],
     ]
@@ -666,7 +664,7 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
             )
             urls.append(url)
         if urls:
-            urls = "|".join(urls)
+            urls = "|".join(urls)  # type: ignore
             item = f"{full_name} ({urls})"
         else:
             item = full_name
