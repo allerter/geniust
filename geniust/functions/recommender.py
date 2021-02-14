@@ -647,7 +647,7 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     songs = recommender.shuffle(user_preferences)
 
     deep_linked = []
-    for i, song in enumerate(songs):
+    for song in songs:
         urls = []
         full_name = f"{song.artist} - {song.name}"
         if song.id_spotify:
