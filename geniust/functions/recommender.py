@@ -138,11 +138,12 @@ class Recommender:
         }
 
     def genres_by_age(self, age: int) -> List[str]:
-        age_group = [i for i in self.genres_by_age_group.keys() if i >= age]
-        if age_group:
-            age_group = age_group[0]
+        age_groups = list(self.genres_by_age_group.keys())
+        for age_group in age_groups:
+            if age >= age_group:
+                break
         else:
-            age_group = list(self.genres_by_age_group)[-1]
+            age_group = age_groups[-1]
         return self.genres_by_age_group[age_group]
 
     def search_artist(self, artist: str) -> List[str]:
