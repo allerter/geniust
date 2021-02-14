@@ -40,6 +40,9 @@ jobs:
         GENIUS_CLIENT_ID: ${{ secrets.GENIUS_CLIENT_ID }}
         GENIUS_REDIRECT_URI: ${{ secrets.GENIUS_REDIRECT_URI }}
         GENIUS_CLIENT_SECRET: ${{ secrets.GENIUS_CLIENT_SECRET }}
+        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+        SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
+        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
       run: tox
 
     - name: Archive code coverage results
