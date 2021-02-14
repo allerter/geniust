@@ -86,12 +86,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
     if platform == "genius":
         album_id = int(album_id_str)
     else:
-        album_id = album_id_str
-
-    logger.debug("album %s", album_id)
-
-    if platform == "spotify":
-        album = spotify.album(album_id)
+        album = spotify.album(album_id_str)
         search = genius.search_albums(album.name)["sections"][0]
         for hit in search["hits"]:
             hit_album = hit["result"]
