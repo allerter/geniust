@@ -130,9 +130,7 @@ def remove_links(s: str) -> str:
     return links_pattern.sub("", s)
 
 
-def format_language(
-    lyrics: Union[BeautifulSoup, str], lyrics_language: str
-) -> Any:
+def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> Any:
     """Removes (non-)ASCII characters
 
     Removes ASCII or non-ASCII or keeps both based

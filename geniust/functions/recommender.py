@@ -341,7 +341,7 @@ def input_preferences(update: Update, context: CallbackContext):
 def input_age(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["input_age"]
-    recommender = context.bot_data['recommender']
+    recommender = context.bot_data["recommender"]
 
     if update.callback_query:
         update.callback_query.edit_message_text(text["enter_age"])
