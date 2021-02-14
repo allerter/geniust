@@ -13,7 +13,7 @@ from geniust.utils import log, remove_unsupported_tags
 from geniust import api
 
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 @log

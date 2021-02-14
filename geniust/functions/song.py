@@ -17,7 +17,7 @@ from geniust import get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 @log
@@ -71,8 +71,8 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         title = song["title"]
         artist = song["primary_artist"]["name"]
         full_title = utils.format_title(artist, title)
-        full_title = utils.deep_link(full_title, song['id'], 'song', 'genius')
-        highlight = hit['highlights'][0]['value']
+        full_title = utils.deep_link(full_title, song["id"], "song", "genius")
+        highlight = hit["highlights"][0]["value"]
 
         caption += f'''\n\n◽️{i + 1}. {full_title}\n"{highlight}"'''
 
@@ -121,7 +121,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
     bot = context.bot
     genius = context.bot_data["genius"]
     chat_id = update.effective_chat.id
-    recommender = context.bot_data['recommender']
+    recommender = context.bot_data["recommender"]
 
     if update.callback_query:
         _, song_id_str, platform = update.callback_query.data.split("_")
@@ -132,7 +132,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
 
     preview_url = None
     download_url = None
-    if platform == 'genius':
+    if platform == "genius":
         song_id = int(song_id_str)
         spotify_id = None
     else:
@@ -142,12 +142,12 @@ def display_song(update: Update, context: CallbackContext) -> int:
         preview_url = recommender_song.preview_url
         download_url = recommender_song.download_url
         search = genius.search_songs(song.name, match=(song.artists[0].name, song.name))
-        if search['match'] is not None:
-            song_id = search['match']['id']
+        if search["match"] is not None:
+            song_id = search["match"]["id"]
         else:
             song_url = download_url if download_url else preview_url
-            logger.debug('Song %s not found. Sending audio %s', spotify_id, song_url)
-            context.bot.send_audio(chat_id, song_url, caption=f'@{username}')
+            logger.debug("Song %s not found. Sending audio %s", spotify_id, song_url)
+            context.bot.send_audio(chat_id, song_url, caption=f"@{username}")
             return END
 
     song = genius.song(song_id)["song"]
@@ -165,26 +165,41 @@ def display_song(update: Update, context: CallbackContext) -> int:
         buttons[0].append(button)
 
     if preview_url:
-        buttons.append([IButton(
-            text['preview'],
-            callback_data=f"song_{recommender_song.id}_recommender_preview")])
+        buttons.append(
+            [
+                IButton(
+                    text["preview"],
+                    callback_data=f"song_{recommender_song.id}_recommender_preview",
+                )
+            ]
+        )
 
     if download_url:
-        buttons.append([IButton(
-            text['download'],
-            callback_data=f"song_{recommender_song.id}_recommender_download")])
+        buttons.append(
+            [
+                IButton(
+                    text["download"],
+                    callback_data=f"song_{recommender_song.id}_recommender_download",
+                )
+            ]
+        )
     else:
-        artist = song['primary_artist']['name']
-        title = song['title'].replace('\u200b', '')
+        artist = song["primary_artist"]["name"]
+        title = song["title"].replace("\u200b", "")
         query = f"{title} artist:{artist}"
-        spotify_search = spotify.search(query, types=('track',), limit=5)[0]
+        spotify_search = spotify.search(query, types=("track",), limit=5)[0]
         for track in spotify_search.items:
             if title in track.name and artist == track.artists[0].name:
                 spotify_id = track.id
         if spotify_id:
-            buttons.append([IButton(
-                text['download'],
-                url=f"http://t.me/acutebot?start=music_{spotify_id}")])
+            buttons.append(
+                [
+                    IButton(
+                        text["download"],
+                        url=f"http://t.me/acutebot?start=music_{spotify_id}",
+                    )
+                ]
+            )
 
     bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
 
@@ -197,8 +212,8 @@ def download_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     bot = context.bot
     chat_id = update.effective_chat.id
-    recommender = context.bot_data['recommender']
-    spotify = context.bot_data['spotify']
+    recommender = context.bot_data["recommender"]
+    spotify = context.bot_data["spotify"]
 
     if update.callback_query:
         _, song_id_str, platform, type = update.callback_query.data.split("_")
@@ -206,23 +221,20 @@ def download_song(update: Update, context: CallbackContext) -> int:
     else:
         _, song_id_str, platform, type = context.args[0].split("_")
 
-    if platform == 'recommender':
+    if platform == "recommender":
         song = recommender.song(int(song_id_str))
-        song_url = song.download_url if type == 'download' else song.preview_url
+        song_url = song.download_url if type == "download" else song.preview_url
         artist = song.artist
         name = song.name
     else:
         song = spotify.track(song_id_str)
         song_url = song.preview_url
-        artist = ' & '.join([artist.name for artist in song.artists])
+        artist = " & ".join([artist.name for artist in song.artists])
         name = song.name
 
     bot.send_audio(
-        chat_id,
-        song_url,
-        performer=artist,
-        title=name,
-        caption=f'@{username}')
+        chat_id, song_url, performer=artist, title=name, caption=f"@{username}"
+    )
 
     return END
 
@@ -260,10 +272,10 @@ def display_lyrics(
             telegram_song=True,
         )
     except Exception as e:
-        logger.error('error when displaying lyrics of %s: %s', song_id, e)
+        logger.error("error when displaying lyrics of %s: %s", song_id, e)
         lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
 
-    logger.debug('%s lyrics: %s', song_id, repr(lyrics))
+    logger.debug("%s lyrics: %s", song_id, repr(lyrics))
     # formatting lyrics language
     # lyrics = BeautifulSoup(lyrics, "html.parser")
     lyrics = utils.format_language(lyrics, lyrics_language)
@@ -283,7 +295,7 @@ def display_lyrics(
     # that's dealt with too
     max_length = MAX_MESSAGE_LENGTH
     while sent < len_lyrics:
-        string = lyrics[i * max_length: (i * max_length) + max_length]
+        string = lyrics[i * max_length : (i * max_length) + max_length]
         a_start = string.count("<a")
         a_end = string.count("</a>")
         if a_start != a_end:
@@ -357,23 +369,37 @@ def song_caption(
         release_date = song["release_date_for_display"]
 
     if song.get("featured_artists"):
-        features = ", ".join([utils.deep_link(x['name'], x['id'],
-                                              'artist', 'genius') for x in song["featured_artists"]])
+        features = ", ".join(
+            [
+                utils.deep_link(x["name"], x["id"], "artist", "genius")
+                for x in song["featured_artists"]
+            ]
+        )
         features = caption["features"].replace("{}", features)
 
     if song.get("albums"):
-        album = ", ".join(utils.deep_link(
-            album['name'], album['id'], 'album', 'genius') for album in song["albums"])
+        album = ", ".join(
+            utils.deep_link(album["name"], album["id"], "album", "genius")
+            for album in song["albums"]
+        )
         album = caption["albums"].replace("{}", album)
 
     if song.get("producer_artists"):
-        producers = ", ".join([utils.deep_link(
-            x['name'], x['id'], 'artist', 'genius') for x in song["producer_artists"]])
+        producers = ", ".join(
+            [
+                utils.deep_link(x["name"], x["id"], "artist", "genius")
+                for x in song["producer_artists"]
+            ]
+        )
         producers = caption["producers"].replace("{}", producers)
 
     if song.get("writer_artists"):
-        writers = ", ".join([utils.deep_link(x['name'], x['id'],
-                                             'artist', 'genius') for x in song["writer_artists"]])
+        writers = ", ".join(
+            [
+                utils.deep_link(x["name"], x["id"], "artist", "genius")
+                for x in song["writer_artists"]
+            ]
+        )
         writers = caption["writers"].replace("{}", writers)
 
     if song.get("song_relationships"):
@@ -383,8 +409,12 @@ def song_caption(
                 type_ = caption[relation["type"]]
             else:
                 type_ = " ".join([x.capitalize() for x in relation["type"].split("_")])
-            songs = ", ".join([utils.deep_link(x['title'], x['id'],
-                                               'song', 'genius') for x in relation["songs"]])
+            songs = ", ".join(
+                [
+                    utils.deep_link(x["title"], x["id"], "song", "genius")
+                    for x in relation["songs"]
+                ]
+            )
             string = f"\n<b>{type_}</b>:\n{songs}"
 
             relationships.append(string)
@@ -419,7 +449,10 @@ def song_caption(
         caption["body"]
         .replace("{title}", song["title"])
         .replace("{artist_name}", song["primary_artist"]["name"])
-        .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
+        .replace(
+            "{artist}",
+            utils.deep_link(artist["name"], artist["id"], "artist", "genius"),
+        )
         .replace("{release_date}", release_date)
         .replace("{hot}", hot)
         .replace("{tags}", tags)

@@ -42,7 +42,7 @@ def deep_link(
     name: str,
     id: str,
     type: str,
-    platform: str = 'genius',
+    platform: str = "genius",
     download: bool = False,
 ) -> str:
     """Deep links given entity using an <a> tag.
@@ -67,8 +67,8 @@ def deep_link(
             (e.g. <a href="link">song name</name>)
     """
     url = create_deep_linked_url(
-        geniust.username,
-        f"{type}_{id}_{platform}{'_download' if download else ''}")
+        geniust.username, f"{type}_{id}_{platform}{'_download' if download else ''}"
+    )
     return f"""<a href="{url}">{name}</a>"""
 
 

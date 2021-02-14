@@ -37,8 +37,13 @@ class TokenHandler(RequestHandler):
     """
 
     def initialize(
-        self, auths: dict, database: Database, bot: Bot, texts: dict, user_data: dict,
-        username: str
+        self,
+        auths: dict,
+        database: Database,
+        bot: Bot,
+        texts: dict,
+        user_data: dict,
+        username: str,
     ) -> None:
         self.auths = auths
         self.database = database
@@ -95,19 +100,19 @@ class TokenHandler(RequestHandler):
         redirected_url = "{}://{}{}".format(
             self.request.protocol, self.request.host, self.request.uri
         )
-        if platform == 'genius':
+        if platform == "genius":
             try:
-                token = self.auths['genius'].get_user_token(redirected_url)
+                token = self.auths["genius"].get_user_token(redirected_url)
             except HTTPError as e:
                 self.logger.debug("%s for %s", str(e), state)
                 return
         else:
             try:
-                token = self.auths['spotify']._cred.request_user_token(code)
+                token = self.auths["spotify"]._cred.request_user_token(code)
                 token = token.refresh_token
             except AssertionError:
                 self.set_status(400)
-                self.finish('Invalid state parameter')
+                self.finish("Invalid state parameter")
                 return
             except tk.BadRequest as e:
                 self.set_status(e.response.status_code)
@@ -127,97 +132,88 @@ class TokenHandler(RequestHandler):
 
 
 class GenresHandler(RequestHandler):
-
-    def initialize(
-        self, recommender
-    ) -> None:
+    def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
 
     def set_default_headers(self):
-        self.set_header("Content-Type", 'application/json')
+        self.set_header("Content-Type", "application/json")
 
     @log
     def get(self):
         age = self.get_argument("age", default=None)
-        response = {'response': {'status_code': 200}}
-        r = response['response']
+        response = {"response": {"status_code": 200}}
+        r = response["response"]
         if age is None:
-            r['genres'] = self.recommender.genres
+            r["genres"] = self.recommender.genres
         else:
             try:
                 age = int(age)
             except Exception as e:
                 self.logger.debug(e)
                 self.set_status(400)
-                r['error'] = 'invalid value for age parameter.'
-                r['status_code'] = 400
+                r["error"] = "invalid value for age parameter."
+                r["status_code"] = 400
             else:
-                r['genres'] = self.recommender.genres_by_age(age)
-                r['age'] = age
+                r["genres"] = self.recommender.genres_by_age(age)
+                r["age"] = age
 
         res = json.dumps(response)
         self.write(res)
 
 
 class SearchHandler(RequestHandler):
-
-    def initialize(
-        self, recommender
-    ) -> None:
+    def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
 
     def set_default_headers(self):
-        self.set_header("Content-Type", 'application/json')
+        self.set_header("Content-Type", "application/json")
 
     @log
     def get(self):
         artist = self.get_argument("artist", default=None)
-        response = {'response': {'status_code': 200}}
-        r = response['response']
+        response = {"response": {"status_code": 200}}
+        r = response["response"]
         if artist is None:
             self.set_status(404)
-            r['error'] = '404 Not Found'
-            r['status_code'] = 404
+            r["error"] = "404 Not Found"
+            r["status_code"] = 404
         else:
-            r['artists'] = self.recommender.search_artist(artist)
-            r['artist'] = artist
+            r["artists"] = self.recommender.search_artist(artist)
+            r["artist"] = artist
 
         res = json.dumps(response)
         self.write(res)
 
 
 class RecommendationsHandler(RequestHandler):
-
-    def initialize(
-        self, recommender
-    ) -> None:
+    def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
 
     def set_default_headers(self):
-        self.set_header("Content-Type", 'application/json')
+        self.set_header("Content-Type", "application/json")
 
     @log
     def get(self):
         genres = self.get_argument("genres", default=None)
         artists = self.get_argument("artists", default=None)
-        song_type = self.get_argument("song_type", default='any')
-        response = {'response': {'status_code': 200}}
-        r = response['response']
+        song_type = self.get_argument("song_type", default="any")
+        response = {"response": {"status_code": 200}}
+        r = response["response"]
 
         # genres are required
         if genres is None:
             self.set_status(400)
-            r['error'] = 'genres parameter required.'
-            r['status_code'] = 400
+            r["error"] = "genres parameter required."
+            r["status_code"] = 400
             res = json.dumps(response)
             self.write(res)
             return
 
         # genres must be valid
-        genres = genres.split(',')
+        genres = genres.split(",")
         invalid_genre = False
         for genre in genres:
             if genre not in self.recommender.genres:
@@ -225,15 +221,15 @@ class RecommendationsHandler(RequestHandler):
                 break
         if invalid_genre:
             self.set_status(400)
-            r['error'] = 'invalid genre in genres.'
-            r['status_code'] = 400
+            r["error"] = "invalid genre in genres."
+            r["status_code"] = 400
             res = json.dumps(response)
             self.write(res)
             return
 
         # artists must be valid
         if artists is not None:
-            artists = artists.split(',')
+            artists = artists.split(",")
             invalid_artist = False
             for request_artist in artists:
                 if request_artist not in self.recommender.artists_names:
@@ -241,32 +237,33 @@ class RecommendationsHandler(RequestHandler):
                     break
             if invalid_artist:
                 self.set_status(400)
-                r['error'] = 'invalid artist in artists.'
-                r['status_code'] = 400
+                r["error"] = "invalid artist in artists."
+                r["status_code"] = 400
                 res = json.dumps(response)
                 self.write(res)
                 return
         else:
             artists = []
 
-        valid_song_types = ('any', 'any_file', 'preview', 'full', 'preview,full')
+        valid_song_types = ("any", "any_file", "preview", "full", "preview,full")
         if song_type not in valid_song_types:
             self.set_status(400)
-            r['error'] = ("invalid song type. must be one of 'any',"
-                          " 'any_file', 'preview', 'full', 'preview,full'")
-            r['status_code'] = 400
+            r["error"] = (
+                "invalid song type. must be one of 'any',"
+                " 'any_file', 'preview', 'full', 'preview,full'"
+            )
+            r["status_code"] = 400
             res = json.dumps(response)
             self.write(res)
             return
 
         user_preferences = Preferences(genres=genres, artists=artists)
-        tracks = [x.to_dict()
-                  for x in self.recommender.shuffle(
-            user_preferences,
-            song_type=song_type)
+        tracks = [
+            x.to_dict()
+            for x in self.recommender.shuffle(user_preferences, song_type=song_type)
         ]
 
-        r['tracks'] = tracks
+        r["tracks"] = tracks
         res = json.dumps(response)
         self.write(res)
 
@@ -278,10 +275,11 @@ class WebhookThread(threading.Thread):  # pragma: no cover
     going to sleep in Heroku's free plan and receive tokens from Genius.
     """
 
-    def __init__(self, bot_token, server_port, auths, database,
-                 texts, username, dispatcher):
+    def __init__(
+        self, bot_token, server_port, auths, database, texts, username, dispatcher
+    ):
         super().__init__()
-        recommender = dispatcher.bot_data['recommender']
+        recommender = dispatcher.bot_data["recommender"]
         app = tornado.web.Application(
             [
                 url(r"/get", CronHandler),
@@ -299,8 +297,11 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                 ),
                 url(r"/api/genres", GenresHandler, dict(recommender=recommender)),
                 url(r"/api/search", SearchHandler, dict(recommender=recommender)),
-                url(r"/api/recommendations", RecommendationsHandler,
-                    dict(recommender=recommender))
+                url(
+                    r"/api/recommendations",
+                    RecommendationsHandler,
+                    dict(recommender=recommender),
+                ),
             ]
         )
         # noinspection PyTypeChecker

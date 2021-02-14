@@ -18,29 +18,36 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from lyricsgenius import PublicAPI
 
-from geniust.constants import (SELECT_ACTION, SELECT_ARTISTS, SELECT_GENRES, END,
-                               SPOTIFY_CLIENT_ID, Preferences,
-                               SPOTIFY_CLIENT_SECRET)
+from geniust.constants import (
+    SELECT_ACTION,
+    SELECT_ARTISTS,
+    SELECT_GENRES,
+    END,
+    SPOTIFY_CLIENT_ID,
+    Preferences,
+    SPOTIFY_CLIENT_SECRET,
+)
 from geniust.utils import log
 from geniust import api, get_user, data_path, utils
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 # based on https://www.statista.com/statistics/253915/favorite-music-genres-in-the-us/
 genres_by_age_group: Dict[int, List[str]] = {
-    19: ['pop', 'rap', 'rock'],
-    24: ['pop', 'rap', 'rock'],
-    34: ['pop', 'rock', 'rap', 'country', 'traditional'],
-    44: ['pop', 'rock', 'rap', 'country', 'traditional'],
-    54: ['rock', 'pop', 'country', 'traditional'],
-    64: ['rock', 'country', 'traditional'],
-    65: ['rock', 'country', 'traditional'],
+    19: ["pop", "rap", "rock"],
+    24: ["pop", "rap", "rock"],
+    34: ["pop", "rock", "rap", "country", "traditional"],
+    44: ["pop", "rock", "rap", "country", "traditional"],
+    54: ["rock", "pop", "country", "traditional"],
+    64: ["rock", "country", "traditional"],
+    65: ["rock", "country", "traditional"],
 }
 
 
 @dataclass
 class Song:
     """A Song from the Recommender"""
+
     id: int
     artist: str
     name: str
@@ -62,18 +69,19 @@ class Recommender:
     # classical - country - instrumental - persian - pop - rap - rnb - rock -traditional
     def __init__(self):
         # Read tracks
-        en = pd.read_csv(join(data_path, 'tracks en.csv'))
-        fa = pd.read_csv(join(data_path, 'tracks fa.csv'))
+        en = pd.read_csv(join(data_path, "tracks en.csv"))
+        fa = pd.read_csv(join(data_path, "tracks fa.csv"))
         self.songs: pd.DataFrame = pd.merge(
-            en.drop(columns=['download_url']), fa, how='outer')
+            en.drop(columns=["download_url"]), fa, how="outer"
+        )
         self.songs.replace({np.NaN: None}, inplace=True)
 
         # Read artists
-        en_artists = pd.read_csv(join(data_path, 'artists en.csv'))
-        fa_artists = pd.read_csv(join(data_path, 'artists fa.csv'))
-        self.artists: pd.DataFrame = pd.merge(en_artists, fa_artists, how='outer')
-        self.artists['description'] = self.artists['description'].str.replace(r'\n', '')
-        self.artists.description.fillna('', inplace=True)
+        en_artists = pd.read_csv(join(data_path, "artists en.csv"))
+        fa_artists = pd.read_csv(join(data_path, "artists fa.csv"))
+        self.artists: pd.DataFrame = pd.merge(en_artists, fa_artists, how="outer")
+        self.artists["description"] = self.artists["description"].str.replace(r"\n", "")
+        self.artists.description.fillna("", inplace=True)
 
         self.artists_names = self.artists.name.to_list()
         self.lowered_artists_names = {p.lower(): p for p in self.artists_names}
@@ -82,19 +90,30 @@ class Recommender:
         # ).value_counts().all(False)
         # assert no_duplicates, True
 
-        self.songs['genres'] = self.songs['genres'].str.split(',')
+        self.songs["genres"] = self.songs["genres"].str.split(",")
         songs_copy = self.songs.copy()
         # One-hot encode genres
         mlb = MultiLabelBinarizer(sparse_output=True)
         df = songs_copy.join(
             pd.DataFrame.sparse.from_spmatrix(
-                mlb.fit_transform(songs_copy.pop('genres')),
+                mlb.fit_transform(songs_copy.pop("genres")),
                 index=songs_copy.index,
-                columns=mlb.classes_))
+                columns=mlb.classes_,
+            )
+        )
         self.binarizer = mlb
         # Convert df to numpy array
-        numpy_df = df.drop(columns=['id_spotify', 'artist', 'name',
-                                    'download_url', 'preview_url', 'isrc', 'cover_art'])
+        numpy_df = df.drop(
+            columns=[
+                "id_spotify",
+                "artist",
+                "name",
+                "download_url",
+                "preview_url",
+                "isrc",
+                "cover_art",
+            ]
+        )
         self.genres = list(numpy_df.columns)
         self.genres_by_number = {}
         for i, genre in enumerate(self.genres):
@@ -102,20 +121,20 @@ class Recommender:
         # dtype=[(genre, int) for genre in self.genres]
         self.numpy_songs = numpy_df.to_numpy()
 
-        with open(join(data_path, 'persian_stopwords.txt'), 'r', encoding='utf8') as f:
+        with open(join(data_path, "persian_stopwords.txt"), "r", encoding="utf8") as f:
             PERSIAN_STOP_WORDS = f.read().strip().split()
         stop_words = list(ENGLISH_STOP_WORDS) + PERSIAN_STOP_WORDS
-        self.tfidf = TfidfVectorizer(analyzer='word', stop_words=stop_words)
-        self.tfidf = self.tfidf.fit_transform(self.artists['description'])
+        self.tfidf = TfidfVectorizer(analyzer="word", stop_words=stop_words)
+        self.tfidf = self.tfidf.fit_transform(self.artists["description"])
 
         self.genres_by_age_group: Dict[int, List[str]] = {
-            19: ['pop', 'rap', 'rock'],
-            24: ['pop', 'rap', 'rock'],
-            34: ['pop', 'rock', 'rap', 'country', 'traditional'],
-            44: ['pop', 'rock', 'rap', 'country', 'traditional'],
-            54: ['rock', 'pop', 'country', 'traditional'],
-            64: ['rock', 'country', 'traditional'],
-            65: ['rock', 'country', 'traditional'],
+            19: ["pop", "rap", "rock"],
+            24: ["pop", "rap", "rock"],
+            34: ["pop", "rock", "rap", "country", "traditional"],
+            44: ["pop", "rock", "rap", "country", "traditional"],
+            54: ["rock", "pop", "country", "traditional"],
+            64: ["rock", "country", "traditional"],
+            65: ["rock", "country", "traditional"],
         }
 
     def genres_by_age(self, age: int) -> List[str]:
@@ -134,13 +153,14 @@ class Recommender:
     def binarize(self, genres: List[str]) -> np.ndarray:
         return self.binarizer.transform([genres]).toarray()[0]
 
-    def shuffle(self,
-                user_preferences: Preferences,
-                # language: str = 'any',
-                song_type='any',
-                ) -> List[Song]:
+    def shuffle(
+        self,
+        user_preferences: Preferences,
+        # language: str = 'any',
+        song_type="any",
+    ) -> List[Song]:
         user_genres = self.binarize(user_preferences.genres)
-        persian_index = np.where(self.binarize(['persian']) == 1)[0][0]
+        persian_index = np.where(self.binarize(["persian"]) == 1)[0][0]
         persian_user = True if user_genres[persian_index] == 1 else False
         similar = []
         for index, song in enumerate(self.numpy_songs):
@@ -160,44 +180,51 @@ class Recommender:
         # Randomly choose 20 songs from similar songs
         # This is to avoid sending the same set of songs each time
         if similar:
-            selected = np.random.choice(similar, 20, )  # TODO: set probability array
+            selected = np.random.choice(
+                similar,
+                20,
+            )  # TODO: set probability array
         else:
             return []
 
         # sort songs by most similar song artists to user artists
-        user_artists = [self.artists[self.artists.name == artist]
-                        for artist in user_preferences.artists]
+        user_artists = [
+            self.artists[self.artists.name == artist]
+            for artist in user_preferences.artists
+        ]
         if user_artists:
-            song_artists = [self.artists[self.artists.name == self.songs.loc[song].artist]
-                            for song in selected]
+            song_artists = [
+                self.artists[self.artists.name == self.songs.loc[song].artist]
+                for song in selected
+            ]
             cosine_similarities = []
             user_tfifd = self.tfidf[[artist.index[0] for artist in user_artists], :]
             for index, artist in enumerate(song_artists):
-                cosine_similarity = linear_kernel(
-                    self.tfidf[artist.index[0]], user_tfifd
-                ).flatten().sum()
+                cosine_similarity = (
+                    linear_kernel(self.tfidf[artist.index[0]], user_tfifd)
+                    .flatten()
+                    .sum()
+                )
                 if artist.name.values[0] in [x.name.values[0] for x in user_artists]:
                     cosine_similarity += 1
-                cosine_similarities.append(
-                    (index, cosine_similarity)
-                )
+                cosine_similarities.append((index, cosine_similarity))
             cosine_similarities.sort(key=lambda x: x[1], reverse=True)
             hits = []
             for row in cosine_similarities:
                 song = self.song(selected[row[0]])
-                if song_type == 'any':
+                if song_type == "any":
                     hits.append(song)
-                elif song_type == 'any_file':
+                elif song_type == "any_file":
                     if song.preview_url or song.download_url:
                         hits.append(song)
-                elif song_type == 'preview':
+                elif song_type == "preview":
                     if song.preview_url:
                         hits.append(song)
-                elif song_type == 'full':
+                elif song_type == "full":
                     if song.download_url:
                         hits.append(song)
                     hits.append(song)
-                elif song_type == 'preview,full':
+                elif song_type == "preview,full":
                     if song.preview_url and song.download_url:
                         hits.append(song)
                 if len(hits) == 5:
@@ -206,19 +233,19 @@ class Recommender:
             hits = []
             for index in selected:
                 song = self.song(index)
-                if song_type == 'any':
+                if song_type == "any":
                     hits.append(song)
-                elif song_type == 'any_file':
+                elif song_type == "any_file":
                     if song.preview_url or song.download_url:
                         hits.append(song)
-                elif song_type == 'preview':
+                elif song_type == "preview":
                     if song.preview_url:
                         hits.append(song)
-                elif song_type == 'full':
+                elif song_type == "full":
                     if song.download_url:
                         hits.append(song)
                     hits.append(song)
-                elif song_type == 'preview,full':
+                elif song_type == "preview,full":
                     if song.preview_url and song.download_url:
                         hits.append(song)
                 if len(hits) == 5:
@@ -228,53 +255,62 @@ class Recommender:
 
     def song(self, id: int = None, id_spotify: str = None) -> Song:
         if not any([id, id_spotify]):
-            raise AssertionError('Must supply either id or id_spotify.')
+            raise AssertionError("Must supply either id or id_spotify.")
         if id:
             row = self.songs.iloc[id]
         else:
             rows = self.songs[self.songs.id_spotify == id_spotify]
             id = rows.index[0]
             row = rows.iloc[0]
-        return Song(
-            id=int(id),
-            **row.to_dict()
-        )
+        return Song(id=int(id), **row.to_dict())
 
 
 @log
 def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["welcome_to_shuffle"]
-    recommender = context.bot_data['recommender']
+    recommender = context.bot_data["recommender"]
     ud = context.user_data
     bot = context.bot
     chat_id = update.effective_chat.id
-    photo = join(data_path, 'shuffle.jpg')
+    photo = join(data_path, "shuffle.jpg")
 
-    caption = text['body'].format(len(recommender.songs))
+    caption = text["body"].format(len(recommender.songs))
 
     buttons = [
-        [IButton(text['enter_preferences'], callback_data='shuffle_manual')],
+        [IButton(text["enter_preferences"], callback_data="shuffle_manual")],
     ]
 
-    if ud['genius_token']:
-        buttons.append([IButton(text['preferences_from_genius'],
-                                callback_data='shuffle_genius')])
+    if ud["genius_token"]:
+        buttons.append(
+            [IButton(text["preferences_from_genius"], callback_data="shuffle_genius")]
+        )
     else:
-        buttons.append([IButton(text['preferences_from_genius_login'],
-                                callback_data='login_genius')])
+        buttons.append(
+            [
+                IButton(
+                    text["preferences_from_genius_login"], callback_data="login_genius"
+                )
+            ]
+        )
 
-    if ud['spotify_token']:
-        buttons.append([IButton(text['preferences_from_spotify'],
-                                callback_data='shuffle_spotify')])
+    if ud["spotify_token"]:
+        buttons.append(
+            [IButton(text["preferences_from_spotify"], callback_data="shuffle_spotify")]
+        )
     else:
-        buttons.append([IButton(text['preferences_from_spotify_login'],
-                                callback_data='login_spotify')])
+        buttons.append(
+            [
+                IButton(
+                    text["preferences_from_spotify_login"],
+                    callback_data="login_spotify",
+                )
+            ]
+        )
 
-    bot.send_photo(chat_id,
-                   open(photo, 'rb'),
-                   caption,
-                   reply_markup=IBKeyboard(buttons))
+    bot.send_photo(
+        chat_id, open(photo, "rb"), caption, reply_markup=IBKeyboard(buttons)
+    )
     return SELECT_ACTION
 
 
@@ -285,19 +321,17 @@ def input_preferences(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
 
     buttons = [
-        [IButton(text['enter_age'], callback_data='age'),
-         IButton(text['choose_genres'], callback_data='genre')
-         ],
+        [
+            IButton(text["enter_age"], callback_data="age"),
+            IButton(text["choose_genres"], callback_data="genre"),
+        ],
     ]
 
-    context.user_data['genres'] = []
-    context.user_data['artists'] = []
+    context.user_data["genres"] = []
+    context.user_data["artists"] = []
 
     update.callback_query.message.delete()
-    context.bot.send_message(
-        chat_id,
-        text['body'],
-        reply_markup=IBKeyboard(buttons))
+    context.bot.send_message(chat_id, text["body"], reply_markup=IBKeyboard(buttons))
 
     return SELECT_GENRES
 
@@ -308,13 +342,13 @@ def input_age(update: Update, context: CallbackContext):
     text = context.bot_data["texts"][language]["input_age"]
 
     if update.callback_query:
-        update.callback_query.edit_message_text(text['enter_age'])
+        update.callback_query.edit_message_text(text["enter_age"])
         return SELECT_GENRES
 
     try:
         num = int(update.message.text)
     except ValueError:
-        update.message.reply_text(text['invalid_age'])
+        update.message.reply_text(text["invalid_age"])
         return SELECT_GENRES
 
     age_group = [i for i in genres_by_age_group.keys() if i >= num]
@@ -323,9 +357,9 @@ def input_age(update: Update, context: CallbackContext):
     else:
         age_group = list(genres_by_age_group)[-1]
     genres = genres_by_age_group[age_group]
-    if language == 'fa':
-        genres.append('persian')
-    context.user_data['genres'] = genres
+    if language == "fa":
+        genres.append("persian")
+    context.user_data["genres"] = genres
 
     return begin_artist(update, context)
 
@@ -334,56 +368,55 @@ def input_age(update: Update, context: CallbackContext):
 def select_genres(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["select_genres"]
-    recommender = context.bot_data['recommender']
-    genres_text = context.bot_data['texts'][language]['genres']
+    recommender = context.bot_data["recommender"]
+    genres_text = context.bot_data["texts"][language]["genres"]
 
     query = update.callback_query
     selected_genre = None
-    if query.data == 'genre':
-        if language == 'fa':
-            context.user_data['genres'] = ['persian']
-        query.edit_message_text(text['choose_genres'])
-    elif query.data == 'done':
+    if query.data == "genre":
+        if language == "fa":
+            context.user_data["genres"] = ["persian"]
+        query.edit_message_text(text["choose_genres"])
+    elif query.data == "done":
         return begin_artist(update, context)
     else:
         # User chose a genre between genres
-        _, genre_str = query.data.split('_')
+        _, genre_str = query.data.split("_")
         selected_genre = recommender.genres_by_number[int(genre_str)]
 
-    user_genres = context.user_data['genres']
+    user_genres = context.user_data["genres"]
 
     # Remove genre if user re-selected it
     # Otherwise add it to user's genres
     if selected_genre:
         if selected_genre in user_genres:
-            query.answer(text['genre_removed'])
+            query.answer(text["genre_removed"])
             user_genres.remove(selected_genre)
         else:
-            query.answer(text['genre_added'])
+            query.answer(text["genre_added"])
             user_genres.append(selected_genre)
 
     # keyboard for genres
     buttons = []
     for id, genre in recommender.genres_by_number.items():
         if genre in user_genres:
-            button_text = f'✅{genres_text[genre]}✅'
+            button_text = f"✅{genres_text[genre]}✅"
         else:
             button_text = genres_text[genre]
-        buttons.append(IButton(button_text, callback_data=f'genre_{id}'))
+        buttons.append(IButton(button_text, callback_data=f"genre_{id}"))
 
     # 3 genres in each row
     def grouper(n, iterable, fillvalue=None):
         # from https://stackoverflow.com/a/3415150
         args = [iter(iterable)] * n
-        return zip_longest(fillvalue=IButton('⬛️', callback_data='None'), *args)
+        return zip_longest(fillvalue=IButton("⬛️", callback_data="None"), *args)
+
     keyboard_buttons = []
     for button_set in grouper(3, buttons):
         keyboard_buttons.append(button_set)
 
-    if context.user_data['genres']:
-        keyboard_buttons.append(
-            [IButton(text['done'], callback_data='done')]
-        )
+    if context.user_data["genres"]:
+        keyboard_buttons.append([IButton(text["done"], callback_data="done")])
 
     query.edit_message_reply_markup(IBKeyboard(keyboard_buttons))
 
@@ -392,17 +425,17 @@ def select_genres(update: Update, context: CallbackContext):
 
 @log
 def begin_artist(update: Update, context: CallbackContext):
-    language = context.user_data['bot_lang']
+    language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["input_artist"]
     buttons = [
-        [IButton(text['add_artist'], callback_data='input')],
-        [IButton(text['done'], callback_data='done')]
+        [IButton(text["add_artist"], callback_data="input")],
+        [IButton(text["done"], callback_data="done")],
     ]
     keyboard = IBKeyboard(buttons)
     if update.callback_query:
-        update.callback_query.edit_message_text(text['body'], reply_markup=keyboard)
+        update.callback_query.edit_message_text(text["body"], reply_markup=keyboard)
     else:
-        update.message.reply_text(text['body'], reply_markup=keyboard)
+        update.message.reply_text(text["body"], reply_markup=keyboard)
     return SELECT_ARTISTS
 
 
@@ -411,7 +444,7 @@ def input_artist(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["input_artist"]
 
-    update.callback_query.edit_message_text(text['enter_artist'])
+    update.callback_query.edit_message_text(text["enter_artist"])
     return SELECT_ARTISTS
 
 
@@ -421,8 +454,8 @@ def select_artists(update: Update, context: CallbackContext):
     ud = context.user_data
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["select_artists"]
-    db = context.bot_data['db']
-    recommender = context.bot_data['recommender']
+    db = context.bot_data["db"]
+    recommender = context.bot_data["recommender"]
     chat_id = update.effective_chat.id
 
     if update.message:
@@ -433,37 +466,40 @@ def select_artists(update: Update, context: CallbackContext):
             n=5,
         )
         if not matches:
-            update.message.reply_text(text['no_match'])
+            update.message.reply_text(text["no_match"])
             return SELECT_ARTISTS
 
         buttons = []
         for match in matches:
             index = recommender.artists[recommender.artists["name"] == match].index[0]
-            buttons.append([IButton(match, callback_data=f'artist_{index}')])
+            buttons.append([IButton(match, callback_data=f"artist_{index}")])
 
-        buttons.append([IButton(text['not_in_matches'], callback_data='artist_none')])
-        update.message.reply_text(text['choose_artist'],
-                                  reply_markup=IBKeyboard(buttons))
+        buttons.append([IButton(text["not_in_matches"], callback_data="artist_none")])
+        update.message.reply_text(
+            text["choose_artist"], reply_markup=IBKeyboard(buttons)
+        )
         return SELECT_ARTISTS
 
     query = update.callback_query
 
-    if query.data == 'done':
-        ud['preferences'] = Preferences(ud.pop('genres'), ud.pop('artists'))
-        db.update_preferences(chat_id, ud['preferences'])
-        update.callback_query.edit_message_text(text['finished'])
+    if query.data == "done":
+        ud["preferences"] = Preferences(ud.pop("genres"), ud.pop("artists"))
+        db.update_preferences(chat_id, ud["preferences"])
+        update.callback_query.edit_message_text(text["finished"])
         return END
     else:
-        _, artist = query.data.split('_')
-        if artist != 'none':
-            ud['artists'].append(recommender.artists.name.loc[int(artist)])
-            query.answer(text['artist_added'])
+        _, artist = query.data.split("_")
+        if artist != "none":
+            ud["artists"].append(recommender.artists.name.loc[int(artist)])
+            query.answer(text["artist_added"])
         buttons = [
-            [IButton(text['add_artist'], callback_data='input')],
-            [IButton(text['done'], callback_data='done')]]
+            [IButton(text["add_artist"], callback_data="input")],
+            [IButton(text["done"], callback_data="done")],
+        ]
         query.edit_message_text(
-            text['artists'].format(', '.join(ud['artists'])),
-            reply_markup=IBKeyboard(buttons))
+            text["artists"].format(", ".join(ud["artists"])),
+            reply_markup=IBKeyboard(buttons),
+        )
         return SELECT_ARTISTS
 
 
@@ -477,13 +513,11 @@ def select_language(update: Update, context: CallbackContext):
     buttons = [
         [
             [
-                IButton(bd['texts'][language]['en'], callback_data='en'),
-                IButton(bd['texts'][language]['fa'], callback_data='fa')
+                IButton(bd["texts"][language]["en"], callback_data="en"),
+                IButton(bd["texts"][language]["fa"], callback_data="fa"),
             ]
         ],
-        [
-            IButton(bd['texts'][language]['both'], callback_data='both')
-        ]
+        [IButton(bd["texts"][language]["both"], callback_data="both")],
     ]
 
     update.callback_query.edit_message_text(text, reply_markup=IBKeyboard(buttons))
@@ -494,61 +528,59 @@ def select_language(update: Update, context: CallbackContext):
 def process_preferences(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["process_preferences"]
-    recommender = context.bot_data['recommender']
+    recommender = context.bot_data["recommender"]
     chat_id = update.effective_chat.id
     bot = context.bot
     bd = context.bot_data
 
     query = update.callback_query
-    _, platform = query.data.split('_')
-    platform_text = bd['texts'][language][platform]
+    _, platform = query.data.split("_")
+    platform_text = bd["texts"][language][platform]
 
     query.message.delete()
-    message = bot.send_message(chat_id,
-                               text['getting_data'].format(platform_text))
+    message = bot.send_message(chat_id, text["getting_data"].format(platform_text))
 
-    if platform == 'genius':
-        genius_token = context.user_data['genius_token']
+    if platform == "genius":
+        genius_token = context.user_data["genius_token"]
         user_genius = api.GeniusT(genius_token)
-        account = user_genius.account()['user']
-        pyongs = user_genius.user_pyongs(account['id'])
+        account = user_genius.account()["user"]
+        pyongs = user_genius.user_pyongs(account["id"])
         pyonged_songs = []
-        for contribution in pyongs['contribution_groups']:
-            pyong = contribution['contributions'][0]
-            if pyong['pyongable_type'] == 'song':
-                api_path = pyong['pyongable']['api_path']
-                pyonged_songs.append(int(api_path[api_path.rfind('/') + 1:]))
+        for contribution in pyongs["contribution_groups"]:
+            pyong = contribution["contributions"][0]
+            if pyong["pyongable_type"] == "song":
+                api_path = pyong["pyongable"]["api_path"]
+                pyonged_songs.append(int(api_path[api_path.rfind("/") + 1 :]))
 
         public_genius = PublicAPI(timeout=10)
 
         genres = []
         artists = []
         for song_id in pyonged_songs:
-            song = public_genius.song(song_id)['song']
-            artists.append(song['primary_artist']['name'])
-            for tag in song['tags']:
+            song = public_genius.song(song_id)["song"]
+            artists.append(song["primary_artist"]["name"])
+            for tag in song["tags"]:
                 for genre in recommender.genres:
                     if genre in tag:
                         genres.append(genre)
     else:
-        spotify_token = context.user_data['spotify_token']
+        spotify_token = context.user_data["spotify_token"]
         token = spotify_token
-        cred = tk.RefreshingCredentials(SPOTIFY_CLIENT_ID,
-                                        SPOTIFY_CLIENT_SECRET)
+        cred = tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
         token = cred.refresh_user_token(spotify_token)
         user_spotify = tk.Spotify(token, sender=tk.RetryingSender())
-        top_tracks = user_spotify.current_user_top_tracks('short_term')
+        top_tracks = user_spotify.current_user_top_tracks("short_term")
         top_artists = user_spotify.current_user_top_artists(limit=5)
         user_spotify.close()
 
         # Add track genres to genres list
         genres = []
         for track in top_tracks.items:
-            track_genres = api.lastfm('Track.getTopTags',
-                                      {'artist': track.artists[0],
-                                       'track': track.name})
-            if 'toptags' in track_genres:
-                for tag in track_genres['toptags']['tag']:
+            track_genres = api.lastfm(
+                "Track.getTopTags", {"artist": track.artists[0], "track": track.name}
+            )
+            if "toptags" in track_genres:
+                for tag in track_genres["toptags"]["tag"]:
                     for genre in recommender.genres:
                         if genre in tag:
                             genres.append(genre)
@@ -566,16 +598,17 @@ def process_preferences(update: Update, context: CallbackContext):
     found_artists = []
     for artist in artists:
         found_artist = recommender.artists[
-            recommender.artists.name == artist].name.values
+            recommender.artists.name == artist
+        ].name.values
         if found_artist.size > 0:
             found_artists.append(found_artist[0])
 
     if not genres:
-        message.edit_text(text['insufficient_data'].format(platform_text))
+        message.edit_text(text["insufficient_data"].format(platform_text))
     else:
-        context.user_data['preferences'] = Preferences(genres, found_artists)
-        context.bot_data['db'].update_preferences(context.user_data['preferences'])
-        message.edit_text(text['done'])
+        context.user_data["preferences"] = Preferences(genres, found_artists)
+        context.bot_data["db"].update_preferences(context.user_data["preferences"])
+        message.edit_text(text["done"])
 
     return END
 
@@ -586,10 +619,10 @@ def reset_shuffle(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["reset_shuffle"]
     chat_id = update.effective_chat.id
-    db = context.bot_data['db']
+    db = context.bot_data["db"]
 
     db.delete_preferences(chat_id)
-    context.user_data['preferences'] = None
+    context.user_data["preferences"] = None
 
     update.callback_query.edit_message_text(text)
 
@@ -602,10 +635,10 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     """Displays song recommendations to the user"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["display_recommendations"]
-    recommender = context.bot_data['recommender']
+    recommender = context.bot_data["recommender"]
     bot = context.bot
     chat_id = update.effective_chat.id
-    user_preferences = context.user_data['preferences']
+    user_preferences = context.user_data["preferences"]
 
     if update.callback_query:
         update.callback_query.answer()
@@ -616,32 +649,32 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     deep_linked = []
     for i, song in enumerate(songs):
         urls = []
-        full_name = f'{song.artist} - {song.name}'
+        full_name = f"{song.artist} - {song.name}"
         if song.id_spotify:
-            full_name = utils.deep_link(full_name, song.id_spotify, 'song', 'spotify')
+            full_name = utils.deep_link(full_name, song.id_spotify, "song", "spotify")
         if song.preview_url:
             url = utils.deep_link(
-                text['preview'],
+                text["preview"],
                 song.id,
-                'song',
-                'recommender_preview',
+                "song",
+                "recommender_preview",
             )
             urls.append(url)
         if song.download_url:
             url = utils.deep_link(
-                text['download'],
+                text["download"],
                 song.id,
-                'song',
-                'recommender_download',
+                "song",
+                "recommender_download",
             )
             urls.append(url)
         if urls:
-            urls = '|'.join(urls)
+            urls = "|".join(urls)
             item = f"{full_name} ({urls})"
         else:
             item = full_name
         deep_linked.append(item)
-    caption = text['body'].format('\n'.join('▪️ {}'.format(x) for x in deep_linked))
+    caption = text["body"].format("\n".join("▪️ {}".format(x) for x in deep_linked))
     bot.send_message(chat_id, caption)
 
     return END

@@ -16,7 +16,7 @@ from geniust import username, utils, get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 @log
@@ -277,8 +277,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> None:
         return
 
     search_more = [
-        IButton(text=f"...{text['body']}...",
-                switch_inline_query_current_chat=".lyrics ")
+        IButton(
+            text=f"...{text['body']}...", switch_inline_query_current_chat=".lyrics "
+        )
     ]
 
     res = genius.search_lyrics(input_text, per_page=10)
@@ -307,7 +308,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> None:
                 answer_text, disable_web_page_preview=False
             ),
             reply_markup=keyboard,
-            description=hit['highlights'][0]['value'],
+            description=hit["highlights"][0]["value"],
         )
         # It's possible to provide results that are captioned photos
         # of the song cover art, but that requires using InlineQueryResultPhoto
@@ -404,31 +405,34 @@ def search_users(update: Update, context: CallbackContext) -> None:
     res = genius.search_users(input_text, per_page=10)
     articles = []
     for hit in res["sections"][0]["hits"][:10]:
-        user = hit['result']
-        user_username = user['name']
+        user = hit["result"]
+        user_username = user["name"]
         user_id = user["id"]
 
         answer_text = user_caption(update, context, user, text["caption"])
         user_url = create_deep_linked_url(username, f"user_{user_id}")
-        description_url = create_deep_linked_url(username,
-                                                 f"user_{user_id}_description")
+        description_url = create_deep_linked_url(
+            username, f"user_{user_id}_description"
+        )
         header_url = create_deep_linked_url(username, f"user_{user_id}_header")
         buttons = [
             [IButton(texts["inline_menu"]["full_details"], url=user_url)],
-            [IButton(texts["display_user"]["description"], url=description_url),
-             IButton(texts["display_user"]["header"], url=header_url)],
+            [
+                IButton(texts["display_user"]["description"], url=description_url),
+                IButton(texts["display_user"]["header"], url=header_url),
+            ],
             search_more,
         ]
         keyboard = IBKeyboard(buttons)
         answer = InlineQueryResultArticle(
             id=str(uuid4()),
             title=user_username,
-            thumb_url=user["avatar"]['thumb']['url'],
+            thumb_url=user["avatar"]["thumb"]["url"],
             input_message_content=InputTextMessageContent(
                 answer_text, disable_web_page_preview=False
             ),
             reply_markup=keyboard,
-            description=user['about_me_summary'],
+            description=user["about_me_summary"],
         )
         # It's possible to provide results that are captioned photos
         # of the song cover art, but that requires using InlineQueryResultPhoto
@@ -473,7 +477,12 @@ def album_caption(
     string = (
         caption.replace("{name}", album["name"])
         .replace("{artist_name}", album["artist"]["name"])
-        .replace("{artist}", utils.deep_link(album["artist"]['name'], album["artist"]['id'], 'artist', 'genius'))
+        .replace(
+            "{artist}",
+            utils.deep_link(
+                album["artist"]["name"], album["artist"]["id"], "artist", "genius"
+            ),
+        )
         .replace("{release_date}", release_date)
         .replace("{url}", album["url"])
         .replace("{image_url}", album["cover_art_url"])
@@ -543,14 +552,19 @@ def song_caption(
     hot = context.bot_data["texts"][language][song["stats"]["hot"]]
     instrumental = context.bot_data["texts"][language][song["instrumental"]]
     artist = song["primary_artist"]
-    views = song["stats"].get("pageviews", '?')
+    views = song["stats"].get("pageviews", "?")
 
     string = (
         caption.replace("{title}", song["title"])
         .replace("{artist_name}", song["primary_artist"]["name"])
-        .replace("{artist}", utils.deep_link(artist['name'], artist['id'], 'artist', 'genius'))
+        .replace(
+            "{artist}",
+            utils.deep_link(artist["name"], artist["id"], "artist", "genius"),
+        )
         .replace("{hot}", hot)
-        .replace("{views}", utils.human_format(views) if isinstance(views, int) else views)
+        .replace(
+            "{views}", utils.human_format(views) if isinstance(views, int) else views
+        )
         .replace("{instrumental}", instrumental)
         .replace("{url}", song["url"])
         .replace("{image_url}", song["song_art_image_url"])
@@ -577,11 +591,10 @@ def user_caption(
         str: Formatted caption.
     """
     string = (
-        caption
-        .replace("{name}", user["name"])
+        caption.replace("{name}", user["name"])
         .replace("{iq}", utils.human_format(user["iq"]))
         .replace("{url}", user["url"])
-        .replace("{role}", user['human_readable_role_for_display'])
-        .replace("{image_url}", user['avatar']['medium']['url'])
+        .replace("{role}", user["human_readable_role_for_display"])
+        .replace("{image_url}", user["avatar"]["medium"]["url"])
     )
     return string

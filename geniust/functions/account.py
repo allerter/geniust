@@ -13,7 +13,7 @@ from geniust import utils, auths, get_user
 from geniust.utils import log
 from geniust import api
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 @log
@@ -25,14 +25,16 @@ def login_choices(update: Update, context: CallbackContext):
     bd = context.bot_data
 
     buttons = []
-    if ud['genius_token'] is None:
-        buttons.append([IButton(bd['texts'][language]['genius'],
-                                callback_data='login_genius')])
-    if ud['spotify_token'] is None:
-        buttons.append([IButton(bd['texts'][language]['spotify'],
-                                callback_data='login_spotify')])
+    if ud["genius_token"] is None:
+        buttons.append(
+            [IButton(bd["texts"][language]["genius"], callback_data="login_genius")]
+        )
+    if ud["spotify_token"] is None:
+        buttons.append(
+            [IButton(bd["texts"][language]["spotify"], callback_data="login_spotify")]
+        )
 
-    caption = text['choose'] if buttons else text['logged_in']
+    caption = text["choose"] if buttons else text["logged_in"]
     update.message.reply_text(caption, reply_markup=IBKeyboard(buttons))
 
 
@@ -43,19 +45,17 @@ def login(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["login"]
     chat_id = update.effective_chat.id
-    platform = update.callback_query.data.split('_')[1]
+    platform = update.callback_query.data.split("_")[1]
 
     unique_value = secrets.token_urlsafe().replace("_", "-")
-    state = f'{chat_id}_{platform}_{unique_value}'
-    if platform == 'genius':
-        auth = auths['genius']
+    state = f"{chat_id}_{platform}_{unique_value}"
+    if platform == "genius":
+        auth = auths["genius"]
         auth.state = state
         url = auth.url
     else:
-        url = auths['spotify']._cred.user_authorisation_url(
-            tk.scope.user_top_read,
-            state,
-            show_dialog=True
+        url = auths["spotify"]._cred.user_authorisation_url(
+            tk.scope.user_top_read, state, show_dialog=True
         )
 
     context.user_data["state"] = unique_value
@@ -63,7 +63,7 @@ def login(update: Update, context: CallbackContext) -> int:
     buttons = [[IButton(text["button"], url)]]
     keyboard = IBKeyboard(buttons)
 
-    msg = text["genius"] if platform == 'genius' else text['spotify']
+    msg = text["genius"] if platform == "genius" else text["spotify"]
     update.callback_query.answer()
     update.callback_query.message.delete()
     context.bot.send_message(chat_id, msg, reply_markup=keyboard)
@@ -104,7 +104,7 @@ def logout(update: Update, context: CallbackContext) -> int:
     language = ud["bot_lang"]
     text = bd["texts"][language]["logout"]
 
-    bd["db"].delete_token(chat_id, 'genius')
+    bd["db"].delete_token(chat_id, "genius")
     ud["genius_token"] = None
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
@@ -173,6 +173,6 @@ def account_caption(
         .replace("{all_activities_count}", str(sum(account["stats"].values())))
     )
     if artist := account["artist"]:
-        artist = utils.deep_link(artist['name'], artist['id'], 'artist', 'genius')
+        artist = utils.deep_link(artist["name"], artist["id"], "artist", "genius")
         string += caption["artist"].replace("{}", artist)  # type: ignore
     return string

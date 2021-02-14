@@ -27,53 +27,53 @@ from geniust.constants import (
     GENIUS_TOKEN,
 )
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 def lastfm(method: str, parameters_input: dict) -> dict:
     # Variabls: Set local
     api_key_lastfm = LASTFM_API_KEY
-    user_agent_lastfm = 'GeniusT'
-    api_url_lastfm = 'http://ws.audioscrobbler.com/2.0/'
+    user_agent_lastfm = "GeniusT"
+    api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
     # Last.fm API header and default parameters
-    headers = {
-        'user-agent': user_agent_lastfm
-    }
-    parameters = {
-        'method': method,
-        'api_key': api_key_lastfm,
-        'format': 'json'
-    }
+    headers = {"user-agent": user_agent_lastfm}
+    parameters = {"method": method, "api_key": api_key_lastfm, "format": "json"}
     parameters.update(parameters_input)
     # Responses and error codes
     state = False
     while state is False:
         try:
-            response = requests.get(api_url_lastfm,
-                                    headers=headers,
-                                    params=parameters,
-                                    timeout=10)
+            response = requests.get(
+                api_url_lastfm, headers=headers, params=parameters, timeout=10
+            )
             if response.status_code == 200:
-                logger.debug(('Last.fm API: 200'
-                              ' - Response was successfully received.'))
+                logger.debug(
+                    ("Last.fm API: 200" " - Response was successfully received.")
+                )
                 state = True
             elif response.status_code == 401:
-                logger.debug(('Last.fm API: 401'
-                              ' - Unauthorized. Please check your API key.'))
+                logger.debug(
+                    ("Last.fm API: 401" " - Unauthorized. Please check your API key.")
+                )
             elif response.status_code == 429:
-                logger.debug(('Last.fm API: 429'
-                              ' - Too many requests. Waiting 60 seconds.'))
+                logger.debug(
+                    ("Last.fm API: 429" " - Too many requests. Waiting 60 seconds.")
+                )
                 time.sleep(5)
                 state = False
             else:
-                logger.debug(('Last.fm API: Unspecified error %s.'
-                              ' No response was received.'
-                              ' Trying again after 60 seconds...'),
-                             response.status_code)
+                logger.debug(
+                    (
+                        "Last.fm API: Unspecified error %s."
+                        " No response was received."
+                        " Trying again after 60 seconds..."
+                    ),
+                    response.status_code,
+                )
                 time.sleep(1)
                 state = False
         except OSError as err:
-            logger.debug('Error: %s. Trying again...', str(err))
+            logger.debug("Error: %s. Trying again...", str(err))
             time.sleep(3)
             state = False
     return response.json()
@@ -335,7 +335,7 @@ class GeniusT(Genius):
         if public_api or self.public_api:
             res = super(PublicAPI, self).search_songs(search_term, per_page, page)
             if match:
-                res = res['sections'][0]
+                res = res["sections"][0]
         else:
             if self.access_token is None:
                 raise ValueError("You need an access token for the developers API.")
@@ -344,12 +344,13 @@ class GeniusT(Genius):
         if match is None:
             return res
         else:
-            for hit in res['hits']:
-                song = hit['result']
-                if (clean_str(song['primary_artist']['name']) == clean_str(match[0])
-                        and clean_str(song['title']) == clean_str(match[1])):
-                    return {'match': song}
-            return {'match': None}
+            for hit in res["hits"]:
+                song = hit["result"]
+                if clean_str(song["primary_artist"]["name"]) == clean_str(
+                    match[0]
+                ) and clean_str(song["title"]) == clean_str(match[1]):
+                    return {"match": song}
+            return {"match": None}
 
     def lyrics(
         self,
@@ -606,31 +607,20 @@ class GeniusT(Genius):
 
 class Sender:
     """Sends HTTP requests."""
+
     # Create a persistent requests connection
 
-    def __init__(
-        self,
-        timeout=5,
-        sleep_time=0.2,
-        retries=0
-    ):
+    def __init__(self, timeout=5, sleep_time=0.2, retries=0):
         self._session = requests.Session()
         self._session.headers = {
-            'application': 'GeniusT',
-            'User-Agent': 'https://github.com/Allerter/geniust'
+            "application": "GeniusT",
+            "User-Agent": "https://github.com/Allerter/geniust",
         }
         self.timeout = timeout
         self.sleep_time = sleep_time
         self.retries = retries
 
-    def _make_request(
-        self,
-        path,
-        params=None,
-        method='GET',
-        web=False,
-        **kwargs
-    ):
+    def _make_request(self, path, params=None, method="GET", web=False, **kwargs):
         """Makes a request to Genius."""
         uri = path
 
@@ -642,17 +632,15 @@ class Sender:
         while response is None and tries <= self.retries:
             tries += 1
             try:
-                if method == 'GET':
-                    response = self._session.request(method, uri,
-                                                     timeout=self.timeout,
-                                                     params=params,
-                                                     **kwargs)
+                if method == "GET":
+                    response = self._session.request(
+                        method, uri, timeout=self.timeout, params=params, **kwargs
+                    )
                 else:
-                    response = self._session.request(method, uri,
-                                                     timeout=self.timeout,
-                                                     data=params,
-                                                     **kwargs)
-                logger.debug('%s status code for %s', response.status_code, uri)
+                    response = self._session.request(
+                        method, uri, timeout=self.timeout, data=params, **kwargs
+                    )
+                logger.debug("%s status code for %s", response.status_code, uri)
                 response.raise_for_status()
             except Timeout as e:
                 error = "Request timed out:\n{e}".format(e=e)
@@ -677,40 +665,44 @@ class Sender:
 
 
 def songs_match(first_artist, first_song, second_artist, second_song):
-    if (clean_str(first_artist) == clean_str(second_artist)
-            and clean_str(first_song) == clean_str(second_song)):
+    if clean_str(first_artist) == clean_str(second_artist) and clean_str(
+        first_song
+    ) == clean_str(second_song):
         return True
     else:
         return False
 
 
 MusicSource = namedtuple(
-    'MusicSource',
-    'name, download_url, search_url, method, parameters',
-    defaults=['GET', None])
+    "MusicSource",
+    "name, download_url, search_url, method, parameters",
+    defaults=["GET", None],
+)
 
 
-class FaMusic():
+class FaMusic:
     """Interface to APIs of Persian music websites"""
 
     sources = [
         MusicSource(
-            name='nex1music',
-            download_url='https://apin1mservice.com/WebService/music-more.php',
-            search_url='https://apin1mservice.com/WebService/search.php',
-            method='POST',
-            parameters={'download': 'post_id', 'search': 'text'}),
+            name="nex1music",
+            download_url="https://apin1mservice.com/WebService/music-more.php",
+            search_url="https://apin1mservice.com/WebService/search.php",
+            method="POST",
+            parameters={"download": "post_id", "search": "text"},
+        ),
         MusicSource(
-            name='radiojavan',
-            download_url='https://api-rjvn.app/api2/mp3',
-            search_url='https://api-rjvn.app/api2/search',
-            parameters={'download': 'id', 'search': 'query'}),
+            name="radiojavan",
+            download_url="https://api-rjvn.app/api2/mp3",
+            search_url="https://api-rjvn.app/api2/search",
+            parameters={"download": "id", "search": "query"},
+        ),
         MusicSource(
-            name='navahang',
-            download_url='https://navahang.co/navaapi2/GetSingleMediaInfo',
-            search_url='https://navahang.com/main-search.php',
-            parameters={'download': 'media_id', 'search': 'q'}),
-
+            name="navahang",
+            download_url="https://navahang.co/navaapi2/GetSingleMediaInfo",
+            search_url="https://navahang.com/main-search.php",
+            parameters={"download": "media_id", "search": "q"},
+        ),
     ]
 
     def __init__(self):
@@ -719,29 +711,28 @@ class FaMusic():
         sleep_time = 0.2
         self.sender = Sender(sleep_time=sleep_time, timeout=timeout, retries=retries)
 
-    def search(self, artist: str, song: str, type: Optional[str] = 'song'):
+    def search(self, artist: str, song: str, type: Optional[str] = "song"):
         for source in self.sources:
-            params = {source.parameters['search']: song}
+            params = {source.parameters["search"]: song}
             res = self.sender._make_request(source.search_url, params, source.method)
-            logger.info('%s API Search', source.name)
+            logger.info("%s API Search", source.name)
             if res:
-                if source.name == 'radiojavan':
-                    for hit in res['mp3s']:
-                        if songs_match(artist, song,
-                                       hit['artist'], hit['song']):
-                            return hit['id'], source.name
-                elif source.name == 'navahang':
-                    for hit in res['MP3']:
-                        if songs_match(artist, song,
-                                       hit['artist_name'], hit['song_name']):
-                            return hit['id'], source.name
+                if source.name == "radiojavan":
+                    for hit in res["mp3s"]:
+                        if songs_match(artist, song, hit["artist"], hit["song"]):
+                            return hit["id"], source.name
+                elif source.name == "navahang":
+                    for hit in res["MP3"]:
+                        if songs_match(
+                            artist, song, hit["artist_name"], hit["song_name"]
+                        ):
+                            return hit["id"], source.name
                 else:
                     for hit in res[1:]:
-                        if (songs_match(artist, song,
-                                        hit['artisten'], hit['tracken'])
-                            or songs_match(artist, song,
-                                           hit['artistfa'], hit['trackfa'])):
-                            return hit['id'], source.name
+                        if songs_match(
+                            artist, song, hit["artisten"], hit["tracken"]
+                        ) or songs_match(artist, song, hit["artistfa"], hit["trackfa"]):
+                            return hit["id"], source.name
         return None, None
 
     def download_url(self, song_id, song_source):
@@ -750,16 +741,16 @@ class FaMusic():
                 break
         else:
             return None
-        params = {source.parameters['download']: song_id}
+        params = {source.parameters["download"]: song_id}
         res = self.sender._make_request(source.download_url, params, source.method)
 
-        logger.info('%s API Download', source.name)
+        logger.info("%s API Download", source.name)
 
         if res is None:
             return None
-        elif source.name == 'radiojavan':
-            return res['link']
-        elif source.name == 'navahang':
-            return res[0]['download']
+        elif source.name == "radiojavan":
+            return res["link"]
+        elif source.name == "navahang":
+            return res[0]["download"]
         else:
-            return res['Music128']
+            return res["Music128"]

@@ -13,7 +13,7 @@ from geniust import get_user
 from geniust.utils import log
 
 
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 
 
 @log
@@ -46,7 +46,7 @@ def search_users(update: Update, context: CallbackContext) -> int:
     json_search = genius.search_users(input_text)
     buttons = []
     for hit in json_search["sections"][0]["hits"][:10]:
-        user = hit['result']
+        user = hit["result"]
         username = user["name"]
         callback = f"user_{user['id']}"
 
@@ -82,10 +82,10 @@ def display_user(update: Update, context: CallbackContext) -> int:
     caption = user_caption(update, context, user, text["caption"])
 
     buttons = [[]]
-    if user['about_me']['plain']:
+    if user["about_me"]["plain"]:
         callback_data = f"user_{user['id']}_description"
         buttons[0].append(IButton(text["description"], callback_data=callback_data))
-    if user['custom_header_image_url']:
+    if user["custom_header_image_url"]:
         callback_data = f"user_{user['id']}_header"
         buttons[0].append(IButton(text["header"], callback_data=callback_data))
 
@@ -115,10 +115,10 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
 
-    description = BeautifulSoup(user['about_me']['html'], "html.parser")
+    description = BeautifulSoup(user["about_me"]["html"], "html.parser")
     description = str(utils.remove_unsupported_tags(description))
 
-    caption = text.format(username=user['name'], description=description)
+    caption = text.format(username=user["name"], description=description)
     context.bot.send_message(chat_id, caption)
 
     return END
@@ -144,8 +144,8 @@ def display_user_header(update: Update, context: CallbackContext) -> int:
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
 
-    photo = user['custom_header_image_url']
-    caption = text.format(username=user['name'])
+    photo = user["custom_header_image_url"]
+    caption = text.format(username=user["name"])
     context.bot.send_photo(chat_id, photo, caption)
 
     return END
@@ -168,7 +168,7 @@ def user_caption(
     Returns:
         str: Formatted caption.
     """
-    user_roles = [role.capitalize() for role in user['roles_for_display']]
+    user_roles = [role.capitalize() for role in user["roles_for_display"]]
     string = (
         caption["body"]  # type: ignore
         .replace("{name}", user["name"])
@@ -187,6 +187,6 @@ def user_caption(
         .replace("{all_activities_count}", str(sum(user["stats"].values())))
     )
     if artist := user["artist"]:
-        artist = utils.deep_link(artist['name'], artist['id'], 'artist', 'genius')
+        artist = utils.deep_link(artist["name"], artist["id"], "artist", "genius")
         string += caption["artist"].replace("{}", artist)  # type: ignore
     return string

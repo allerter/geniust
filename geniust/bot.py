@@ -70,18 +70,15 @@ from geniust.constants import (
 # Enable logging
 logging.getLogger("telegram").setLevel(logging.INFO)
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger('geniust')
+logger = logging.getLogger("geniust")
 logger.setLevel(logging.DEBUG)
-defaults = {
-    'token': BOT_TOKEN,
-    'chat_id': DEVELOPERS[0]
-}
-hdlr = NotificationHandler('telegram', defaults=defaults)
+defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
+hdlr = NotificationHandler("telegram", defaults=defaults)
 hdlr.setLevel(logging.ERROR)
 logging.getLogger().addHandler(hdlr)
 
-class NewShuffleUser(MessageFilter):
 
+class NewShuffleUser(MessageFilter):
     def __init__(self, user_data):
         self.user_data = user_data
 
@@ -91,7 +88,7 @@ class NewShuffleUser(MessageFilter):
         if "bot_lang" not in self.user_data[chat_id]:
             database.user(chat_id, self.user_data[chat_id])
 
-        return True if not self.user_data[chat_id]['preferences'] else False
+        return True if not self.user_data[chat_id]["preferences"] else False
 
 
 @log
@@ -126,13 +123,14 @@ def main_menu(update: Update, context: CallbackContext) -> int:
         ],
     ]
 
-    token = context.user_data.get("genius_token",
-                                  context.user_data.get('spotify_token'))
+    token = context.user_data.get(
+        "genius_token", context.user_data.get("spotify_token")
+    )
     if token is not None:
         buttons.append([IButton(text["view_accounts"], callback_data=str(LOGGED_IN))])
 
-    if context.user_data['preferences'] is not None:
-        buttons.append([IButton(text['reset_shuffle'], callback_data='shuffle_reset')])
+    if context.user_data["preferences"] is not None:
+        buttons.append([IButton(text["reset_shuffle"], callback_data="shuffle_reset")])
 
     keyboard = IBKeyboard(buttons)
 
@@ -292,18 +290,20 @@ def main():
     dp.bot_data["texts"]: Dict[Any, str] = texts
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
-    dp.bot_data['famusic']: FaMusic = FaMusic()
-    dp.bot_data['spotify']: tk.Spotify = tk.Spotify(
-        tk.RefreshingCredentials(SPOTIFY_CLIENT_ID,
-                                 SPOTIFY_CLIENT_SECRET).request_client_token()
+    dp.bot_data["famusic"]: FaMusic = FaMusic()
+    dp.bot_data["spotify"]: tk.Spotify = tk.Spotify(
+        tk.RefreshingCredentials(
+            SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+        ).request_client_token()
     )
-    dp.bot_data['recommender'] = recommender.Recommender()
+    dp.bot_data["recommender"] = recommender.Recommender()
 
     my_states = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),
         CallbackQueryHandler(album.type_album, pattern="^" + str(TYPING_ALBUM) + "$"),
-        CallbackQueryHandler(album.display_album,
-                             pattern=r"^album_.*_(genius|spotify)$"),
+        CallbackQueryHandler(
+            album.display_album, pattern=r"^album_.*_(genius|spotify)$"
+        ),
         CallbackQueryHandler(
             album.display_album_covers, pattern=r"^album_[0-9]+_covers$"
         ),
@@ -317,8 +317,9 @@ def main():
             album.thread_get_album, pattern=r"^album_[0-9]+_lyrics_(pdf|tgf|zip)$"
         ),
         CallbackQueryHandler(artist.type_artist, pattern=f"^{TYPING_ARTIST}$"),
-        CallbackQueryHandler(artist.display_artist,
-                             pattern=r"^artist_.*_(genius|spotify)$"),
+        CallbackQueryHandler(
+            artist.display_artist, pattern=r"^artist_.*_(genius|spotify)$"
+        ),
         CallbackQueryHandler(
             artist.display_artist_albums, pattern=r"^artist_[0-9]+_albums$"
         ),
@@ -329,13 +330,14 @@ def main():
         CallbackQueryHandler(song.type_lyrics, pattern=f"^{TYPING_LYRICS}$"),
         CallbackQueryHandler(song.type_song, pattern=f"^{TYPING_SONG}$"),
         CallbackQueryHandler(
-            song.display_song, pattern=r"^song_[\d\S]+_(genius|spotify)$"),
+            song.display_song, pattern=r"^song_[\d\S]+_(genius|spotify)$"
+        ),
         CallbackQueryHandler(
             song.thread_display_lyrics, pattern=r"^song_[0-9]+_lyrics$"
         ),
         CallbackQueryHandler(
             song.download_song,
-            pattern=r"^song_[\d\S]+_(recommender|spotify)_(preview|download)$"
+            pattern=r"^song_[\d\S]+_(recommender|spotify)_(preview|download)$",
         ),
         CallbackQueryHandler(
             customize.customize_menu, pattern="^" + str(CUSTOMIZE_MENU) + "$"
@@ -356,7 +358,6 @@ def main():
         CallbackQueryHandler(
             annotation.downvote_annotation, pattern=r"^annotation_[0-9]+_downvote$"
         ),
-
         CallbackQueryHandler(account.login, pattern=r"^login_(spotify|genius)$"),
         CallbackQueryHandler(account.logged_in, pattern="^" + str(LOGGED_IN) + "$"),
         CallbackQueryHandler(account.logout, pattern="^" + str(LOGOUT) + "$"),
@@ -364,8 +365,9 @@ def main():
         # User
         CallbackQueryHandler(user.type_user, pattern=f"^{TYPING_USER}$"),
         CallbackQueryHandler(user.display_user, pattern=r"^user_[0-9]+$"),
-        CallbackQueryHandler(user.display_user_description,
-                             pattern=r"^user_[0-9]+_description$"),
+        CallbackQueryHandler(
+            user.display_user_description, pattern=r"^user_[0-9]+_description$"
+        ),
         CallbackQueryHandler(user.display_user_header, pattern=r"^user_[0-9]+_header$"),
     ]
 
@@ -390,9 +392,7 @@ def main():
         ],
         TYPING_USER: [
             MessageHandler(Filters.text & (~Filters.command), user.search_users),
-            CallbackQueryHandler(
-                user.type_user, pattern="^(?!" + str(END) + ").*$"
-            ),
+            CallbackQueryHandler(user.type_user, pattern="^(?!" + str(END) + ").*$"),
         ],
         TYPING_FEEDBACK: [
             MessageHandler(Filters.text & (~Filters.command), send_feedback)
@@ -439,7 +439,7 @@ def main():
         CommandHandler("lyrics_language", customize.lyrics_language),
         CommandHandler("bot_language", customize.bot_language),
         CommandHandler("include_annotations", customize.include_annotations),
-        CommandHandler('login', account.login_choices),
+        CommandHandler("login", account.login_choices),
         CommandHandler("help", help_message),
         CommandHandler("contact_us", contact_us),
     ]
@@ -526,7 +526,8 @@ def main():
             "start",
             song.download_song,
             Filters.regex(
-                r"^/start song_[\d\S]+_(recommender|spotify)_(preview|download)$"),
+                r"^/start song_[\d\S]+_(recommender|spotify)_(preview|download)$"
+            ),
             pass_args=True,
         ),
         CommandHandler(
@@ -570,52 +571,40 @@ def main():
     shuffle_preferences_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
-                'shuffle',
-                recommender.welcome_to_shuffle,
-                NewShuffleUser(user_data=dp.user_data)),
-
-            CommandHandler(
                 "shuffle",
-                recommender.display_recommendations),
-
-            CallbackQueryHandler(
-                recommender.reset_shuffle,
-                pattern=r"^shuffle_reset$")
+                recommender.welcome_to_shuffle,
+                NewShuffleUser(user_data=dp.user_data),
+            ),
+            CommandHandler("shuffle", recommender.display_recommendations),
+            CallbackQueryHandler(recommender.reset_shuffle, pattern=r"^shuffle_reset$"),
         ],
         states={
             SELECT_ACTION: [
-
                 CallbackQueryHandler(
-                    recommender.input_preferences,
-                    pattern=r"^shuffle_manual$"),
-
+                    recommender.input_preferences, pattern=r"^shuffle_manual$"
+                ),
                 CallbackQueryHandler(
                     recommender.process_preferences,
-                    pattern=r"^shuffle_(genius|spotify)$"),
-
+                    pattern=r"^shuffle_(genius|spotify)$",
+                ),
                 CallbackQueryHandler(
-                    account.login,
-                    pattern=r"^login_(genius|spotify)$"),
+                    account.login, pattern=r"^login_(genius|spotify)$"
+                ),
             ],
             SELECT_GENRES: [
                 CallbackQueryHandler(
-                    recommender.select_genres,
-                    pattern=r"^(done|genre|genre_[0-9]+)$"),
-                CallbackQueryHandler(
-                    recommender.input_age,
-                    pattern=r"^age$"),
-                MessageHandler(Filters.text, recommender.input_age)
+                    recommender.select_genres, pattern=r"^(done|genre|genre_[0-9]+)$"
+                ),
+                CallbackQueryHandler(recommender.input_age, pattern=r"^age$"),
+                MessageHandler(Filters.text, recommender.input_age),
             ],
             SELECT_ARTISTS: [
                 CallbackQueryHandler(
-                    recommender.select_artists,
-                    pattern=r"^(artist_([0-9]+|none)|done)$"),
-                CallbackQueryHandler(
-                    recommender.input_artist,
-                    pattern=r"^input$"),
-                MessageHandler(Filters.text, recommender.select_artists)
+                    recommender.select_artists, pattern=r"^(artist_([0-9]+|none)|done)$"
+                ),
+                CallbackQueryHandler(recommender.input_artist, pattern=r"^input$"),
+                MessageHandler(Filters.text, recommender.select_artists),
             ],
-
         },
         fallbacks=[
             CommandHandler("cancel", end_describing),
@@ -632,8 +621,8 @@ def main():
     # and receive user tokens at /callback
     if SERVER_PORT:
         webhook_thread = WebhookThread(
-            BOT_TOKEN, SERVER_PORT, auths, database,
-            texts, username, dp)
+            BOT_TOKEN, SERVER_PORT, auths, database, texts, username, dp
+        )
         webhook_thread.start()
     # if SERVER_PORT:
     #

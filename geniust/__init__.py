@@ -51,9 +51,9 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
 
 
 data_path = pathlib.Path(__file__).parent.resolve() / "data"
-files = [f
-         for f in listdir(data_path)
-         if isfile(join(data_path, f)) and f.endswith(".yaml")]
+files = [
+    f for f in listdir(data_path) if isfile(join(data_path, f)) and f.endswith(".yaml")
+]
 texts = {}
 for file in files:
     with open(join(data_path, file), "r", encoding="utf8") as f:
@@ -64,6 +64,9 @@ genius_auth = OAuth2.full_code_exchange(
     GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET, scope=("me", "vote")
 )
 spotify_auth = tk.UserAuth(
-    tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI),
-    scope=tk.scope.user_top_read)
-auths = {'genius': genius_auth, 'spotify': spotify_auth}
+    tk.RefreshingCredentials(
+        SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
+    ),
+    scope=tk.scope.user_top_read,
+)
+auths = {"genius": genius_auth, "spotify": spotify_auth}

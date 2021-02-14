@@ -7,7 +7,7 @@ import psycopg2
 from geniust.constants import DATABASE_URL, Preferences
 from geniust.utils import log
 
-logging.getLogger('geniust').setLevel(logging.DEBUG)
+logging.getLogger("geniust").setLevel(logging.DEBUG)
 
 RT = TypeVar("RT")
 
@@ -46,7 +46,7 @@ class Database:
         res = self.select(chat_id)
         if res:
             preferences = self.get_preferences(chat_id)
-            res.update({'preferences': preferences})
+            res.update({"preferences": preferences})
             user_data.update(res)
         else:
             # create user data with default preferences
@@ -63,7 +63,7 @@ class Database:
                     "bot_lang": bot_language,
                     "genius_token": genius_token,
                     "spotify_token": spotify_token,
-                    "preferences": preferences
+                    "preferences": preferences,
                 }
             )
             self.insert(chat_id, include_annotations, lyrics_language, bot_language)
@@ -75,8 +75,8 @@ class Database:
         self,
         chat_id: int,
         *data: Tuple[bool, str, str, Optional[str]],
-        table: str = 'user_data',
-        cursor: Any
+        table: str = "user_data",
+        cursor: Any,
     ) -> None:
         """Inserts data into database.
 
@@ -97,11 +97,7 @@ class Database:
     @log
     @get_cursor
     def upsert(
-        self,
-        chat_id: int,
-        *data: List,
-        table: str = 'user_data',
-        cursor: Any
+        self, chat_id: int, *data: List, table: str = "user_data", cursor: Any
     ) -> None:
         """Inserts data if chat_id is not duplicate, otherwise updates.
 
@@ -129,11 +125,7 @@ class Database:
     @log
     @get_cursor
     def select(
-        self,
-        chat_id: int,
-        cursor: Any,
-        column: str = "*",
-        table: str = 'user_data'
+        self, chat_id: int, cursor: Any, column: str = "*", table: str = "user_data"
     ) -> Dict[str, Any]:
         """Selects values from table.
 
@@ -166,9 +158,9 @@ class Database:
                     "genius_token": res[4],
                     "spotify_token": res[5],
                 }
-            elif len(column.split(',')) > 1:
+            elif len(column.split(",")) > 1:
                 values = {}
-                for i, column in enumerate(column.split(',')):
+                for i, column in enumerate(column.split(",")):
                     values[column] = res[i]
                 res = values
             else:
@@ -184,7 +176,7 @@ class Database:
         data: Union[bool, str, None],
         update: str,
         cursor: Any,
-        table: str = 'user_data',
+        table: str = "user_data",
     ):
         """Updates user data.
 
@@ -194,7 +186,7 @@ class Database:
             update (str): Column to update.
             cursor (Any): Database cursor.
         """
-        if table == 'user_data':
+        if table == "user_data":
             query = f"UPDATE {table} SET {update} = %s WHERE chat_id = {chat_id};"
             values = (data,)
         else:
@@ -288,23 +280,24 @@ class Database:
         return self.select(chat_id, column="bot_lang").get("bot_lang")  # type: ignore
 
     def get_preferences(self, chat_id: int) -> Optional[Preferences]:
-        res = self.select(chat_id,
-                          column='genres,artists',
-                          table=self.preferences_table)
+        res = self.select(
+            chat_id, column="genres,artists", table=self.preferences_table
+        )
 
-        if res is None or not res['genres']:
+        if res is None or not res["genres"]:
             return None
         else:
-            return Preferences(res['genres'], res['artists'])
+            return Preferences(res["genres"], res["artists"])
 
     def update_preferences(self, chat_id: int, user_preferences: Preferences) -> None:
-        self.upsert(chat_id,
-                    user_preferences.genres,
-                    user_preferences.artists,
-                    table=self.preferences_table)
+        self.upsert(
+            chat_id,
+            user_preferences.genres,
+            user_preferences.artists,
+            table=self.preferences_table,
+        )
 
     def delete_preferences(self, chat_id: int) -> None:
-        self.update(chat_id,
-                    data=(None, None),
-                    update=None,
-                    table=self.preferences_table)
+        self.update(
+            chat_id, data=(None, None), update=None, table=self.preferences_table
+        )
