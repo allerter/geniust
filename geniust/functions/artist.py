@@ -79,10 +79,7 @@ def display_artist(update: Update, context: CallbackContext) -> int:
     if platform == "genius":
         artist_id = int(artist_id_str)
     else:
-        artist_id = artist_id_str
-
-    if platform == "spotify":
-        artist = spotify.artist(artist_id)
+        artist = spotify.artist(artist_id_str)
         search = genius.search_artists(artist.name)["sections"][0]
         for hit in search["hits"]:
             hit_artist = hit["result"]
