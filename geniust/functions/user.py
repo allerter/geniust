@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Union
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -81,7 +81,7 @@ def display_user(update: Update, context: CallbackContext) -> int:
     cover_art = user["photo_url"]
     caption = user_caption(update, context, user, text["caption"])
 
-    buttons = [[]]
+    buttons: List = [[]]
     if user["about_me"]["plain"]:
         callback_data = f"user_{user['id']}_description"
         buttons[0].append(IButton(text["description"], callback_data=callback_data))
