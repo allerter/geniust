@@ -44,7 +44,7 @@ view their account\'s details (including unread messages), and even vote
 on album/song descriptions when viewing them.
 
 ### GeniusT Shuffle
-<img src="data/shuffle.jpg" alt="GeniusT Shuffle logo" width="480"/>
+<img src="geniust/data/shuffle.jpg" alt="GeniusT Shuffle logo" width="480"/>
 GeniusT offers a basic genre-based music recommendation system that
 offers users song recommendations from about 20K songs based on their
 favorite genres. Users can either input their age (and let the bot guess
