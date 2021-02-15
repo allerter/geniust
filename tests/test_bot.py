@@ -12,22 +12,13 @@ def test_main_menu(update_callback_query, context, token):
 
     update = update_callback_query
     user = context.user_data
-    user["token"] = token
+    user["genius_token"] = token
 
-    # Return None when bot tries to get the token
-    context.bot_data["db"].get_token.return_value = None
     res = bot.main_menu(update, context)
 
     keyboard = update.callback_query.edit_message_text.call_args[1]["reply_markup"][
         "inline_keyboard"
     ]
-
-    # Check if bot returned correct keyboard for logged-in/out users
-    if token is None:
-        context.bot_data["db"].get_token.assert_called_once()
-        assert keyboard[-1][0]["callback_data"] == str(constants.LOGIN)
-    else:
-        assert keyboard[-1][0]["callback_data"] == str(constants.LOGGED_IN)
 
     # Check if bot answered the callback query
     update.callback_query.answer.assert_called_once()

@@ -16,6 +16,7 @@ from geniust import api
 from geniust import db
 from geniust import data
 from geniust.functions.recommender import Recommender 
+from geniust.constants import Preferences
 
 
 @pytest.fixture(scope="session")
@@ -174,7 +175,9 @@ for language in languages:
             "include_annotations": True,
             "lyrics_lang": "English + Non-English",
             "bot_lang": language,
-            "token": None,
+            "genius_token": "test_token",
+            "spotify_token": "test_token",
+            "preferences": Preferences(genres=["pop"]),
         }
     )
 
