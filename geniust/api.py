@@ -605,7 +605,7 @@ class GeniusT(Genius):
         return q.get()
 
 
-class Sender:
+class Sender:  # pragma: no cover
     """Sends HTTP requests."""
 
     # Create a persistent requests connection
@@ -680,7 +680,7 @@ MusicSource = namedtuple(
 )
 
 
-class FaMusic:
+class FaMusic:  # pragma: no cover
     """Interface to APIs of Persian music websites"""
 
     sources = [
