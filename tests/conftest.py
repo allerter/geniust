@@ -8,6 +8,7 @@ from unittest.mock import create_autospec, MagicMock
 import pytest
 import yaml
 import tekore as tk
+from lyricsgenius import OAuth2
 from telegram import Update, CallbackQuery, Bot, Message
 from telegram.ext import CallbackContext
 
@@ -138,6 +139,21 @@ def update_message(update_message_class):
     return update
 
 
+@pytest.fixture(scope="session")
+def auths_class():
+    auths = dict(genius=create_autospec(OAuth2), spotify=create_autospec(tk.UserAuth))
+    auths['spotify']._cred = MagicMock()
+    return auths
+
+
+@pytest.fixture(scope="function")
+def auths(auths_class):
+    auths_class['genius'].reset_mock()
+    auths_class['spotify'].reset_mock()
+    auths_class['spotify']._cred.reset_mock()
+    return auths_class
+
+
 # ----------------- Context Fixture -----------------
 
 
@@ -169,6 +185,9 @@ def context_class():
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
     context.bot_data = {}
+    context.bot_data['auths'] = dict(genius=create_autospec(OAuth2),
+                                     spotify=create_autospec(tk.UserAuth))
+    context.bot_data['auths']['spotify']._cred = MagicMock()
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
     context.bot_data['spotify'] = create_autospec(tk.Spotify, spec_set=True)
@@ -180,7 +199,13 @@ def context_class():
 @pytest.fixture(scope="function", params=users)
 def context(context_class, request):
     context_class.bot.reset_mock()
-    for spec in ("db", "genius", "spotify"):
-        context_class.bot_data[spec].reset_mock()
+    for spec in ("db", "genius", "spotify", "auths"):
+        spec_class = context_class.bot_data[spec]
+        if spec == "auths":
+            spec_class['genius'].reset_mock()
+            spec_class['spotify'].reset_mock()
+            spec_class['spotify']._cred = MagicMock()
+        else:
+            spec_class.reset_mock()
     context_class.user_data = request.param
     return context_class
