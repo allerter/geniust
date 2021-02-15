@@ -15,7 +15,7 @@ from telegram.ext import CallbackContext
 from geniust import api
 from geniust import db
 from geniust import data
-from geniust.functions import recommender
+from geniust.functions.recommender import Recommender 
 
 
 @pytest.fixture(scope="session")
@@ -180,7 +180,12 @@ for language in languages:
 
 
 @pytest.fixture(scope="session")
-def context_class():
+def recommender():
+    return Recommender()
+
+
+@pytest.fixture(scope="session")
+def context_class(recommender):
     context = create_autospec(CallbackContext)
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
@@ -192,7 +197,7 @@ def context_class():
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
     context.bot_data['spotify'] = create_autospec(tk.Spotify, spec_set=True)
     context.bot_data["texts"] = texts
-    context.bot_data['recommender'] = recommender.Recommender()
+    context.bot_data['recommender'] = recommender
     return context
 
 
