@@ -409,7 +409,7 @@ def search_users(update: Update, context: CallbackContext) -> None:
         user_username = user["name"]
         user_id = user["id"]
 
-        answer_text = user_caption(update, context, user, text["caption"])
+        answer_text = user_caption(update, context, user, text["caption"], language)
         user_url = create_deep_linked_url(username, f"user_{user_id}")
         description_url = create_deep_linked_url(
             username, f"user_{user_id}_description"
@@ -575,7 +575,7 @@ def song_caption(
 
 @log
 def user_caption(
-    update: Update, context: CallbackContext, user: Dict[str, Any], caption: str
+    update: Update, context: CallbackContext, user: Dict[str, Any], caption: str, language: str
 ) -> str:
     """Generates caption for user data.
 
@@ -586,15 +586,18 @@ def user_caption(
             to the error handler in case of errors.
         user (Dict[str, Any]): User data.
         caption (str): Caption template.
+        language (str): User's bot language.
 
     Returns:
         str: Formatted caption.
     """
+    if (role := user["human_readable_role_for_display"]) is None:
+        role = context.bot_data["texts"][language]["none"]
     string = (
         caption.replace("{name}", user["name"])
         .replace("{iq}", utils.human_format(user["iq"]))
         .replace("{url}", user["url"])
-        .replace("{role}", user["human_readable_role_for_display"])
+        .replace("{role}", role)
         .replace("{image_url}", user["avatar"]["medium"]["url"])
     )
     return string

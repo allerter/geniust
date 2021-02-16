@@ -22,11 +22,11 @@ fa: Persian
 both: Both
 
 stop: Stopped.
-
 back: 🔙 Back
 
 yes: "Yes"
 no: "No"
+none: "None"
 
 send_feedback: Thanks for the feedback!
 
@@ -542,6 +542,7 @@ display_user:
       <b>All Activities Count:</b>
       {all_activities_count}
     artist: "\n<b>Artist:</b> {}"
+    none: "None"
   description: Description
   header: Header Image
 

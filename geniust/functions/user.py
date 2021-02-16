@@ -168,7 +168,9 @@ def user_caption(
     Returns:
         str: Formatted caption.
     """
-    user_roles = [role.capitalize() for role in user["roles_for_display"]]
+    user_roles = ", ".join(role.capitalize() for role in user["roles_for_display"])
+    if not user_roles:
+        user_roles = caption["none"]
     string = (
         caption["body"]  # type: ignore
         .replace("{name}", user["name"])
