@@ -56,8 +56,20 @@ def search_artists_dict(data_path):
 
 
 @pytest.fixture(scope="session")
+def search_lyrics_dict(data_path):
+    with open(join(data_path, "search_lyrics.json"), "r", encoding="utf-8-sig") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
 def search_songs_dict(data_path):
     with open(join(data_path, "search_songs.json"), "r", encoding="utf-8-sig") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def search_users_dict(data_path):
+    with open(join(data_path, "search_users.json"), "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
