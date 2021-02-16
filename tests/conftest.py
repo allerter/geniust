@@ -97,6 +97,12 @@ def song_dict(data_path):
         return json.load(f)
 
 
+@pytest.fixture(scope="function")
+def user_dict(data_path):
+    with open(join(data_path, "user.json"), "r") as f:
+        return json.load(f)
+
+
 @pytest.fixture(scope="session")
 def annotations(data_path):
     with open(join(data_path, "annotations.json"), "r") as f:
