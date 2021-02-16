@@ -170,7 +170,7 @@ def user_caption(
     """
     user_roles = ", ".join(role.capitalize() for role in user["roles_for_display"])
     if not user_roles:
-        user_roles = caption["none"]
+        user_roles = caption["none"]  # type: ignore
     string = (
         caption["body"]  # type: ignore
         .replace("{name}", user["name"])
@@ -178,7 +178,7 @@ def user_caption(
         .replace("{url}", user["url"])
         .replace("{followers}", str(user["followers_count"]))
         .replace("{following}", str(user["followed_users_count"]))
-        .replace("{roles}", ", ".join(user_roles))
+        .replace("{roles}", user_roles)
         .replace("{annotations}", str(user["stats"]["annotations_count"]))
         .replace("{answers}", str(user["stats"]["answers_count"]))
         .replace("{comments}", str(user["stats"]["comments_count"]))
