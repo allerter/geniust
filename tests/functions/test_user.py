@@ -62,9 +62,11 @@ def user_dict_no_header(user_dict):
 
 @pytest.mark.parametrize(
     "user_data",
-    [pytest.lazy_fixture("user_dict"),
-     pytest.lazy_fixture("user_dict_no_description"),
-     pytest.lazy_fixture("user_dict_no_header")],
+    [
+        pytest.lazy_fixture("user_dict"),
+        pytest.lazy_fixture("user_dict_no_description"),
+        pytest.lazy_fixture("user_dict_no_header"),
+    ],
 )
 @pytest.mark.parametrize(
     "update",
@@ -74,7 +76,7 @@ def user_dict_no_header(user_dict):
     ],
 )
 def test_display_user(update, context, user_data):
-    context.bot_data['recommender'] = MagicMock()
+    context.bot_data["recommender"] = MagicMock()
     if update.callback_query:
         update.callback_query.data = "user_1"
     else:

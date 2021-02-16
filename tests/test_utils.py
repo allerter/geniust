@@ -37,8 +37,8 @@ def lyrics(page):
     return str(lyrics).strip()
 
 
-@pytest.mark.parametrize('download', [True, False])
-@pytest.mark.parametrize('platform', ['genius', 'spotify'])
+@pytest.mark.parametrize("download", [True, False])
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
 def test_deep_link(download, platform):
     username = "test_bot"
     name = "test_name"
@@ -48,8 +48,8 @@ def test_deep_link(download, platform):
     with patch("geniust.username", username):
         res = utils.deep_link(name, id, type, platform, download)
 
-    assert res.startswith('<a')
-    assert res.endswith('</a>')
+    assert res.startswith("<a")
+    assert res.endswith("</a>")
     assert name in res
 
 

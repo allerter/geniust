@@ -15,9 +15,7 @@ def test_login_choices(update_message, context, genius_token, spotify_token):
 
     res = account.login_choices(update, context)
 
-    keyboard = update.message.reply_text.call_args[1]["reply_markup"][
-        "inline_keyboard"
-    ]
+    keyboard = update.message.reply_text.call_args[1]["reply_markup"]["inline_keyboard"]
     if genius_token and spotify_token:
         assert len(keyboard) == 0
     elif genius_token or spotify_token:
@@ -33,9 +31,7 @@ def test_login(update_callback_query, context, platform):
 
     res = account.login(update, context)
 
-    keyboard = context.bot.send_message.call_args[1]["reply_markup"][
-        "inline_keyboard"
-    ]
+    keyboard = context.bot.send_message.call_args[1]["reply_markup"]["inline_keyboard"]
     update.callback_query.answer.assert_called_once()
     assert platform in keyboard[0][0]["url"]
     assert res == constants.END

@@ -60,8 +60,8 @@ def test_shuffle(recommender, genres, artists, song_type):
 @pytest.mark.parametrize("spotify_token", ["test_token", None])
 def test_welcome_to_shuffle(update_message, context, genius_token, spotify_token):
     update = update_message
-    context.user_data['genius_token'] = genius_token
-    context.user_data['spotify_token'] = spotify_token
+    context.user_data["genius_token"] = genius_token
+    context.user_data["spotify_token"] = spotify_token
 
     res = rcr.welcome_to_shuffle(update, context)
 
@@ -76,10 +76,13 @@ def test_input_preferences(update_callback_query, context):
     assert res == constants.SELECT_GENRES
 
 
-@pytest.mark.parametrize("update", [
-    pytest.lazy_fixture("update_message"),
-    pytest.lazy_fixture("update_callback_query")
-])
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
 def test_input_age(update, context):
     if update.message:
         update.message.text = "20"
@@ -105,10 +108,13 @@ def test_select_genres(update_callback_query, context, query_data, genres):
         assert "persian" in context.user_data["genres"]
 
 
-@pytest.mark.parametrize("update", [
-    pytest.lazy_fixture("update_message"),
-    pytest.lazy_fixture("update_callback_query")
-])
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
 def test_begin_artist(update, context):
     res = rcr.begin_artist(update, context)
 
@@ -123,10 +129,13 @@ def test_input_artist(update_callback_query, context):
     assert res == constants.SELECT_ARTISTS
 
 
-@pytest.mark.parametrize("update", [
-    pytest.lazy_fixture("update_message"),
-    pytest.lazy_fixture("update_callback_query"),
-])
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
 @pytest.mark.parametrize("query", ["select_none", "select_0", "done"])
 def test_select_artists(update, context, query):
     if update.message:
@@ -140,21 +149,21 @@ def test_select_artists(update, context, query):
     rcr.select_artists(update, context)
 
     if update.callback_query and query == "done":
-        context.bot_data['db'].update_preferences.assert_called_once()
+        context.bot_data["db"].update_preferences.assert_called_once()
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
 def test_process_preferences(update_callback_query, context, platform):
     update = update_callback_query
     update.callback_query.data = f"process_{platform}"
-    context.user_data['genius_token'] = "test_token"
+    context.user_data["genius_token"] = "test_token"
     context.user_data["spotify_token"] = "test_token"
 
     client = MagicMock()
     current_module = "geniust.functions.recommender"
-    with patch(current_module + ".tk", client), \
-            patch(current_module + ".lg.PublicAPI", client), \
-            patch("geniust.api.GeniusT", client):
+    with patch(current_module + ".tk", client), patch(
+        current_module + ".lg.PublicAPI", client
+    ), patch("geniust.api.GeniusT", client):
         rcr.process_preferences(update, context)
 
 
@@ -164,16 +173,19 @@ def test_reset_shuffle(update_callback_query, context):
     res = rcr.reset_shuffle(update, context)
 
     assert res == constants.END
-    context.bot_data['db'].delete_preferences.assert_called_once()
+    context.bot_data["db"].delete_preferences.assert_called_once()
 
 
-@pytest.mark.parametrize("update", [
-    pytest.lazy_fixture("update_message"),
-    pytest.lazy_fixture("update_callback_query"),
-    pytest.lazy_fixture("update_callback_query"),
-])
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
 def test_display_recommendations(update, context):
-    context.user_data['preferences'] = Preferences(genres=['pop'], artists=[])
+    context.user_data["preferences"] = Preferences(genres=["pop"], artists=[])
 
     res = rcr.display_recommendations(update, context)
 

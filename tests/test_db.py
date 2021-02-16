@@ -52,14 +52,15 @@ def test_user_in_db(database):
 
     def select_value(*args, **kwargs):
         if kwargs.get("table") == "pref_table":
-            return {"genres": ['pop'], "artists": []}
+            return {"genres": ["pop"], "artists": []}
         else:
             return values
+
     select.side_effect = select_value
     with patch("geniust.db.Database.select", select):
         database.user(chat_id, user_data)
 
-    assert user_data['preferences'].genres == ['pop']
+    assert user_data["preferences"].genres == ["pop"]
     for key, value in values.items():
         assert key in user_data
         assert value in user_data.values()
@@ -76,7 +77,7 @@ def test_user_not_in_db(database):
     ):
         database.user(chat_id, user_data)
 
-    for key in ('include_annotations', 'lyrics_lang', 'bot_lang'):
+    for key in ("include_annotations", "lyrics_lang", "bot_lang"):
         assert key in user_data
     insert.assert_called_once_with(chat_id, True, "English + Non-English", "en")
 
@@ -245,13 +246,13 @@ def test_get_preferences(database, preferences):
     if preferences is None:
         assert res is None
     else:
-        assert res.genres == preferences['genres']
-        assert res.artists == preferences['artists']
+        assert res.genres == preferences["genres"]
+        assert res.artists == preferences["artists"]
 
 
 def test_update_preferences(database):
     chat_id = 1
-    preferences = Preferences(genres=['pop'], artists=[])
+    preferences = Preferences(genres=["pop"], artists=[])
 
     upsert = MagicMock()
     with patch("geniust.db.Database.upsert", upsert):

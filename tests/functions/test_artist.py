@@ -87,7 +87,9 @@ def test_display_artist(update, context, artist_data, platform):
 
     if platform == "genius":
         genius.artist.assert_called_once_with(1)
-        keyboard = context.bot.send_photo.call_args[1]["reply_markup"]["inline_keyboard"]
+        keyboard = context.bot.send_photo.call_args[1]["reply_markup"][
+            "inline_keyboard"
+        ]
         assert len(keyboard) == 4
         if artist_data["artist"]["description_annotation"]["annotations"][0]["body"][
             "plain"

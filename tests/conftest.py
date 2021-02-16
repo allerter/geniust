@@ -161,15 +161,15 @@ def update_message(update_message_class):
 @pytest.fixture(scope="session")
 def auths_class():
     auths = dict(genius=create_autospec(OAuth2), spotify=create_autospec(tk.UserAuth))
-    auths['spotify']._cred = MagicMock()
+    auths["spotify"]._cred = MagicMock()
     return auths
 
 
 @pytest.fixture(scope="function")
 def auths(auths_class):
-    auths_class['genius'].reset_mock()
-    auths_class['spotify'].reset_mock()
-    auths_class['spotify']._cred.reset_mock()
+    auths_class["genius"].reset_mock()
+    auths_class["spotify"].reset_mock()
+    auths_class["spotify"]._cred.reset_mock()
     return auths_class
 
 
@@ -211,14 +211,15 @@ def context_class(recommender):
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
     context.bot_data = {}
-    context.bot_data['auths'] = dict(genius=create_autospec(OAuth2),
-                                     spotify=create_autospec(tk.UserAuth))
-    context.bot_data['auths']['spotify']._cred = MagicMock()
+    context.bot_data["auths"] = dict(
+        genius=create_autospec(OAuth2), spotify=create_autospec(tk.UserAuth)
+    )
+    context.bot_data["auths"]["spotify"]._cred = MagicMock()
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
-    context.bot_data['spotify'] = create_autospec(tk.Spotify, spec_set=True)
+    context.bot_data["spotify"] = create_autospec(tk.Spotify, spec_set=True)
     context.bot_data["texts"] = texts
-    context.bot_data['recommender'] = recommender
+    context.bot_data["recommender"] = recommender
     return context
 
 
@@ -228,9 +229,9 @@ def context(context_class, request):
     for spec in ("db", "genius", "spotify", "auths"):
         spec_class = context_class.bot_data[spec]
         if spec == "auths":
-            spec_class['genius'].reset_mock()
-            spec_class['spotify'].reset_mock()
-            spec_class['spotify']._cred = MagicMock()
+            spec_class["genius"].reset_mock()
+            spec_class["spotify"].reset_mock()
+            spec_class["spotify"]._cred = MagicMock()
         else:
             spec_class.reset_mock()
     context_class.user_data = request.param

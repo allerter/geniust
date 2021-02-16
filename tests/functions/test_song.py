@@ -62,7 +62,7 @@ def test_search_lyrics(update_message, context, search_dict):
     if update.message.text:
         text = update.message.reply_text.call_args[0][0]
         for hit in search_dict["sections"][0]["hits"]:
-            assert hit['result']['title'] in text
+            assert hit["result"]["title"] in text
 
     assert res == constants.END
 
@@ -109,7 +109,7 @@ def song_dict_no_description(song_dict):
 )
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
 def test_display_song(update, context, song_data, platform):
-    context.bot_data['recommender'] = MagicMock()
+    context.bot_data["recommender"] = MagicMock()
     if update.callback_query:
         update.callback_query.data = f"song_1_{platform}"
     else:
