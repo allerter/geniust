@@ -6,19 +6,35 @@ from geniust import constants
 from geniust.functions import account
 
 
-def test_login(update_callback_query, context):
+@pytest.mark.parametrize("genius_token", [None, "some_token"])
+@pytest.mark.parametrize("spotify_token", [None, "some_token"])
+def test_login_choices(update_message, context, genius_token, spotify_token):
+    update = update_message
+    context.user_data["genius_token"] = genius_token
+    context.user_data["spotify_token"] = spotify_token
+
+    res = account.login_choices(update, context)
+
+    keyboard = update.message.reply_text.call_args[1]["reply_markup"]["inline_keyboard"]
+    if genius_token and spotify_token:
+        assert len(keyboard) == 0
+    elif genius_token or spotify_token:
+        assert len(keyboard) == 1
+    else:
+        assert len(keyboard) == 2
+    assert res == constants.END
+
+
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
+def test_login(update_callback_query, context, platform):
     update = update_callback_query
+    update.callback_query.data = f"account_login_{platform}"
 
     res = account.login(update, context)
 
-    keyboard = update.callback_query.edit_message_text.call_args[1]["reply_markup"][
-        "inline_keyboard"
-    ]
-
-    assert keyboard[0][0]["url"].startswith("https://api.genius.com/oauth/authorize")
-
+    keyboard = context.bot.send_message.call_args[1]["reply_markup"]["inline_keyboard"]
     update.callback_query.answer.assert_called_once()
-
+    assert platform in keyboard[0][0]["url"]
     assert res == constants.END
 
 

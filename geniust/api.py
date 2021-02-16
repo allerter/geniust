@@ -4,11 +4,14 @@ import re
 import os
 import asyncio
 import queue
+import time
 from typing import Any, Tuple, Optional, Union, List, Dict
 
+import requests
 import telethon
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius, PublicAPI
+from lyricsgenius.utils import clean_str
 from concurrent.futures import ThreadPoolExecutor
 from telethon.sessions import StringSession
 from telethon import types
@@ -19,9 +22,58 @@ from geniust.constants import (
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN,
+    LASTFM_API_KEY,
 )
 
-logger = logging.getLogger()
+logger = logging.getLogger("geniust")
+
+
+def lastfm(method: str, parameters_input: dict) -> dict:  # pragma: no cover
+    api_key_lastfm = LASTFM_API_KEY
+    user_agent_lastfm = "GeniusT"
+    api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
+    # Last.fm API header and default parameters
+    headers = {"user-agent": user_agent_lastfm}
+    parameters = {"method": method, "api_key": api_key_lastfm, "format": "json"}
+    parameters.update(parameters_input)
+    # Responses and error codes
+    state = False
+    while state is False:
+        try:
+            response = requests.get(
+                api_url_lastfm, headers=headers, params=parameters, timeout=10
+            )
+            if response.status_code == 200:
+                logger.debug(
+                    ("Last.fm API: 200" " - Response was successfully received.")
+                )
+                state = True
+            elif response.status_code == 401:
+                logger.debug(
+                    ("Last.fm API: 401" " - Unauthorized. Please check your API key.")
+                )
+            elif response.status_code == 429:
+                logger.debug(
+                    ("Last.fm API: 429" " - Too many requests. Waiting 60 seconds.")
+                )
+                time.sleep(5)
+                state = False
+            else:
+                logger.debug(
+                    (
+                        "Last.fm API: Unspecified error %s."
+                        " No response was received."
+                        " Trying again after 60 seconds..."
+                    ),
+                    response.status_code,
+                )
+                time.sleep(1)
+                state = False
+        except OSError as err:
+            logger.debug("Error: %s. Trying again...", str(err))
+            time.sleep(3)
+            state = False
+    return response.json()
 
 
 def get_channel() -> types.TypeInputPeer:
@@ -37,7 +89,9 @@ def get_channel() -> types.TypeInputPeer:
         TELETHON_API_HASH,
         loop=asyncio.new_event_loop(),
     ) as client:
-        return client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
+        return client.loop.run_until_complete(
+            client.get_input_entity(ANNOTATIONS_CHANNEL_HANDLE)
+        )
 
 
 def telegram_annotation(a: str) -> Tuple[str, bool]:
@@ -188,6 +242,7 @@ class GeniusT(Genius):
         self.retries = 3
         self.timeout = 5
         self.public_api = True
+        self.annotations_channel = None
 
     def artist(
         self,
@@ -248,6 +303,7 @@ class GeniusT(Genius):
         per_page: Optional[int] = None,
         page: Optional[int] = None,
         public_api: bool = False,
+        match: Optional[Tuple[str, str]] = None,
     ) -> Dict[str, Any]:
         """Searches songs hosted on Genius.
 
@@ -258,8 +314,13 @@ class GeniusT(Genius):
             page (int, optional): Number of the page.
             public_api (bool, optional): If `True`, performs the search
                 using the public API endpoint.
+            match (tuple, optional): If it's not None, matches the hits
+                with the tuple(artist, title) and returns the song if it
+                matches. Otherwise returns {'match': None}.
+
         Returns:
             dict
+
         Note:
             Using the API or the public API returns the same results. The only
             difference is in the number of values each API returns.
@@ -269,11 +330,24 @@ class GeniusT(Genius):
               through ``response['sections'][0]['hits']``
         """
         if public_api or self.public_api:
-            return super(PublicAPI, self).search_songs(search_term, per_page, page)
+            res = super(PublicAPI, self).search_songs(search_term, per_page, page)
+            if match:
+                res = res["sections"][0]
         else:
             if self.access_token is None:
                 raise ValueError("You need an access token for the developers API.")
-            return super().search_songs(search_term, per_page, page)
+            res = super().search_songs(search_term, per_page, page)
+
+        if match is None:
+            return res
+        else:
+            for hit in res["hits"]:
+                song = hit["result"]
+                if clean_str(song["primary_artist"]["name"]) == clean_str(
+                    match[0]
+                ) and clean_str(song["title"]) == clean_str(match[1]):
+                    return {"match": song}
+            return {"match": None}
 
     def lyrics(
         self,
@@ -356,7 +430,9 @@ class GeniusT(Genius):
             )
 
             client.start()
-            annotations_channel = get_channel()
+            if self.annotations_channel is None:
+                self.annotations_channel = get_channel()
+            annotations_channel = self.annotations_channel
 
             for annotation_id, annotation_body in annotations.items():
                 annotation, preview = telegram_annotation(annotation_body)

@@ -1,0 +1,556 @@
+---
+main_menu:
+  body: What would you like to do?
+  album: Album
+  artist: Artist
+  lyrics: Search Songs by Lyrics
+  song: Song
+  user: User
+  customize_lyrics: Customize Lyrics
+  change_language: Change Language
+  # login: Log into Genius
+  view_accounts: View Account
+  reset_shuffle: Reset Shuffle Preferences
+
+error: "Sorry. Something went wrong :(\nStart again by clicking /start"
+
+spotify: Spotify
+genius: Genius
+
+en: English
+fa: Persian
+both: Both
+
+stop: Stopped.
+back: 🔙 Back
+
+yes: "Yes"
+no: "No"
+none: "None"
+
+send_feedback: Thanks for the feedback!
+
+end_describing: Canceled.
+
+help_message: |-
+    ◻️ Welcome to the Genius T bot!
+    Genius T offers the following services:
+    ▪️Getting album, artist and song data from Genius.
+    ▪️Customizing lyrics to include annotations and removing English/Non-English characters from lyrics
+
+    🔶 You can search for song lyrics using inline search too! Genius T will automatically apply your customizations.
+
+    The bot has a menu with an InlineKeyboardMarkup that can be accessed using /start. But the commands below are there for convenience.
+    ➖➖ Available commands ➖➖
+    /song   - search songs
+    /album  - search albums
+    /artist - search artists
+    /bot_language - Language of the bot
+    /lyrics_language - Language of the lyrics (ASCII/non-ASCII/both)
+    /include_annotations - include annotations in lyrics or not
+    /cancel - cancel the current task
+    /stop - stop and end the conversation
+    /help - gets you this message
+    /contact_us - send us a message
+
+    ➖➖ Inline Mode ➖➖
+    To use inline mode just type the bot's username and some results show up that will help you search different things.
+
+    ➖➖ Album Formats ➖➖
+    User customizations (including annotations and lyrics language) are automatically applied to the provided lyrics.
+    ▪️ PDF: works fine with English and Persian (languages with Arabic alphabet) songs.
+    ▪️ ZIP: a zip file contatining text files of song lyrics. Includations are seperated using <code>!--!</code> and <code>!__!</code> identifiers specifing beginning and ending of each annotation respectively.
+    ▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
+
+contact_us: Send us what's on your mind :)
+
+# ----------- Customize Menu -----------
+
+customize_menu:
+  body: |-
+    What would you like to customize?
+    Your customizations will be used for all lyrics requests (songs, albums, and inline searches).
+    Current settings:
+    Lyrics Language: <b>{language}</b>
+    Include Annotations: <b>{include}</b>
+  True: "Yes."
+  False: "No."
+  lyrics_language: Lyics Language
+  annotations: Annotations
+
+lyrics_language:
+  body: |-
+    What characters would you like to be in the lyrics?
+    Note that by English I mean ASCII characters. This option isuseful for languages with non-ASCII alphabet (like Persian and Arabic).
+  only_english: Only English (ASCII)
+  only_non_english: Only non-English (non-ASCII)
+  enligh_and_non_english: English + non-English
+  updated: |-
+    Updated your preferences.
+    Current language:
+    <b>{language}</b>.
+
+bot_language:
+  body: Choose a language.
+  en: English
+  fa: Persian (فارسی)
+  updated: |-
+    Updated your preferences.
+    Current language:
+    <b>{language}</b>.
+
+include_annotations:
+  body: Would you like to include the annotations in the lyrics?
+  updated: |-
+    Updated your preferences.
+    Include annotations:
+    <b>{include}</b>.
+
+# ----------- Inline Queries -----------
+inline_menu:
+  search_albums:
+    body: Search Albums
+    caption: |-
+      {name} by {artist_name}
+
+      <a href="{image_url}">&#8204;</a><b>Name:</b>
+      {name}
+      <b>Artist:</b>
+      {artist}
+      <b>Release Date:</b>
+      {release_date}
+
+      <a href="{url}">View on Genius</a>
+    description: Album info and lyrics.
+    initial_caption: Click on the button below to search albums.
+
+  search_artists:
+    body: Search artists
+    caption: |-
+      {name}
+
+      <a href="{image_url}">&#8204;</a><b>Name:</b>
+      {name}
+      <b>Verified on <a href="{url}">Genius</a>:</b>
+      {verified}
+
+    description: Artist info, songs and albums.
+    initial_caption: Click on the button below to search artists.
+
+  search_lyrics:
+    body: Search Songs by Lyrics
+    caption: |-
+      {title} by {artist_name}
+
+      <a href="{image_url}">&#8204;</a><b>Title:</b>
+      {title}
+      <b>Artist:</b>
+      {artist}
+      <b>Instrumental:</b>
+      {instrumental}
+      <b>Hot:</b>
+      {hot}
+      <b>Views:</b>
+      {views}
+
+      <a href="{url}">View on Genius</a>
+    description: song info and matching lyrics.
+    initial_caption: Click on the button below to search songs by lyrics.
+
+  search_songs:
+    body: Search songs
+    caption: |-
+      {title} by {artist_name}
+
+      <a href="{image_url}">&#8204;</a><b>Title:</b>
+      {title}
+      <b>Artist:</b>
+      {artist}
+      <b>Instrumental:</b>
+      {instrumental}
+      <b>Hot:</b>
+      {hot}
+      <b>Views:</b>
+      {views}
+
+      <a href="{url}">View on Genius</a>
+    description: song info and lyrics.
+    initial_caption: Click on the button below to search songs.
+
+  search_users:
+    body: Search users
+    caption: |-
+      {name}
+
+      <a href="{image_url}">&#8204;</a><b>IQ on Genius:</b>
+      {iq}
+      <b>Role:</b>
+      {role}
+
+      <a href="{url}">View on Genius</a>
+    description: User info.
+    initial_caption: Click on the button below to search users.
+
+  full_details: Full Details
+  button: Click Here
+  translation: Translation
+
+# ----------- Account -----------
+
+login:
+  genius: |-
+    You can log into Genius using the button below.
+
+    GeniusT respects your privacy and only asks for access to parts where it needs information.
+    When you click on the button below, Genius will show what permissions we ask for.
+    These include the following scopes: <i>me</i> to get account details and <i>vote</i> to allow you to vote on annotations right here in the bot.
+    If you ever decide to log out, you can do so by navigating the menu by using /start.
+  spotify: |-
+    You can log into Spotify using the button below.
+
+    GeniusT respects your privacy and only asks for access to parts where it needs information.
+    When you click on the button below, Spotify will show what permissions we ask for.
+    These include the following scopes: <i>user-top-read</i> to get your top artists and tracks.
+    If you ever decide to log out, you can do so by navigating the menu by using /start or in your account settings in Spotify.com
+  button: Click Here to Log In
+  successful: Login successful!
+
+login_choices:
+  choose: What platform would you like to log into?
+  logged_in: Already logged in :)
+
+logged_in:
+  body: Welcome to your account dashboard.
+  view_account: View Account Details
+  log_out: Log Out
+
+logout: "Successfully logged out.\nYou can log back in anytime you want."
+
+display_account:
+  caption:
+    body: |-
+      {name}
+
+      <b>Unread Group Inbox</b>:
+      {unread_group}
+      <b>Unread Main Activity Inbox</b>:
+      {unread_main}
+      <b>Unread Messages:</b>:
+      {unread_messages}
+      <b>Unread Newsfeed Inbox</b>:
+      {unread_newsfeed}
+      <b>IQ on <a href="{url}">Genius</a>:</b>
+      {iq}
+      <b>Followers:</b>
+      {followers}
+      <b>Following:</b>
+      {following}
+      <b>Role:</b>
+      {role}
+      <b>Annotations:</b>
+      {annotations}
+      <b>Answers:</b>
+      {answers}
+      <b>Comments:</b>
+      {comments}
+      <b>Forum Posts:</b>
+      {forum_posts}
+      <b>Pyongs:</b>
+      {pyongs}
+      <b>Questions:</b>
+      {questions}
+      <b>Transcriptions:</b>
+      {transcriptions}
+      <b>All Activities Count:</b>
+      {all_activities_count}
+    artist: "\n<b>Artist:</b> {}"
+
+# ----------- Annotation -----------
+
+display_annotation: Found nothing :(
+
+upvote_annotation:
+  login_necessary: You need to log in before voting. Log in using /login
+  voted: 👍 Upvoted
+  unvoted: Unvoted!
+
+downvote_annotation:
+  login_necessary: You need to log in before voting. Log in using /login
+  voted: 👎 Downvoted
+  unvoted: Unvoted!
+
+
+# ----------- Album -----------
+type_album: Enter album name.
+
+search_albums:
+  choose: Choose an album.
+  no_albums: No albums found.
+
+display_album:
+  caption:
+    body: |-
+     {name} by {artist_name}
+
+     <b>Name:</b>
+     {name}
+     <b>Artist:</b>
+     {artist}
+     <b>Release Date:</b>
+     {release_date}
+     <b>Views on <a href="{url}">Genius</a>:</b>
+     {views}
+    features: "\n<b>Features:</b>\n{}"
+    labels: "\n<b>Labels:</b>\n{}"
+  cover_arts: Cover Arts
+  description: Description
+  tracks: Tracks
+  lyrics: Lyrics (PDF, ...)
+  not_found: Album not found.
+
+display_album_covers:
+  1: "{} Cover Art"
+  2: "{} Cover Arts"
+
+display_album_tracks: "{} tracks"
+
+display_album_formats: Choose a format.
+
+get_album:
+  downloading: Downloading album...
+  failed: Couldn't get album :(
+  converting: Converting to specified format...
+  uploading: Uploading...
+
+# ----------- Artist -----------
+
+type_artist: Enter artist name.
+
+search_artists: 
+  choose: Choose an artist.
+  no_artists: No artists found.
+
+display_artist:
+  caption:
+    body: |-
+     {name}
+
+     <b>Name:</b>
+     {name}
+     <b>Verified on <a href="{url}">Genius</a>:</b>
+     {verified}
+     <b>Followers:</b>
+     {followers}
+    alternate_names: "\n<b>Alternate Names:</b>\n{}"
+    social_media: "\n<b>Social Media:</b>\n{}"
+  cover_arts: Cover Arts
+  songs_by_popularity: Songs (By Popularity)
+  songs_by_release_data: Songs (By Release Date)
+  songs_by_title: Songs (By Title)
+  albums: Albums
+  description: Description
+  not_found: Artist not found.
+
+display_artist_albums:
+  album: "\n• {}"
+  albums: "{}'s Albums"
+  no_albums: "{} has no albums."
+
+display_artist_songs:
+  songs: "{artist}'s songs sorted by {sort}"
+  popularity: popularity
+  release_date: release date
+  title: title
+  no_songs: "{} has no songs."
+  next_page: Next Page ⏩ {}
+  previous_page: "{} ⏪ Previous Page"
+
+# ----------- Shuffle -----------
+
+welcome_to_shuffle:
+  body: |-
+    Welcome to <b>GeniusT Shuffle</b>!
+    With Shuffle you can get song recommendations from a list of {} songs based on your favorite music genres and artists.
+
+    Before recommending songs, I'll have to know about your preferences (favorite genres and artists).
+    You can tell me about them yourself or let me get them using your Genius or Spotify account.
+    To get started, click on any of the buttons below.
+
+    Happy shuffling!"
+  enter_preferences: Enter Preferences
+  preferences_from_genius: Get Preferences from Genius
+  preferences_from_spotify: Get Preferences from Spotify
+  preferences_from_genius_login: Get Preferences from Genius (Login Required)
+  preferences_from_spotify_login: Get Preferences from Spotify (Login Required)
+
+input_preferences:
+  body: >-
+    First, I'd like to know your favorite genres. You can either
+    choose your favorites from available genres or let me guess
+    them by entering your age.
+  choose_genres: Choose Genres
+  enter_age: Enter Age
+
+genres:
+  classical: Classical
+  country: Country
+  instrumental: Instrumental
+  persian: Persian
+  pop: Pop
+  rap: Rap
+  rnb: R&B
+  rock: Rock
+  traditional: Traditional
+
+input_age:
+  enter_age: Enter your age e.g. 24
+  invalid_age: Invalid age. Please try again.
+
+select_genres:
+  choose_genres: Select your favorite genres.
+  genre_added: Genre added!
+  genre_removed: Genre removed!
+  genre_cannot_be_empty: You must choose at least one genre.
+  done: Done
+
+input_artist:
+  body: >-
+    You can enter some of your favorite artists here.
+    Either add an ortist or click on Done to finish.
+  add_artist: Add Artist
+  done: Done
+  enter_artist: Enter artist name.
+
+select_artists:
+  enter_artist: Enter artist name.
+  choose_artist: Choose an artist or click None.
+  artists: "<b>Artists:</b>\n{}"
+  no_match: Artist not found. Try another name.
+  not_in_matches: None of the Above
+  add_artist: Add Artist
+  artist_added: Artist added!
+  done: Done
+  finished: |-
+    All finished. You can use /shuffle now!
+    You can reset your preferences from the main menu.
+
+select_language: What kind of music do you listen to?
+
+process_preferences:
+  login_required: You need to log into {}. Click on /login to get started.
+  getting_data: Getting preferences from {}...
+  insufficient_data: Couldn't get enough data from {}. Maybe try something else?
+  done: Preferences created. You can use /shuffle now.
+
+display_recommendations:
+  body: "Recommended songs: \n{}"
+  preview: Preview
+  download: Download
+
+reset_shuffle: Reset complete.
+
+# ----------- Song -----------
+
+type_song: Enter song name.
+type_lyrics: Enter song lyrics.
+
+search_lyrics:
+  no_lyrics: No matching songs fround.
+
+search_songs:
+  choose: Choose a song.
+  no_songs: No songs found.
+
+display_song:
+  caption:
+    body: |-
+     {title} by {artist_name}
+
+     <b>Title:</b>
+     {title}
+     <b>Artist:</b>
+     {artist}
+     <b>Release Date:</b>
+     {release_date}
+     <b>Tags:</b>
+     {tags}
+     <b>Views:</b>
+     {views}
+    albums: "\n<b>Album:</b>\n{}"
+    external_links: "\n<b>External Links:</b>\n{}"
+    features: "\n<b>Features:</b>\n{}"
+    labels: "\n<b>Labels:</b>\n{}"
+    producers: "\n<b>Producers:</b>\n{}"
+    writers: "\n<b>Writers:</b>\n{}"
+    verified: "\n<b>Verified Lyrics:</b>\n{}"
+
+    samples: Samples
+    sampled_in: Sampled In
+    interpolates: Interpolates
+    interpolated_by: Interpolated By
+    cover_of: Cover Of
+    covered_by: Covered By
+    remix_of: Remix Of
+    remixed_by: Remixed By
+    live_version_of: Liver Version Of
+
+    rap: Rap
+    pop: Pop
+    alternative: Alternative
+    rock: Rock
+    r&b: R&B
+    country: Country
+    non-music: Non-Music
+
+  description: Description
+  lyrics: Lyrics
+  preview: Preview
+  download: Download
+  not_found: Song not found.
+
+display_lyrics: getting lyrics...
+
+# ----------- User -----------
+
+display_user:
+  caption:
+    body: |-
+      {name}
+
+      <b>IQ on <a href="{url}">Genius</a>:</b>
+      {iq}
+      <b>Followers:</b>
+      {followers}
+      <b>Following:</b>
+      {following}
+      <b>Roles:</b>
+      {roles}
+      <b>Annotations:</b>
+      {annotations}
+      <b>Answers:</b>
+      {answers}
+      <b>Comments:</b>
+      {comments}
+      <b>Forum Posts:</b>
+      {forum_posts}
+      <b>Pyongs:</b>
+      {pyongs}
+      <b>Questions:</b>
+      {questions}
+      <b>Transcriptions:</b>
+      {transcriptions}
+      <b>All Activities Count:</b>
+      {all_activities_count}
+    artist: "\n<b>Artist:</b> {}"
+    none: "None"
+  description: Description
+  header: Header Image
+
+display_user_description: "{username}'s Description\n\n{description}"
+display_user_header: "{username}'s Header Image"
+type_user: Enter username.
+search_users:
+  choose: Choose a user.
+  no_users: No users found.
+
+...

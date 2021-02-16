@@ -105,7 +105,7 @@ def test_upvote_annotation(update_callback_query, context, account_dict, voters,
     update.callback_query.data = "annotation_1_upvote"
     keyboard = IBKeyboard([[IButton("1"), IButton("1")]])
     update.callback_query.message.configure_mock(reply_markup=keyboard)
-    context.user_data["token"] = token
+    context.user_data["genius_token"] = token
 
     client = MagicMock()
     client().account.return_value = account_dict
@@ -118,7 +118,7 @@ def test_upvote_annotation(update_callback_query, context, account_dict, voters,
     downvote_value = int(re.findall(r"\d+", keyboard.inline_keyboard[0][1].text)[0])
 
     voters = voters["voters"]
-    if context.user_data["token"] is None:
+    if context.user_data["genius_token"] is None:
         assert upvote_value == 1
         # only called twice to assign account and voters
         assert client.call_count == 2
@@ -151,7 +151,7 @@ def test_downvote_annotation(
     update.callback_query.data = "annotation_1_upvote"
     keyboard = IBKeyboard([[IButton("1"), IButton("1")]])
     update.callback_query.message.configure_mock(reply_markup=keyboard)
-    context.user_data["token"] = token
+    context.user_data["genius_token"] = token
 
     client = MagicMock()
     client().account.return_value = account_dict
@@ -164,7 +164,7 @@ def test_downvote_annotation(
     downvote_value = int(re.findall(r"\d+", keyboard.inline_keyboard[0][1].text)[0])
 
     voters = voters["voters"]
-    if context.user_data["token"] is None:
+    if context.user_data["genius_token"] is None:
         assert downvote_value == 1
         # only called twice to assign account and voters
         assert client.call_count == 2

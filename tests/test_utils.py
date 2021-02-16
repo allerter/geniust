@@ -1,4 +1,5 @@
 import re
+import os
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -36,32 +37,20 @@ def lyrics(page):
     return str(lyrics).strip()
 
 
-def test_deep_link():
+@pytest.mark.parametrize("download", [True, False])
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
+def test_deep_link(download, platform):
     username = "test_bot"
-    entity = {
-        "name": "test_name",
-        "api_path": "artist",
-        "id": 1,
-    }
-    url = create_deep_linked_url(username, f"artist_{entity['id']}")
-    final_link = f"""<a href="{url}">{entity['name']}</a>"""
+    name = "test_name"
+    type = "artist"
+    id = 1
 
     with patch("geniust.username", username):
-        res = utils.deep_link(entity)
+        res = utils.deep_link(name, id, type, platform, download)
 
-    assert res == final_link
-
-
-def test_deep_link_invalid():
-    username = "test_bot"
-    entity = {
-        "name": "test_name",
-        "api_path": "invalid",
-        "id": 1,
-    }
-
-    with patch("geniust.username", username), pytest.raises(ValueError):
-        utils.deep_link(entity)
+    assert res.startswith("<a")
+    assert res.endswith("</a>")
+    assert name in res
 
 
 def test_remove_unsupported_tags():
@@ -188,6 +177,18 @@ def test_get_description(entity):
     res = utils.get_description(entity)
 
     assert isinstance(res, str)
+
+
+@pytest.mark.parametrize("string", ["filename", "invalid/\\*filename"])
+def test_format_filename(string):
+    filename = utils.format_filename(string)
+
+    try:
+        file = open(filename, "w")
+    finally:
+        if file:
+            file.close()
+            os.remove(filename)
 
 
 @pytest.mark.parametrize(

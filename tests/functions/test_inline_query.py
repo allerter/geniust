@@ -16,12 +16,10 @@ def update():
 
 
 def test_inline_menu(update, context):
-
     inline_query.inline_menu(update, context)
 
     articles = update.inline_query.answer.call_args[0][0]
-
-    assert len(articles) == 3
+    assert articles
 
 
 @pytest.mark.parametrize("query", [".album   ", ".album test"])
@@ -54,15 +52,30 @@ def test_search_artists_inline(update, context, query, search_artists_dict):
         assert len(articles) == 10
 
 
-@pytest.mark.parametrize("query", [".song   ", ".song test"])
-def test_search_songs_inline(update, context, query, search_songs_dict):
+@pytest.mark.parametrize("query", [".lyrics   ", ".lyrics test"])
+def test_search_lyrics_inline(update, context, query, search_lyrics_dict):
     update.inline_query.query = query
     genius = context.bot_data["genius"]
-    genius.search_songs.return_value = search_songs_dict
+    genius.search_lyrics.return_value = search_lyrics_dict
 
-    inline_query.search_songs(update, context)
+    inline_query.search_lyrics(update, context)
 
-    if query == ".song   ":
+    if query == ".lyrics   ":
+        update.inline_query.answer.assert_not_called()
+    else:
+        articles = update.inline_query.answer.call_args[0][0]
+        assert len(articles) == 10
+
+
+@pytest.mark.parametrize("query", [".user   ", ".user test"])
+def test_search_users_inline(update, context, query, search_users_dict):
+    update.inline_query.query = query
+    genius = context.bot_data["genius"]
+    genius.search_users.return_value = search_users_dict
+
+    inline_query.search_users(update, context)
+
+    if query == ".user   ":
         update.inline_query.answer.assert_not_called()
     else:
         articles = update.inline_query.answer.call_args[0][0]

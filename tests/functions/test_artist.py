@@ -1,5 +1,6 @@
 import json
 from os.path import join
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -71,29 +72,31 @@ def artist_dict_no_description(artist_dict):
         pytest.lazy_fixture("update_message"),
     ],
 )
-def test_display_artist(update, context, artist_data):
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
+def test_display_artist(update, context, artist_data, platform):
     if update.callback_query:
-        update.callback_query.data = "artist_1"
+        update.callback_query.data = f"artist_1_{platform}"
     else:
-        context.args[0] = "artist_1"
+        context.args[0] = f"artist_1_{platform}"
 
     genius = context.bot_data["genius"]
     genius.artist.return_value = artist_data
+    genius.search_artists.return_value = MagicMock()
 
     res = artist.display_artist(update, context)
 
-    keyboard = context.bot.send_photo.call_args[1]["reply_markup"]["inline_keyboard"]
-
-    assert len(keyboard) == 4
-    if artist_data["artist"]["description_annotation"]["annotations"][0]["body"][
-        "plain"
-    ]:
-        assert len(keyboard[0]) == 2
-    else:
-        assert len(keyboard[0]) == 1
-
-    # artist ID = 1
-    genius.artist.assert_called_once_with(1)
+    if platform == "genius":
+        genius.artist.assert_called_once_with(1)
+        keyboard = context.bot.send_photo.call_args[1]["reply_markup"][
+            "inline_keyboard"
+        ]
+        assert len(keyboard) == 4
+        if artist_data["artist"]["description_annotation"]["annotations"][0]["body"][
+            "plain"
+        ]:
+            assert len(keyboard[0]) == 2
+        else:
+            assert len(keyboard[0]) == 1
 
     if update.callback_query:
         update.callback_query.answer.assert_called_once()

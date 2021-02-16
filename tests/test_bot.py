@@ -1,97 +1,10 @@
 import warnings
-from unittest.mock import patch, MagicMock, create_autospec
+from unittest.mock import patch, MagicMock
 
 import pytest
-from requests import HTTPError
 from telegram.ext import Updater
-from lyricsgenius import OAuth2
 
 from geniust import constants, bot
-from geniust.bot import CronHandler, TokenHandler
-from geniust.db import Database
-
-
-def test_cron_handler():
-    handler = MagicMock()
-
-    CronHandler.get(handler)
-
-    handler.write.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "state",
-    [
-        "1_test-state",
-        "1_invalid-state",
-        "2_test-state",
-        "invalid_state",
-        "invalid-state",
-    ],
-)
-@pytest.mark.parametrize("code", ["some_code", "invalid_code"])
-@pytest.mark.parametrize("user_state", ["test-state", None])
-def test_token_handler(context, user_state, code, state):
-    handler = MagicMock()
-    handler.get_argument = lambda x: code if x == "code" else state
-    handler.auth = create_autospec(OAuth2)
-    if code == "some_code":
-        handler.auth.get_user_token.return_value = "test_token"
-    else:
-        handler.auth.get_user_token.side_effect = HTTPError()
-    handler.database = create_autospec(Database)
-    handler.bot = context.bot
-    handler.texts = context.bot_data["texts"]
-    handler.user_data = {1: {}}
-    handler.user_data[1]["bot_lang"] = context.user_data["bot_lang"]
-    handler.user_data[1]["state"] = user_state
-
-    handler.request.protocol = "https"
-    handler.request.host = "test-app.com"
-    handler.request.uri = f"/callback?code={code}&state={state}"
-
-    TokenHandler.get(handler)
-
-    if state == "1_test-state" and user_state == "test-state" and code == "some_code":
-        handler.auth.get_user_token.assert_called_once_with(
-            "https://test-app.com/callback?code=some_code&state=1_test-state"
-        )
-        handler.database.update_token.assert_called_once_with(1, "test_token")
-        assert handler.bot.send_message.call_args[0][0] == 1
-        assert handler.user_data[1]["token"] == "test_token"
-        assert "state" not in handler.user_data[1]
-        handler.redirect.assert_called_once()
-    elif code == "invalid_code":
-        handler.database.update_token.assert_not_called()
-    else:
-        handler.set_status.assert_called_once_with(401)
-        handler.finish.assert_called_once()
-        handler.auth.get_user_token.assert_not_called()
-
-
-def test_token_handler_initialize():
-    handler = MagicMock()
-    auth = "auth"
-    bot = "bot"
-    database = "database"
-    texts = "texts"
-    user_data = "user_data"
-
-    res = TokenHandler.initialize(
-        handler,
-        auth=auth,
-        database=database,
-        bot=bot,
-        texts=texts,
-        user_data=user_data,
-    )
-
-    assert res is None
-    assert handler.auth == auth
-    assert handler.database == database
-    assert handler.bot == bot
-    assert handler.texts == texts
-    assert handler.user_data == user_data
 
 
 @pytest.mark.parametrize("token", ["test_token", None])
@@ -99,22 +12,9 @@ def test_main_menu(update_callback_query, context, token):
 
     update = update_callback_query
     user = context.user_data
-    user["token"] = token
+    user["genius_token"] = token
 
-    # Return None when bot tries to get the token
-    context.bot_data["db"].get_token.return_value = None
     res = bot.main_menu(update, context)
-
-    keyboard = update.callback_query.edit_message_text.call_args[1]["reply_markup"][
-        "inline_keyboard"
-    ]
-
-    # Check if bot returned correct keyboard for logged-in/out users
-    if token is None:
-        context.bot_data["db"].get_token.assert_called_once()
-        assert keyboard[-1][0]["callback_data"] == str(constants.LOGIN)
-    else:
-        assert keyboard[-1][0]["callback_data"] == str(constants.LOGGED_IN)
 
     # Check if bot answered the callback query
     update.callback_query.answer.assert_called_once()

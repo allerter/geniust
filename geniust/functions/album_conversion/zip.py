@@ -51,7 +51,7 @@ def create_zip(album: Dict[str, Any], user_data: Dict[str, Any]) -> BytesIO:
 
         # newlines in text files inside zip files need to be
         # \r\n on Windows
-        lyrics = lyrics.get_text().replace("\n", "\r\n")
+        lyrics = lyrics.get_text().replace("\n", "\r\n")  # type: ignore
 
         # cleaning title name
         title = song["title"]

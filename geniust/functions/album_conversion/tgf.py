@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from geniust import utils
 from geniust.constants import TELEGRAPH_TOKEN
 
-logger = logging.getLogger()
+logger = logging.getLogger("geniust")
 
 
 def fetch(img: str) -> Tuple[str, str]:
@@ -251,7 +251,7 @@ def create_pages(album: Dict[str, Any], user_data: Dict[str, Any]) -> str:
 
 
 def test(json_file: str, lyrics_language: str, include_annotations: bool) -> None:
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger("geniust").setLevel(logging.DEBUG)
     user_data: Any = {
         "lyrics_lang": lyrics_language,
         "include_annotations": include_annotations,

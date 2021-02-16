@@ -6,34 +6,69 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
+import tekore as tk
 
 from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, END
-from geniust import utils, auth, get_user
+from geniust import utils, auths, get_user
 from geniust.utils import log
 from geniust import api
 
-logger = logging.getLogger()
+logger = logging.getLogger("geniust")
+
+
+@log
+@get_user
+def login_choices(update: Update, context: CallbackContext):
+    language = context.user_data["bot_lang"]
+    text = context.bot_data["texts"][language]["login_choices"]
+    ud = context.user_data
+    bd = context.bot_data
+
+    buttons = []
+    if ud["genius_token"] is None:
+        buttons.append(
+            [IButton(bd["texts"][language]["genius"], callback_data="login_genius")]
+        )
+    if ud["spotify_token"] is None:
+        buttons.append(
+            [IButton(bd["texts"][language]["spotify"], callback_data="login_spotify")]
+        )
+
+    caption = text["choose"] if buttons else text["logged_in"]
+    update.message.reply_text(caption, reply_markup=IBKeyboard(buttons))
+
+    return END
 
 
 @log
 @get_user
 def login(update: Update, context: CallbackContext) -> int:
-    """Prompts user to log into Genius.com"""
+    """Prompts user to log into a platform"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["login"]
     chat_id = update.effective_chat.id
+    platform = update.callback_query.data.split("_")[1]
 
     unique_value = secrets.token_urlsafe().replace("_", "-")
-    auth.state = str(chat_id) + "_" + unique_value
-    url = auth.url
+    state = f"{chat_id}_{platform}_{unique_value}"
+    if platform == "genius":
+        auth = auths["genius"]
+        auth.state = state
+        url = auth.url
+    else:
+        url = auths["spotify"]._cred.user_authorisation_url(
+            tk.scope.user_top_read, state, show_dialog=True
+        )
+
     context.user_data["state"] = unique_value
 
     buttons = [[IButton(text["button"], url)]]
     keyboard = IBKeyboard(buttons)
 
-    msg = text["body"]
+    msg = text["genius"] if platform == "genius" else text["spotify"]
     update.callback_query.answer()
-    update.callback_query.edit_message_text(msg, reply_markup=keyboard)
+    update.callback_query.message.delete()
+    context.bot.send_message(chat_id, msg, reply_markup=keyboard)
 
     return END
 
@@ -71,8 +106,8 @@ def logout(update: Update, context: CallbackContext) -> int:
     language = ud["bot_lang"]
     text = bd["texts"][language]["logout"]
 
-    bd["db"].delete_token(chat_id)
-    ud["token"] = None
+    bd["db"].delete_token(chat_id, "genius")
+    ud["genius_token"] = None
     update.callback_query.answer()
     update.callback_query.edit_message_text(text)
 
@@ -92,7 +127,7 @@ def display_account(update: Update, context: CallbackContext) -> int:
 
     update.callback_query.message.delete()
 
-    account = api.GeniusT(ud["token"]).account()["user"]
+    account = api.GeniusT(ud["genius_token"]).account()["user"]
 
     avatar = account["avatar"]["medium"]["url"]
     caption = account_caption(update, context, account, texts["caption"])
@@ -137,8 +172,9 @@ def account_caption(
         .replace("{pyongs}", str(account["stats"]["pyongs_count"]))
         .replace("{questions}", str(account["stats"]["questions_count"]))
         .replace("{transcriptions}", str(account["stats"]["transcriptions_count"]))
+        .replace("{all_activities_count}", str(sum(account["stats"].values())))
     )
-    if account["artist"]:
-        artist = utils.deep_link(account["artist"])
+    if artist := account["artist"]:
+        artist = utils.deep_link(artist["name"], artist["id"], "artist", "genius")
         string += caption["artist"].replace("{}", artist)  # type: ignore
     return string

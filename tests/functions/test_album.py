@@ -72,28 +72,21 @@ def album_dict_no_description(album_dict):
         pytest.lazy_fixture("update_message"),
     ],
 )
-def test_display_album(update, context, album_data):
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
+def test_display_album(update, context, album_data, platform):
     if update.callback_query:
-        update.callback_query.data = "album_1"
+        update.callback_query.data = f"album_1_{platform}"
     else:
-        context.args[0] = "album_1"
+        context.args[0] = f"album_1_{platform}"
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_data
+    genius.search_albums.return_value = MagicMock()
 
     res = album.display_album(update, context)
 
-    keyboard = context.bot.send_photo.call_args[1]["reply_markup"]["inline_keyboard"]
-
-    assert len(keyboard) == 3
-    if album_data["album"]["description_annotation"]["annotations"][0]["body"]["plain"]:
-        # Covers - Tracks - Lyrics - Description
-        assert len(keyboard[0]) == 2
-    else:
-        assert len(keyboard[0]) == 1
-
-    # album ID = 1
-    genius.album.assert_called_once_with(1)
+    if platform == "genius":
+        genius.album.assert_called_once_with(1)
 
     if update.callback_query:
         update.callback_query.answer.assert_called_once()

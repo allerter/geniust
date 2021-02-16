@@ -5,23 +5,23 @@ from os.path import isfile, join
 from typing import TypeVar, Callable
 
 # from telegram import Bot
+import tekore as tk
 from lyricsgenius import OAuth2
 import yaml
 
 from geniust.db import Database
-from geniust.api import GeniusT
 from geniust.constants import (
-    # BOT_TOKEN,
     GENIUS_CLIENT_ID,
     GENIUS_REDIRECT_URI,
     GENIUS_CLIENT_SECRET,
+    SPOTIFY_CLIENT_ID,
+    SPOTIFY_CLIENT_SECRET,
+    SPOTIFY_REDIRECT_URI,
 )
 
 username: str = "genius_the_bot"  # Bot(BOT_TOKEN).get_me().username
 
-database = Database(table="user_data")
-
-genius = GeniusT()
+database = Database("user_data", "user_preferences")
 
 RT = TypeVar("RT")
 
@@ -36,8 +36,12 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> RT:
-        chat_id = args[0].effective_chat.id
+        update = args[0]
         context = args[1]
+        if update.effective_chat:
+            chat_id = update.effective_chat.id
+        else:
+            chat_id = update.inline_query.from_user.id
         if "bot_lang" not in context.user_data:
             database.user(chat_id, context.user_data)
         result = func(*args, **kwargs)
@@ -46,15 +50,23 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
     return wrapper
 
 
-here = pathlib.Path(__file__).parent.resolve()
-path = here / "text"
-files = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith(".yaml")]
+data_path = pathlib.Path(__file__).parent.resolve() / "data"
+files = [
+    f for f in listdir(data_path) if isfile(join(data_path, f)) and f.endswith(".yaml")
+]
 texts = {}
 for file in files:
-    with open(join(path, file), "r", encoding="utf8") as f:
+    with open(join(data_path, file), "r", encoding="utf8") as f:
         language = file[:2]
         texts[language] = yaml.full_load(f)
 
-auth = OAuth2.full_code_exchange(
+genius_auth = OAuth2.full_code_exchange(
     GENIUS_CLIENT_ID, GENIUS_REDIRECT_URI, GENIUS_CLIENT_SECRET, scope=("me", "vote")
 )
+spotify_auth = tk.UserAuth(
+    tk.RefreshingCredentials(
+        SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
+    ),
+    scope=tk.scope.user_top_read,
+)
+auths = {"genius": genius_auth, "spotify": spotify_auth}
