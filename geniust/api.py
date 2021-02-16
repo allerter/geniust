@@ -28,7 +28,7 @@ from geniust.constants import (
 logger = logging.getLogger("geniust")
 
 
-def lastfm(method: str, parameters_input: dict) -> dict:
+def lastfm(method: str, parameters_input: dict) -> dict:  # pragma: no cover
     api_key_lastfm = LASTFM_API_KEY
     user_agent_lastfm = "GeniusT"
     api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
