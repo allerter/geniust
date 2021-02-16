@@ -6,6 +6,7 @@ from typing import Tuple, List, Union, Dict
 from dataclasses import dataclass, asdict
 
 import tekore as tk
+import lyricsgenius as lg
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -16,7 +17,6 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from lyricsgenius import PublicAPI
 
 from geniust.constants import (
     SELECT_ACTION,
@@ -500,7 +500,7 @@ def select_artists(update: Update, context: CallbackContext):
 
 @log
 @get_user
-def select_language(update: Update, context: CallbackContext):
+def select_language(update: Update, context: CallbackContext):  # pragam: no cover
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["select_language"]
     bd = context.bot_data
@@ -545,7 +545,7 @@ def process_preferences(update: Update, context: CallbackContext):
                 api_path = pyong["pyongable"]["api_path"]
                 pyonged_songs.append(int(api_path[api_path.rfind("/") + 1 :]))
 
-        public_genius = PublicAPI(timeout=10)
+        public_genius = lg.PublicAPI(timeout=10)
 
         genres = []
         artists = []
