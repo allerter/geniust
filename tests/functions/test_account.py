@@ -22,6 +22,7 @@ def test_login_choices(update_message, context, genius_token, spotify_token):
         assert len(keyboard) == 1
     else:
         assert len(keyboard) == 2
+    assert res == constants.END
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
