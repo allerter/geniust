@@ -76,9 +76,9 @@ def user_dict_no_header(user_dict):
 def test_display_user(update, context, user_data):
     context.bot_data['recommender'] = MagicMock()
     if update.callback_query:
-        update.callback_query.data = f"user_1"
+        update.callback_query.data = "user_1"
     else:
-        context.args[0] = f"user_1"
+        context.args[0] = "user_1"
     genius = context.bot_data["genius"]
     genius.user.return_value = user_data
 

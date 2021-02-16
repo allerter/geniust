@@ -205,4 +205,3 @@ def test_thread_display_lyrics(update, context):
     thread().join.assert_called_once()
 
     assert res == constants.END
-

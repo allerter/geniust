@@ -15,7 +15,7 @@ from telegram.ext import CallbackContext
 from geniust import api
 from geniust import db
 from geniust import data
-from geniust.functions.recommender import Recommender 
+from geniust.functions.recommender import Recommender
 from geniust.constants import Preferences
 
 

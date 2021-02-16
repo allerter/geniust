@@ -16,10 +16,6 @@ def test_main_menu(update_callback_query, context, token):
 
     res = bot.main_menu(update, context)
 
-    keyboard = update.callback_query.edit_message_text.call_args[1]["reply_markup"][
-        "inline_keyboard"
-    ]
-
     # Check if bot answered the callback query
     update.callback_query.answer.assert_called_once()
 

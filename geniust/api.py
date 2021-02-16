@@ -32,7 +32,8 @@ logger = logging.getLogger("geniust")
 def lastfm(method: str, parameters_input: dict) -> dict:
     raise NotImplementedError("LASTFM_API_KEY not defined.")
     # Variabls: Set local
-    api_key_lastfm = LASTFM_API_KEY  # type: ignore
+    LASTFM_API_KEY = "None"
+    api_key_lastfm = LASTFM_API_KEY
     user_agent_lastfm = "GeniusT"
     api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
     # Last.fm API header and default parameters

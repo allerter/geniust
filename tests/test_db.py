@@ -49,6 +49,7 @@ def test_user_in_db(database):
     values = {1: 1, 2: 2}
 
     select = MagicMock()
+
     def select_value(*args, **kwargs):
         if kwargs.get("table") == "pref_table":
             return {"genres": ['pop'], "artists": []}
@@ -124,6 +125,7 @@ def test_select_all(connection, database):
     assert res["genius_token"] == values[4]
     assert res["spotify_token"] == values[5]
 
+
 @patch("psycopg2.connect")
 def test_update(connection, database):
     chat_id = 1
@@ -167,6 +169,7 @@ def test_update_bot_language(database):
 
     update.assert_called_once_with(chat_id, data, "bot_lang")
 
+
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
 def test_update_tokens(database, platform):
     chat_id = 1
@@ -203,18 +206,6 @@ def test_get_token(database, platform):
 
     select.assert_called_once_with(chat_id, column=f"{platform}_token")
     assert res == data
-
-
-def test_get_tokens(database):
-    chat_id = 1
-    values = {"geniu_token": data, "spotify_token": None}
-
-    select = MagicMock()
-    select.return_value = values
-    with patch("geniust.db.Database.select", select):
-        res = database.get_tokens(chat_id)
-
-    assert res == values
 
 
 def test_get_tokens(database):
@@ -276,4 +267,4 @@ def test_delete_preferences(database):
     with patch("geniust.db.Database.update", update):
         database.delete_preferences(chat_id)
 
-    update.call_args[0][0] == chat_id
+    assert update.call_args[0][0] == chat_id

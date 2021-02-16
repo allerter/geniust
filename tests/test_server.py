@@ -166,9 +166,9 @@ class TestGenresHandler:
 
         handler.write.assert_called_once()
         if age is None:
-            res['response']['genres'] == recommender.genres
+            assert res['response']['genres'] == recommender.genres
         elif age == 24:
-            res['response']['genres'] == recommender.genres_by_age(age)
+            assert res['response']['genres'] == recommender.genres_by_age(age)
         else:
             assert res['response'].get('genres') is None
 
