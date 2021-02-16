@@ -36,7 +36,7 @@ from geniust.functions import (
 from geniust import get_user, texts, auths, database, username
 from geniust.utils import log
 from geniust.db import Database
-from geniust.api import GeniusT, FaMusic
+from geniust.api import GeniusT
 from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
@@ -290,7 +290,6 @@ def main():
     dp.bot_data["texts"]: Dict[Any, str] = texts
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
-    dp.bot_data["famusic"]: FaMusic = FaMusic()
     dp.bot_data["spotify"]: tk.Spotify = tk.Spotify(
         tk.RefreshingCredentials(
             SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
