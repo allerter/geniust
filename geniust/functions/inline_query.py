@@ -575,7 +575,11 @@ def song_caption(
 
 @log
 def user_caption(
-    update: Update, context: CallbackContext, user: Dict[str, Any], caption: str, language: str
+    update: Update,
+    context: CallbackContext,
+    user: Dict[str, Any],
+    caption: str,
+    language: str,
 ) -> str:
     """Generates caption for user data.
 
