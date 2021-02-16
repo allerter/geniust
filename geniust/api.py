@@ -4,8 +4,10 @@ import re
 import os
 import asyncio
 import queue
+import time
 from typing import Any, Tuple, Optional, Union, List, Dict
 
+import requests
 import telethon
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius, PublicAPI
@@ -20,9 +22,58 @@ from geniust.constants import (
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN,
+    LASTFM_API_KEY,
 )
 
 logger = logging.getLogger("geniust")
+
+
+def lastfm(method: str, parameters_input: dict) -> dict:
+    api_key_lastfm = LASTFM_API_KEY
+    user_agent_lastfm = "GeniusT"
+    api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
+    # Last.fm API header and default parameters
+    headers = {"user-agent": user_agent_lastfm}
+    parameters = {"method": method, "api_key": api_key_lastfm, "format": "json"}
+    parameters.update(parameters_input)
+    # Responses and error codes
+    state = False
+    while state is False:
+        try:
+            response = requests.get(
+                api_url_lastfm, headers=headers, params=parameters, timeout=10
+            )
+            if response.status_code == 200:
+                logger.debug(
+                    ("Last.fm API: 200" " - Response was successfully received.")
+                )
+                state = True
+            elif response.status_code == 401:
+                logger.debug(
+                    ("Last.fm API: 401" " - Unauthorized. Please check your API key.")
+                )
+            elif response.status_code == 429:
+                logger.debug(
+                    ("Last.fm API: 429" " - Too many requests. Waiting 60 seconds.")
+                )
+                time.sleep(5)
+                state = False
+            else:
+                logger.debug(
+                    (
+                        "Last.fm API: Unspecified error %s."
+                        " No response was received."
+                        " Trying again after 60 seconds..."
+                    ),
+                    response.status_code,
+                )
+                time.sleep(1)
+                state = False
+        except OSError as err:
+            logger.debug("Error: %s. Trying again...", str(err))
+            time.sleep(3)
+            state = False
+    return response.json()
 
 
 def get_channel() -> types.TypeInputPeer:
