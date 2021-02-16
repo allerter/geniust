@@ -253,7 +253,7 @@ class Recommender:
         return hits
 
     def song(self, id: int = None, id_spotify: str = None) -> Song:
-        if not any([id, id_spotify]):
+        if not any([id is not None, id_spotify]):
             raise AssertionError("Must supply either id or id_spotify.")
         if id:
             row = self.songs.iloc[id]
