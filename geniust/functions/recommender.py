@@ -224,7 +224,6 @@ class Recommender:
                 elif song_type == "full":
                     if song.download_url:
                         hits.append(song)
-                    hits.append(song)
                 elif song_type == "preview,full":
                     if song.preview_url and song.download_url:
                         hits.append(song)
