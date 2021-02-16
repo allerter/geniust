@@ -25,6 +25,7 @@ SERVER_ADDRESS: Optional[str] = os.environ.get("SERVER_ADDRESS")
 TELETHON_API_ID: str = os.environ["TELETHON_API_ID"]
 TELETHON_API_HASH: str = os.environ["TELETHON_API_HASH"]
 TELETHON_SESSION_STRING: str = os.environ["TELETHON_SESSION_STRING"]
+LASTFM_API_KEY: str = os.environ["LASTFM_API_KEY"]
 
 TELEGRAM_HTML_TAGS: List[str] = [
     "b",
