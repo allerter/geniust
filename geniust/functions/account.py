@@ -37,6 +37,8 @@ def login_choices(update: Update, context: CallbackContext):
     caption = text["choose"] if buttons else text["logged_in"]
     update.message.reply_text(caption, reply_markup=IBKeyboard(buttons))
 
+    return END
+
 
 @log
 @get_user
