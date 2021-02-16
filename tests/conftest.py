@@ -206,36 +206,6 @@ def recommender():
 
 @pytest.fixture(scope="session")
 def context_class(recommender):
-            "token": None,
-        }
-    )
-
-
-# for language in languages:
-#    users.append({'chat_id': randint(1, 10),
-#                  'include_annotations': True,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': 'a'})
-#    users.append({'chat_id': randint(10, 20),
-#                  'include_annotations': False,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': 'a'})
-#    users.append({'chat_id': randint(20, 30),
-#                  'include_annotations': True,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': None})
-#    users.append({'chat_id': randint(30, 40),
-#                  'include_annotations': False,
-#                  'lyrics_lang': 'English + Non-English',
-#                  'bot_lang': language,
-#                  'token': None})
-
-
-@pytest.fixture(scope="session")
-def context_class():
     context = create_autospec(CallbackContext)
     context.args = [[]]
     context.bot = create_autospec(Bot, spec_set=True)
