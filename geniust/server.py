@@ -211,7 +211,7 @@ class PreferencesHandler(RequestHandler):
             platform = "genius"
         else:
             token = self.auths["spotify"]._cred.request_user_token(spotify_code)
-            token = token.refresh_token
+            token = token.access_token
             platform = "spotify"
 
         preferences = self.recommender.preferences_from_platform(token, platform)
