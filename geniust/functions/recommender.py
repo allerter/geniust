@@ -147,7 +147,9 @@ class Recommender:
         return self.genres_by_age_group[age_group]
 
     @log
-    def preferences_from_platform(self, token: str, platform: str) -> Optional[Preferences]:
+    def preferences_from_platform(
+        self, token: str, platform: str
+    ) -> Optional[Preferences]:
         if platform == "genius":
             user_genius = api.GeniusT(token)
             account = user_genius.account()["user"]
@@ -180,7 +182,8 @@ class Recommender:
             genres = []
             for track in top_tracks.items:
                 track_genres = api.lastfm(
-                    "Track.getTopTags", {"artist": track.artists[0], "track": track.name}
+                    "Track.getTopTags",
+                    {"artist": track.artists[0], "track": track.name},
                 )
                 if "toptags" in track_genres:
                     for tag in track_genres["toptags"]["tag"]:
@@ -200,9 +203,7 @@ class Recommender:
         # find user artists in recommender artists
         found_artists = []
         for artist in artists:
-            found_artist = self.artists[
-                self.artists.name == artist
-            ].name.values
+            found_artist = self.artists[self.artists.name == artist].name.values
             if found_artist.size > 0:
                 found_artists.append(found_artist[0])
 
@@ -596,8 +597,7 @@ def process_preferences(update: Update, context: CallbackContext):
     message = bot.send_message(chat_id, text["getting_data"].format(platform_text))
 
     preferences = recommender.preferences_from_platform(
-        context.user_data[f"{platform}_token"],
-        platform
+        context.user_data[f"{platform}_token"], platform
     )
 
     if preferences is None:

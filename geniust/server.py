@@ -216,11 +216,11 @@ class PreferencesHandler(RequestHandler):
 
         preferences = self.recommender.preferences_from_platform(token, platform)
         if preferences is not None:
-            response['genres'] = preferences.genres
-            response['artists'] = preferences.artists
+            response["genres"] = preferences.genres
+            response["artists"] = preferences.artists
         else:
-            response['genres'] = None
-            response['artists'] = None
+            response["genres"] = None
+            response["artists"] = None
 
         res = json.dumps(response)
         self.write(res)
@@ -336,7 +336,11 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                 ),
                 url(r"/api/genres", GenresHandler, dict(recommender=recommender)),
                 url(r"/api/search", SearchHandler, dict(recommender=recommender)),
-                url(r"/api/preferences", PreferencesHandler, dict(auths=auths, recommender=recommender)),
+                url(
+                    r"/api/preferences",
+                    PreferencesHandler,
+                    dict(auths=auths, recommender=recommender),
+                ),
                 url(
                     r"/api/recommendations",
                     RecommendationsHandler,
