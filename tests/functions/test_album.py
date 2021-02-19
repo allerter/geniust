@@ -237,13 +237,13 @@ def test_thread_get_album(update_callback_query, context, album_format):
     assert res == constants.END
 
 
-@pytest.mark.parametrize("album_search", [pytest.lazy_fixture("full_album"), None])
 @pytest.mark.parametrize("album_format", ["pdf", "tgf", "zip", "invalid"])
-def test_get_album(update_callback_query, context, album_format, album_search):
+def test_get_album(update_callback_query, context, album_format):
     update = update_callback_query
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["get_album"]
     album_id = 1
+    album_search = {"album": "album"}
 
     client = MagicMock()
     client().async_album_search.return_value = album_search
