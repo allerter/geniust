@@ -595,73 +595,15 @@ def process_preferences(update: Update, context: CallbackContext):
     query.message.delete()
     message = bot.send_message(chat_id, text["getting_data"].format(platform_text))
 
-    if platform == "genius":
-        genius_token = context.user_data["genius_token"]
-        user_genius = api.GeniusT(genius_token)
-        account = user_genius.account()["user"]
-        pyongs = user_genius.user_pyongs(account["id"])
-        pyonged_songs = []
-        for contribution in pyongs["contribution_groups"]:
-            pyong = contribution["contributions"][0]
-            if pyong["pyongable_type"] == "song":
-                api_path = pyong["pyongable"]["api_path"]
-                pyonged_songs.append(int(api_path[api_path.rfind("/") + 1 :]))
+    preferences = recommender.preferences_from_platform(
+        context.user_data[f"{platform}_token"],
+        platform
+    )
 
-        public_genius = lg.PublicAPI(timeout=10)
-
-        genres = []
-        artists = []
-        for song_id in pyonged_songs:
-            song = public_genius.song(song_id)["song"]
-            artists.append(song["primary_artist"]["name"])
-            for tag in song["tags"]:
-                for genre in recommender.genres:
-                    if genre in tag:
-                        genres.append(genre)
-    else:
-        spotify_token = context.user_data["spotify_token"]
-        token = spotify_token
-        cred = tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
-        token = cred.refresh_user_token(spotify_token)
-        user_spotify = tk.Spotify(token, sender=tk.RetryingSender())
-        top_tracks = user_spotify.current_user_top_tracks("short_term")
-        top_artists = user_spotify.current_user_top_artists(limit=5)
-        user_spotify.close()
-
-        # Add track genres to genres list
-        genres = []
-        for track in top_tracks.items:
-            track_genres = api.lastfm(
-                "Track.getTopTags", {"artist": track.artists[0], "track": track.name}
-            )
-            if "toptags" in track_genres:
-                for tag in track_genres["toptags"]["tag"]:
-                    for genre in recommender.genres:
-                        if genre in tag:
-                            genres.append(genre)
-
-        artists = [artist.name for artist in top_artists.items]
-
-    # get count of genres and only keep genres with a >=30% occurance
-    unique_elements, counts_elements = np.unique(genres, return_counts=True)
-    counts_elements = counts_elements.astype(float)
-    counts_elements /= counts_elements.sum()
-    genres = np.asarray((unique_elements, counts_elements))
-    genres = genres[0][genres[1] >= 0.30]
-
-    # find user artists in recommender artists
-    found_artists = []
-    for artist in artists:
-        found_artist = recommender.artists[
-            recommender.artists.name == artist
-        ].name.values
-        if found_artist.size > 0:
-            found_artists.append(found_artist[0])
-
-    if not genres:
+    if preferences is None:
         message.edit_text(text["insufficient_data"].format(platform_text))
     else:
-        context.user_data["preferences"] = Preferences(genres, found_artists)
+        context.user_data["preferences"] = preferences
         context.bot_data["db"].update_preferences(context.user_data["preferences"])
         message.edit_text(text["done"])
 
