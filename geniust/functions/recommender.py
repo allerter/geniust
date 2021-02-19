@@ -146,6 +146,68 @@ class Recommender:
             age_group = age_groups[-1]
         return self.genres_by_age_group[age_group]
 
+    @log
+    def preferences_from_platform(self, token: str, platform: str) -> Preferences:
+        if platform == "genius":
+            user_genius = api.GeniusT(token)
+            account = user_genius.account()["user"]
+            pyongs = user_genius.user_pyongs(account["id"])
+            pyonged_songs = []
+            for contribution in pyongs["contribution_groups"]:
+                pyong = contribution["contributions"][0]
+                if pyong["pyongable_type"] == "song":
+                    api_path = pyong["pyongable"]["api_path"]
+                    pyonged_songs.append(int(api_path[api_path.rfind("/") + 1 :]))
+
+            public_genius = lg.PublicAPI(timeout=10)
+
+            genres = []
+            artists = []
+            for song_id in pyonged_songs:
+                song = public_genius.song(song_id)["song"]
+                artists.append(song["primary_artist"]["name"])
+                for tag in song["tags"]:
+                    for genre in self.genres:
+                        if genre in tag:
+                            genres.append(genre)
+        else:
+            user_spotify = tk.Spotify(token, sender=tk.RetryingSender())
+            top_tracks = user_spotify.current_user_top_tracks("short_term")
+            top_artists = user_spotify.current_user_top_artists(limit=5)
+            user_spotify.close()
+
+            # Add track genres to genres list
+            genres = []
+            for track in top_tracks.items:
+                track_genres = api.lastfm(
+                    "Track.getTopTags", {"artist": track.artists[0], "track": track.name}
+                )
+                if "toptags" in track_genres:
+                    for tag in track_genres["toptags"]["tag"]:
+                        for genre in self.genres:
+                            if genre in tag:
+                                genres.append(genre)
+
+            artists = [artist.name for artist in top_artists.items]
+
+        # get count of genres and only keep genres with a >=30% occurance
+        unique_elements, counts_elements = np.unique(genres, return_counts=True)
+        counts_elements = counts_elements.astype(float)
+        counts_elements /= counts_elements.sum()
+        genres = np.asarray((unique_elements, counts_elements))
+        genres = genres[0][genres[1] >= 0.30]
+
+        # find user artists in recommender artists
+        found_artists = []
+        for artist in artists:
+            found_artist = self.artists[
+                self.artists.name == artist
+            ].name.values
+            if found_artist.size > 0:
+                found_artists.append(found_artist[0])
+
+        return Preferences(genres, artists) if genres else None
+
     def search_artist(self, artist: str) -> List[str]:
         artist = artist.lower()
         matches = difflib.get_close_matches(artist, self.lowered_artists_names.keys())
