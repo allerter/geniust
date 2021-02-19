@@ -596,9 +596,13 @@ def process_preferences(update: Update, context: CallbackContext):
     query.message.delete()
     message = bot.send_message(chat_id, text["getting_data"].format(platform_text))
 
-    preferences = recommender.preferences_from_platform(
-        context.user_data[f"{platform}_token"], platform
-    )
+    if platform == "genius":
+        token = context.user_data["genius_token"]
+    else:
+        cred = tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+        token = cred.refresh_user_token(context.user_data["spotify_token"])
+
+    preferences = recommender.preferences_from_platform(token, platform)
 
     if preferences is None:
         message.edit_text(text["insufficient_data"].format(platform_text))
