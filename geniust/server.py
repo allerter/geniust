@@ -187,6 +187,45 @@ class SearchHandler(RequestHandler):
         self.write(res)
 
 
+class PreferencesHandler(RequestHandler):
+    def initialize(self, auths, recommender) -> None:
+        self.auths = auths
+        self.recommender = recommender
+        self.logger = logging.getLogger(__name__)
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", "application/json")
+
+    @log
+    def get(self):
+        genius_code = self.get_argument("genius_code", default=None)
+        spotify_code = self.get_argument("spotify_code", default=None)
+        response = {"response": {"status_code": 200}}
+        r = response["response"]
+        if genius_code is None and spotify_code is None:
+            self.set_status(404)
+            r["error"] = "404 Not Found"
+            r["status_code"] = 404
+        elif genius_code:
+            token = self.auths["genius"].get_user_token(code=genius_code)
+            platform = "genius"
+        else:
+            token = self.auths["spotify"]._cred.request_user_token(spotify_code)
+            token = token.refresh_token
+            platform = "spotify"
+
+        preferences = self.recommender.preferences_from_platform(token, platform)
+        if preferences is not None:
+            response['genres'] = preferences.genres
+            response['artists'] = preferences.artists
+        else:
+            response['genres'] = None
+            response['artists'] = None
+
+        res = json.dumps(response)
+        self.write(res)
+
+
 class RecommendationsHandler(RequestHandler):
     def initialize(self, recommender) -> None:
         self.recommender = recommender
@@ -297,6 +336,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                 ),
                 url(r"/api/genres", GenresHandler, dict(recommender=recommender)),
                 url(r"/api/search", SearchHandler, dict(recommender=recommender)),
+                url(r"/api/preferences", PreferencesHandler, dict(auths=auths, recommender=recommender)),
                 url(
                     r"/api/recommendations",
                     RecommendationsHandler,
