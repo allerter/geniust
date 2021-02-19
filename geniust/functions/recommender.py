@@ -198,16 +198,19 @@ class Recommender:
         counts_elements = counts_elements.astype(float)
         counts_elements /= counts_elements.sum()
         genres = np.asarray((unique_elements, counts_elements))
-        genres = genres[0][genres[1] >= 0.30]
+        genres = genres[0][genres[1] >= 0.30].tolist()
 
-        # find user artists in recommender artists
-        found_artists = []
-        for artist in artists:
-            found_artist = self.artists[self.artists.name == artist].name.values
-            if found_artist.size > 0:
-                found_artists.append(found_artist[0])
+        if genres:
+            # find user artists in recommender artists
+            found_artists = []
+            for artist in artists:
+                found_artist = self.artists[self.artists.name == artist].name.values
+                if found_artist.size > 0:
+                    found_artists.append(found_artist[0])
+        else:
+            found_artists = []
 
-        return Preferences(genres, artists) if genres else None
+        return Preferences(genres, found_artists) if genres else None
 
     def search_artist(self, artist: str) -> List[str]:
         artist = artist.lower()
