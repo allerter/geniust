@@ -102,7 +102,7 @@ class TokenHandler(RequestHandler):
         )
         if platform == "genius":
             try:
-                token = self.auths["genius"].get_user_token(redirected_url)
+                token = self.auths["genius"].get_user_token(url=redirected_url)
             except HTTPError as e:
                 self.logger.debug("%s for %s", str(e), state)
                 return
