@@ -2,7 +2,7 @@ import logging
 import difflib
 from os.path import join
 from itertools import zip_longest
-from typing import Tuple, List, Union, Dict
+from typing import List, Optional, Dict
 from dataclasses import dataclass, asdict
 
 import tekore as tk
