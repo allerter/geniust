@@ -147,7 +147,7 @@ class Recommender:
         return self.genres_by_age_group[age_group]
 
     @log
-    def preferences_from_platform(self, token: str, platform: str) -> Preferences:
+    def preferences_from_platform(self, token: str, platform: str) -> Optional[Preferences]:
         if platform == "genius":
             user_genius = api.GeniusT(token)
             account = user_genius.account()["user"]
