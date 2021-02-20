@@ -206,6 +206,7 @@ class PreferencesHandler(RequestHandler):
             self.set_status(404)
             r["error"] = "404 Not Found"
             r["status_code"] = 404
+            token = None
         elif genius_code:
             token = self.auths["genius"].get_user_token(code=genius_code)
             platform = "genius"
@@ -214,13 +215,14 @@ class PreferencesHandler(RequestHandler):
             token = token.access_token
             platform = "spotify"
 
-        preferences = self.recommender.preferences_from_platform(token, platform)
-        if preferences is not None:
-            response["genres"] = preferences.genres
-            response["artists"] = preferences.artists
-        else:
-            response["genres"] = None
-            response["artists"] = None
+        if token is not None:
+            preferences = self.recommender.preferences_from_platform(token, platform)
+            if preferences is not None:
+                response["genres"] = preferences.genres
+                response["artists"] = preferences.artists
+            else:
+                response["genres"] = None
+                response["artists"] = None
 
         res = json.dumps(response)
         self.write(res)
