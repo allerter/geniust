@@ -218,11 +218,11 @@ class PreferencesHandler(RequestHandler):
         if token is not None:
             preferences = self.recommender.preferences_from_platform(token, platform)
             if preferences is not None:
-                response["genres"] = preferences.genres
-                response["artists"] = preferences.artists
+                r["genres"] = preferences.genres
+                r["artists"] = preferences.artists
             else:
-                response["genres"] = None
-                response["artists"] = None
+                r["genres"] = None
+                r["artists"] = None
 
         res = json.dumps(response)
         self.write(res)
