@@ -145,10 +145,11 @@ def test_select_all(connection, database):
 
 
 @patch("psycopg2.connect")
-def test_update(connection, database):
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
+def test_update(connection, database, table):
     chat_id = 1
     value = "en"
-    database.update(chat_id, value, "bot_lang")
+    database.update(chat_id, value, "bot_lang", table=table)
 
     args = connection().__enter__().cursor().__enter__().execute.call_args
 
