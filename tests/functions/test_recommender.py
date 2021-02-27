@@ -34,12 +34,14 @@ def test_binarize(recommender, genres):
 
 class TopArtists:
     Artist = namedtuple("Artist", "name")
+
     def __init__(self, artist_names):
         self.items = [self.Artist(name=name) for name in artist_names]
 
 
 class TopTracks:
     Track = namedtuple("Track", "name, artists")
+
     def __init__(self, track_names):
         self.items = [self.Track(name=name, artists=[name]) for name in track_names]
 
@@ -65,7 +67,7 @@ def test_preferences_from_platform(recommender, client, platform):
     with patch(current_module + ".tk", client), patch(
         current_module + ".lg.PublicAPI", client
     ), patch("geniust.api.GeniusT", client), patch("geniust.api.lastfm", client):
-        res = recommender.preferences_from_platform(token, platform)
+        recommender.preferences_from_platform(token, platform)
 
 
 @pytest.mark.parametrize("genres", [["pop", "rap"], ["persian"]])
@@ -189,7 +191,6 @@ def test_select_artists(update, context, query, text):
 
     if update.callback_query and query == "done":
         context.bot_data["db"].update_preferences.assert_called_once()
-
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
