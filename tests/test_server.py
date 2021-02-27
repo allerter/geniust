@@ -319,7 +319,7 @@ class TestRecommendationsHandler:
         handler.write.assert_called_once()
         if (
             genres in (None, "invalid")
-            or artists in (None, "Nas,invalid")
+            or artists == "Nas,invalid"
             or song_type == "invalid"
         ):
             assert res["response"].get("genres") is None
