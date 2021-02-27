@@ -32,9 +32,10 @@ class TestTokenHandler:
             "1_spotify_test-state",
             "1_genius_invalid-state",
             "1_spotify_invalid-state",
+            "1_spotify",
         ],
     )
-    @pytest.mark.parametrize("code", ["some_code", "invalid_code", "error"])
+    @pytest.mark.parametrize("code", ["some_code", "invalid_code", "error", None])
     @pytest.mark.parametrize("user_state", ["test-state", None])
     def test_token_handler(self, context, user_state, code, state):
         if len(state.split("_")) == 3:
