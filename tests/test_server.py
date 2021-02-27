@@ -10,9 +10,11 @@ from geniust.server import (
     TokenHandler,
     GenresHandler,
     SearchHandler,
+    PreferencesHandler,
     RecommendationsHandler,
 )
 from geniust.db import Database
+from geniust.constants import Preferences
 
 
 class TestCronHandler:
@@ -217,6 +219,56 @@ class TestSearchHandler:
             handler.set_status.assert_called_once_with(404)
         else:
             assert "Nas" in res["response"]["artists"]
+
+
+class TestPreferencesHandler:
+    def test_initialize(self):
+        handler = MagicMock()
+        recommender = "recommender"
+        auths = "auths"
+
+        res = PreferencesHandler.initialize(handler, auths, recommender)
+
+        assert res is None
+        assert handler.recommender == recommender
+        assert handler.auths == auths
+
+    def test_set_default_headers(self):
+        handler = MagicMock()
+
+        res = PreferencesHandler.set_default_headers(handler)
+
+        assert res is None
+        handler.set_header.assert_called_once()
+
+    @pytest.mark.parametrize("genius_code", [None, "test_code"])
+    @pytest.mark.parametrize("spotify_code", [None, "test_code"])
+    @pytest.mark.parametrize("result", [None, Preferences(genres=['pop'])])
+    def test_get(self, genius_code, spotify_code, result):
+        handler = MagicMock()
+        recommender = MagicMock()
+        recommender.preferences_from_platform.return_value = result
+        handler.recommender = recommender
+
+        def get_argument(arg, default=None):
+            if arg == "genius_code":
+                return genius_code
+            else:
+                return spotify_code
+        handler.get_argument = get_argument
+
+        PreferencesHandler.get(handler)
+        res = json.loads(handler.write.call_args[0][0])
+
+        handler.write.assert_called_once()
+        no_code = not any([genius_code, spotify_code])
+        if result is None or no_code:
+            assert res["response"].get("genres") is None
+            if no_code:
+                handler.set_status.assert_called_once_with(404)
+        else:
+            assert res["response"]['genres'] == result.genres
+            assert res["response"]['artists'] == result.artists
 
 
 class TestRecommendationsHandler:
