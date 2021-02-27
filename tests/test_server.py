@@ -297,7 +297,7 @@ class TestRecommendationsHandler:
             "invalid",
         ],
     )
-    @pytest.mark.parametrize("artists", ["Nas", "", "Nas,invalid"])
+    @pytest.mark.parametrize("artists", ["Nas", None, "Nas,invalid"])
     @pytest.mark.parametrize("song_type", ["preview", "any", "invalid"])
     def test_get(self, recommender, genres, artists, song_type):
         handler = MagicMock()
@@ -318,8 +318,8 @@ class TestRecommendationsHandler:
 
         handler.write.assert_called_once()
         if (
-            genres in ("", "invalid")
-            or artists in ("", "Nas,invalid")
+            genres in (None, "invalid")
+            or artists in (None, "Nas,invalid")
             or song_type == "invalid"
         ):
             assert res["response"].get("genres") is None
