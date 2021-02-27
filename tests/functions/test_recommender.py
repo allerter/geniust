@@ -193,11 +193,15 @@ def test_select_artists(update, context, query, text):
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
-def test_process_preferences(update_callback_query, song_dict, context, platform):
+@pytest.mark.parametrize("result", [None, Preferences(genres=['pop'], artists=[])])
+def test_process_preferences(update_callback_query, song_dict, context, platform, result):
     update = update_callback_query
     update.callback_query.data = f"process_{platform}"
     context.user_data["genius_token"] = "test_token"
     context.user_data["spotify_token"] = "test_token"
+    recommender = MagicMock()
+    recommender.preferences_from_platform.return_value = result
+    context.bot_data['recommender'] = recommender
 
     client = MagicMock()
     current_module = "geniust.functions.recommender"
