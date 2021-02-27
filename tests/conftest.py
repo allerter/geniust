@@ -105,7 +105,7 @@ def user_dict(data_path):
 
 @pytest.fixture(scope="session")
 def user_pyongs_dict(data_path):
-    with open(join(data_path, "user_pyongs.json"), "r", encoding='utf8') as f:
+    with open(join(data_path, "user_pyongs.json"), "r", encoding="utf8") as f:
         return json.load(f)
 
 

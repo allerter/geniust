@@ -59,7 +59,7 @@ def client(song_dict, user_pyongs_dict, lastfm_track_toptags):
     return client
 
 
-@pytest.mark.parametrize("platform", ['genius', 'spotify'])
+@pytest.mark.parametrize("platform", ["genius", "spotify"])
 def test_preferences_from_platform(recommender, client, platform):
     token = "test_token"
 
@@ -178,7 +178,7 @@ def test_input_artist(update_callback_query, context):
 @pytest.mark.parametrize("query", ["select_none", "select_0", "done"])
 @pytest.mark.parametrize("text", ["Eminem", "0"])
 def test_select_artists(update, context, query, text):
-    context.user_data['artists'] = []
+    context.user_data["artists"] = []
     if update.message:
         update.message.text = text
     else:
@@ -194,15 +194,17 @@ def test_select_artists(update, context, query, text):
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
-@pytest.mark.parametrize("result", [None, Preferences(genres=['pop'], artists=[])])
-def test_process_preferences(update_callback_query, song_dict, context, platform, result):
+@pytest.mark.parametrize("result", [None, Preferences(genres=["pop"], artists=[])])
+def test_process_preferences(
+    update_callback_query, song_dict, context, platform, result
+):
     update = update_callback_query
     update.callback_query.data = f"process_{platform}"
     context.user_data["genius_token"] = "test_token"
     context.user_data["spotify_token"] = "test_token"
     recommender = MagicMock()
     recommender.preferences_from_platform.return_value = result
-    context.bot_data['recommender'] = recommender
+    context.bot_data["recommender"] = recommender
 
     client = MagicMock()
     current_module = "geniust.functions.recommender"

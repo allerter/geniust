@@ -243,7 +243,7 @@ class TestPreferencesHandler:
 
     @pytest.mark.parametrize("genius_code", [None, "test_code"])
     @pytest.mark.parametrize("spotify_code", [None, "test_code"])
-    @pytest.mark.parametrize("result", [None, Preferences(genres=['pop'])])
+    @pytest.mark.parametrize("result", [None, Preferences(genres=["pop"])])
     def test_get(self, genius_code, spotify_code, result):
         handler = MagicMock()
         recommender = MagicMock()
@@ -255,6 +255,7 @@ class TestPreferencesHandler:
                 return genius_code
             else:
                 return spotify_code
+
         handler.get_argument = get_argument
 
         PreferencesHandler.get(handler)
@@ -267,8 +268,8 @@ class TestPreferencesHandler:
             if no_code:
                 handler.set_status.assert_called_once_with(404)
         else:
-            assert res["response"]['genres'] == result.genres
-            assert res["response"]['artists'] == result.artists
+            assert res["response"]["genres"] == result.genres
+            assert res["response"]["artists"] == result.artists
 
 
 class TestRecommendationsHandler:
