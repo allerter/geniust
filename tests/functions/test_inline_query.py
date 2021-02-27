@@ -67,6 +67,21 @@ def test_search_lyrics_inline(update, context, query, search_lyrics_dict):
         assert len(articles) == 10
 
 
+@pytest.mark.parametrize('query', ['.song   ', '.song test'])
+def test_search_songs_inline(update, context, query, search_songs_dict):
+    update.inline_query.query = query
+    genius = context.bot_data['genius']
+    genius.search_songs.return_value = search_songs_dict
+
+    inline_query.search_songs(update, context)
+
+    if query == '.song   ':
+        update.inline_query.answer.assert_not_called()
+    else:
+        articles = update.inline_query.answer.call_args[0][0]
+        assert len(articles) == 10
+
+
 @pytest.mark.parametrize("query", [".user   ", ".user test"])
 def test_search_users_inline(update, context, query, search_users_dict):
     update.inline_query.query = query
