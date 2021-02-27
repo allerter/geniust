@@ -49,17 +49,18 @@ def client(song_dict, user_pyongs_dict, lastfm_track_toptags):
     top_tracks = TopTracks(["one", "two", "three"])
     top_artists = TopArtists(["Blackbear", "Eminem", "Unknown Artist"])
     client = MagicMock()
-    client.song.return_value = song_dict
-    client.user_pyongs.return_value = user_pyongs_dict
-    client.current_user_top_tracks.return_value = top_tracks
-    client.current_user_top_artists.return_value = top_artists
-    client.lastfm.return_value = lastfm_track_toptags
+    client().song.return_value = song_dict
+    client().user_pyongs.return_value = user_pyongs_dict
+    client.Spotify().current_user_top_tracks.return_value = top_tracks
+    client.Spotify().current_user_top_artists.return_value = top_artists
+    client.lastfm().return_value = lastfm_track_toptags
     return client
 
 
 @pytest.mark.parametrize("platform", ['genius', 'spotify'])
 def test_preferences_from_platform(recommender, client, platform):
     token = "test_token"
+
     current_module = "geniust.functions.recommender"
     with patch(current_module + ".tk", client), patch(
         current_module + ".lg.PublicAPI", client
@@ -173,9 +174,11 @@ def test_input_artist(update_callback_query, context):
     ],
 )
 @pytest.mark.parametrize("query", ["select_none", "select_0", "done"])
-def test_select_artists(update, context, query):
+@pytest.mark.parametrize("text", ["Eminem", "0"])
+def test_select_artists(update, context, query, text):
+    context.user_data['artists'] = []
     if update.message:
-        update.message.text = "0"
+        update.message.text = text
     else:
         update.callback_query.data = query
         if query == "done":
