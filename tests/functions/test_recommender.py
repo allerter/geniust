@@ -64,7 +64,7 @@ def test_preferences_from_platform(recommender, client, platform):
     current_module = "geniust.functions.recommender"
     with patch(current_module + ".tk", client), patch(
         current_module + ".lg.PublicAPI", client
-    ), patch("geniust.api.GeniusT", client):
+    ), patch("geniust.api.GeniusT", client), patch("geniust.api.lastfm", client):
         res = recommender.preferences_from_platform(token, platform)
 
 
