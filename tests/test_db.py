@@ -83,10 +83,11 @@ def test_user_not_in_db(database):
 
 
 @patch("psycopg2.connect")
-def test_insert(connection, database):
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
+def test_insert(connection, database, table):
     chat_id = 1
     values = True, "English", "en"
-    database.insert(chat_id, *values)
+    database.insert(chat_id, *values, table=table)
 
     args = connection().__enter__().cursor().__enter__().execute.call_args
 
@@ -94,7 +95,7 @@ def test_insert(connection, database):
 
 
 @patch("psycopg2.connect")
-@pytest.mark.parametrize("table", ["user_data", "preferences_data"])
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
 def test_upsert(connection, database, table):
     chat_id = 1
     values = 1, "some_data"
