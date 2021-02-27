@@ -32,7 +32,6 @@ def test_login(update_callback_query, context, platform):
 
     res = account.login(update, context)
 
-    keyboard = context.bot.send_message.call_args[1]["reply_markup"]["inline_keyboard"]
     update.callback_query.answer.assert_called_once()
     assert res == constants.END
 
