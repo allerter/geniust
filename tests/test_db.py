@@ -94,6 +94,19 @@ def test_insert(connection, database):
 
 
 @patch("psycopg2.connect")
+@pytest.mark.parametrize("table", ["user_data", "preferences_data"])
+def test_upsert(connection, database, table):
+    chat_id = 1
+    values = 1, "some_data"
+
+    database.upsert(chat_id, *values, table=table)
+
+    args = connection().__enter__().cursor().__enter__().execute.call_args
+
+    assert args[0][1] == (chat_id, *values)
+
+
+@patch("psycopg2.connect")
 @pytest.mark.parametrize("value", ["en", None])
 def test_select(connection, database, value):
     chat_id = 1
