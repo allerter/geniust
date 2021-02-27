@@ -611,7 +611,7 @@ def process_preferences(update: Update, context: CallbackContext):
         message.edit_text(text["insufficient_data"].format(platform_text))
     else:
         context.user_data["preferences"] = preferences
-        context.bot_data["db"].update_preferences(context.user_data["preferences"])
+        context.bot_data["db"].update_preferences(chat_id, context.user_data["preferences"])
         message.edit_text(text["done"])
 
     return END
