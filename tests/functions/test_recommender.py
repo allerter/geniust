@@ -1,4 +1,5 @@
 from unittest.mock import patch, MagicMock
+from collections import namedtuple
 
 import pytest
 
@@ -29,6 +30,41 @@ def test_binarize(recommender, genres):
     res = recommender.binarize(genres)
 
     assert sum(res) == len(genres)
+
+
+class TopArtists:
+    Artist = namedtuple("Artist", "name")
+    def __init__(self, artist_names):
+        self.items = [self.Artist(name=name) for name in artist_names]
+
+
+class TopTracks:
+    Track = namedtuple("Track", "name, artists")
+    def __init__(self, track_names):
+        self.items = [self.Track(name=name, artists=[name]) for name in track_names]
+
+
+@pytest.fixture(scope="module")
+def client(song_dict, user_pyongs_dict, lastfm_track_toptags):
+    top_tracks = TopTracks(["one", "two", "three"])
+    top_artists = TopArtists(["Blackbear", "Eminem", "Unknown Artist"])
+    client = MagicMock()
+    client.song.return_value = song_dict
+    client.user_pyongs.return_value = user_pyongs_dict
+    client.current_user_top_tracks.return_value = top_tracks
+    client.current_user_top_artists.return_value = top_artists
+    client.lastfm.return_value = lastfm_track_toptags
+    return client
+
+
+@pytest.mark.parametrize("platform", ['genius', 'spotify'])
+def test_preferences_from_platform(recommender, client, platform):
+    token = "test_token"
+    current_module = "geniust.functions.recommender"
+    with patch(current_module + ".tk", client), patch(
+        current_module + ".lg.PublicAPI", client
+    ), patch("geniust.api.GeniusT", client):
+        res = recommender.preferences_from_platform(token, platform)
 
 
 @pytest.mark.parametrize("genres", [["pop", "rap"], ["persian"]])
@@ -152,8 +188,9 @@ def test_select_artists(update, context, query):
         context.bot_data["db"].update_preferences.assert_called_once()
 
 
+
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
-def test_process_preferences(update_callback_query, context, platform):
+def test_process_preferences(update_callback_query, song_dict, context, platform):
     update = update_callback_query
     update.callback_query.data = f"process_{platform}"
     context.user_data["genius_token"] = "test_token"
