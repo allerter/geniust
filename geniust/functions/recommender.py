@@ -566,7 +566,7 @@ def select_artists(update: Update, context: CallbackContext):
 
 @log
 @get_user
-def select_language(update: Update, context: CallbackContext):  # pragam: no cover
+def select_language(update: Update, context: CallbackContext):  # pragma: no cover
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["select_language"]
     bd = context.bot_data
