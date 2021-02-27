@@ -293,7 +293,7 @@ class TestRecommendationsHandler:
         "genres",
         [
             "pop,rap",
-            "",
+            None,
             "invalid",
         ],
     )
