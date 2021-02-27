@@ -108,11 +108,14 @@ def test_upsert(connection, database, table):
 
 
 @patch("psycopg2.connect")
-@pytest.mark.parametrize("value", ["en", None])
+@pytest.mark.parametrize("value", ["en", None, ("en", "some_data")])
 def test_select(connection, database, value):
     chat_id = 1
-    key = "bot_lang"
-    if value is not None:
+    if isinstance(value, list):
+        key = "bot_lang,some_column"
+    else:
+        key = "bot_lang"
+    if value is not None and not isinstance(value, list):
         value = (value,)
 
     connection().__enter__().cursor().__enter__().fetchone.return_value = value
