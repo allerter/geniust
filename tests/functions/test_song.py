@@ -160,7 +160,8 @@ def test_display_lyrics(update_callback_query, context, song_id, full_album):
 
     client = MagicMock()
     client().lyrics.return_value = BeautifulSoup(
-        full_album["tracks"][3]["song"]["lyrics"]
+        full_album["tracks"][3]["song"]["lyrics"],
+        "html.parser",
     )
     client().song.return_value = full_album["tracks"][3]
 

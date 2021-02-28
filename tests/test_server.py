@@ -10,9 +10,11 @@ from geniust.server import (
     TokenHandler,
     GenresHandler,
     SearchHandler,
+    PreferencesHandler,
     RecommendationsHandler,
 )
 from geniust.db import Database
+from geniust.constants import Preferences
 
 
 class TestCronHandler:
@@ -32,9 +34,10 @@ class TestTokenHandler:
             "1_spotify_test-state",
             "1_genius_invalid-state",
             "1_spotify_invalid-state",
+            "1_spotify",
         ],
     )
-    @pytest.mark.parametrize("code", ["some_code", "invalid_code", "error"])
+    @pytest.mark.parametrize("code", ["some_code", "invalid_code", "error", None])
     @pytest.mark.parametrize("user_state", ["test-state", None])
     def test_token_handler(self, context, user_state, code, state):
         if len(state.split("_")) == 3:
@@ -87,9 +90,11 @@ class TestTokenHandler:
             and user_state == "test-state"
             and code == "some_code"
         ):
-            handler.auths["genius"].get_user_token.assert_called_once_with(
-                "https://test-app.com/callback?code=some_code&state=1_genius_test-state"
+            url = (
+                "https://test-app.com/callback"
+                "?code=some_code&state=1_genius_test-state"
             )
+            handler.auths["genius"].get_user_token.assert_called_once_with(url=url)
             handler.database.update_token.assert_called_once_with(
                 1, "test_token", platform
             )
@@ -216,6 +221,57 @@ class TestSearchHandler:
             assert "Nas" in res["response"]["artists"]
 
 
+class TestPreferencesHandler:
+    def test_initialize(self):
+        handler = MagicMock()
+        recommender = "recommender"
+        auths = "auths"
+
+        res = PreferencesHandler.initialize(handler, auths, recommender)
+
+        assert res is None
+        assert handler.recommender == recommender
+        assert handler.auths == auths
+
+    def test_set_default_headers(self):
+        handler = MagicMock()
+
+        res = PreferencesHandler.set_default_headers(handler)
+
+        assert res is None
+        handler.set_header.assert_called_once()
+
+    @pytest.mark.parametrize("genius_code", [None, "test_code"])
+    @pytest.mark.parametrize("spotify_code", [None, "test_code"])
+    @pytest.mark.parametrize("result", [None, Preferences(genres=["pop"])])
+    def test_get(self, genius_code, spotify_code, result):
+        handler = MagicMock()
+        recommender = MagicMock()
+        recommender.preferences_from_platform.return_value = result
+        handler.recommender = recommender
+
+        def get_argument(arg, default=None):
+            if arg == "genius_code":
+                return genius_code
+            else:
+                return spotify_code
+
+        handler.get_argument = get_argument
+
+        PreferencesHandler.get(handler)
+        res = json.loads(handler.write.call_args[0][0])
+
+        handler.write.assert_called_once()
+        no_code = not any([genius_code, spotify_code])
+        if result is None or no_code:
+            assert res["response"].get("genres") is None
+            if no_code:
+                handler.set_status.assert_called_once_with(404)
+        else:
+            assert res["response"]["genres"] == result.genres
+            assert res["response"]["artists"] == result.artists
+
+
 class TestRecommendationsHandler:
     def test_initialize(self):
         handler = MagicMock()
@@ -238,11 +294,11 @@ class TestRecommendationsHandler:
         "genres",
         [
             "pop,rap",
-            "",
+            None,
             "invalid",
         ],
     )
-    @pytest.mark.parametrize("artists", ["Nas", "", "Nas,invalid"])
+    @pytest.mark.parametrize("artists", ["Nas", None, "Nas,invalid"])
     @pytest.mark.parametrize("song_type", ["preview", "any", "invalid"])
     def test_get(self, recommender, genres, artists, song_type):
         handler = MagicMock()
@@ -263,8 +319,8 @@ class TestRecommendationsHandler:
 
         handler.write.assert_called_once()
         if (
-            genres in ("", "invalid")
-            or artists in ("", "Nas,invalid")
+            genres in (None, "invalid")
+            or artists == "Nas,invalid"
             or song_type == "invalid"
         ):
             assert res["response"].get("genres") is None

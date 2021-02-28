@@ -83,10 +83,11 @@ def test_user_not_in_db(database):
 
 
 @patch("psycopg2.connect")
-def test_insert(connection, database):
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
+def test_insert(connection, database, table):
     chat_id = 1
     values = True, "English", "en"
-    database.insert(chat_id, *values)
+    database.insert(chat_id, *values, table=table)
 
     args = connection().__enter__().cursor().__enter__().execute.call_args
 
@@ -94,11 +95,27 @@ def test_insert(connection, database):
 
 
 @patch("psycopg2.connect")
-@pytest.mark.parametrize("value", ["en", None])
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
+def test_upsert(connection, database, table):
+    chat_id = 1
+    values = 1, "some_data"
+
+    database.upsert(chat_id, *values, table=table)
+
+    args = connection().__enter__().cursor().__enter__().execute.call_args
+
+    assert args[0][1] == (chat_id, *values)
+
+
+@patch("psycopg2.connect")
+@pytest.mark.parametrize("value", ["en", None, ("en", "some_data")])
 def test_select(connection, database, value):
     chat_id = 1
-    key = "bot_lang"
-    if value is not None:
+    if isinstance(value, list):
+        key = "bot_lang,some_column"
+    else:
+        key = "bot_lang"
+    if value is not None and not isinstance(value, list):
         value = (value,)
 
     connection().__enter__().cursor().__enter__().fetchone.return_value = value
@@ -128,10 +145,11 @@ def test_select_all(connection, database):
 
 
 @patch("psycopg2.connect")
-def test_update(connection, database):
+@pytest.mark.parametrize("table", ["test_table", "pref_table"])
+def test_update(connection, database, table):
     chat_id = 1
     value = "en"
-    database.update(chat_id, value, "bot_lang")
+    database.update(chat_id, value, "bot_lang", table=table)
 
     args = connection().__enter__().cursor().__enter__().execute.call_args
 

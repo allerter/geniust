@@ -10,6 +10,7 @@ main_menu:
   change_language: Change Language
   # login: Log into Genius
   view_accounts: View Account
+  shuffle: Get Song Recommednations
   reset_shuffle: Reset Shuffle Preferences
 
 error: "Sorry. Something went wrong :(\nStart again by clicking /start"

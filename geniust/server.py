@@ -102,7 +102,7 @@ class TokenHandler(RequestHandler):
         )
         if platform == "genius":
             try:
-                token = self.auths["genius"].get_user_token(redirected_url)
+                token = self.auths["genius"].get_user_token(url=redirected_url)
             except HTTPError as e:
                 self.logger.debug("%s for %s", str(e), state)
                 return
@@ -182,6 +182,47 @@ class SearchHandler(RequestHandler):
         else:
             r["artists"] = self.recommender.search_artist(artist)
             r["artist"] = artist
+
+        res = json.dumps(response)
+        self.write(res)
+
+
+class PreferencesHandler(RequestHandler):
+    def initialize(self, auths, recommender) -> None:
+        self.auths = auths
+        self.recommender = recommender
+        self.logger = logging.getLogger(__name__)
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", "application/json")
+
+    @log
+    def get(self):
+        genius_code = self.get_argument("genius_code", default=None)
+        spotify_code = self.get_argument("spotify_code", default=None)
+        response = {"response": {"status_code": 200}}
+        r = response["response"]
+        if genius_code is None and spotify_code is None:
+            self.set_status(404)
+            r["error"] = "404 Not Found"
+            r["status_code"] = 404
+            token = None
+        elif genius_code:
+            token = self.auths["genius"].get_user_token(code=genius_code)
+            platform = "genius"
+        else:
+            token = self.auths["spotify"]._cred.request_user_token(spotify_code)
+            token = token.access_token
+            platform = "spotify"
+
+        if token is not None:
+            preferences = self.recommender.preferences_from_platform(token, platform)
+            if preferences is not None:
+                r["genres"] = preferences.genres
+                r["artists"] = preferences.artists
+            else:
+                r["genres"] = None
+                r["artists"] = None
 
         res = json.dumps(response)
         self.write(res)
@@ -297,6 +338,11 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                 ),
                 url(r"/api/genres", GenresHandler, dict(recommender=recommender)),
                 url(r"/api/search", SearchHandler, dict(recommender=recommender)),
+                url(
+                    r"/api/preferences",
+                    PreferencesHandler,
+                    dict(auths=auths, recommender=recommender),
+                ),
                 url(
                     r"/api/recommendations",
                     RecommendationsHandler,
