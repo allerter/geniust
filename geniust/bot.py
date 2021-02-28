@@ -131,6 +131,8 @@ def main_menu(update: Update, context: CallbackContext) -> int:
 
     if context.user_data["preferences"] is not None:
         buttons.append([IButton(text["reset_shuffle"], callback_data="shuffle_reset")])
+    else:
+        buttons.append([IButton(text["shuffle"], callback_data="shuffle")])
 
     keyboard = IBKeyboard(buttons)
 
@@ -573,6 +575,11 @@ def main():
                 "shuffle",
                 recommender.welcome_to_shuffle,
                 NewShuffleUser(user_data=dp.user_data),
+            ),
+            CallbackQueryHandler(
+                recommender.welcome_to_shuffle,
+                "shuffle",
+                pattern=NewShuffleUser(user_data=dp.user_data),
             ),
             CommandHandler("shuffle", recommender.display_recommendations),
             CallbackQueryHandler(recommender.reset_shuffle, pattern=r"^shuffle_reset$"),
