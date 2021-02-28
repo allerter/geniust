@@ -5,14 +5,17 @@ import pytest
 from telegram.ext import Updater
 
 from geniust import constants, bot
+from geniust.constants import Preferences
 
 
 @pytest.mark.parametrize("token", ["test_token", None])
-def test_main_menu(update_callback_query, context, token):
+@pytest.mark.parametrize("preferences", [Preferences(genres=["pop"]), None])
+def test_main_menu(update_callback_query, context, token, preferences):
 
     update = update_callback_query
     user = context.user_data
     user["genius_token"] = token
+    user["preferences"] = preferences
 
     res = bot.main_menu(update, context)
 
