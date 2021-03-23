@@ -67,7 +67,7 @@ class Song:
 
 class Recommender:
     """GeniusT Recommender
-    
+
     Available genres:
     classical,  country, instrumental, persian, pop, rap, rnb, rock, traditional
     """
@@ -280,7 +280,7 @@ class Recommender:
                 or "preview,full". Defaults to "any".
 
         Returns:
-            List[Song]: List of recommended Songs. 
+            List[Song]: List of recommended Songs.
         """
         user_genres = self.binarize(user_preferences.genres)
         persian_index = np.where(self.binarize(["persian"]) == 1)[0][0]
@@ -538,7 +538,9 @@ def select_genres(update: Update, context: CallbackContext):
         buttons.append(IButton(button_text, callback_data=f"genre_{id}"))
 
     # 3 genres in each row
-    def grouper(n: int, iterable: Iterable , fillvalue: Optional[str] = None) -> Iterator:
+    def grouper(
+        n: int, iterable: Iterable, fillvalue: Optional[str] = None
+    ) -> Iterator:
         """Groups iterable values by n
 
         Limits buttons to n button in every row

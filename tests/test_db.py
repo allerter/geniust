@@ -38,7 +38,7 @@ def test_get_user(update_message, context, user_data):
     func.assert_called_once_with(update, context)
 
     if user_data:
-        context.bot_data['db'].assert_not_called()
+        context.bot_data["db"].assert_not_called()
 
 
 @pytest.mark.parametrize("chat_id", (1, 2))

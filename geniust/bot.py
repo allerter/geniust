@@ -88,7 +88,7 @@ class NewShuffleUser(MessageFilter):
         """determines whether user should enter conv or not
 
         Args:
-            message (telegram.Message): Message from user. 
+            message (telegram.Message): Message from user.
 
         Returns:
             bool: True if user has no preferences, else False.

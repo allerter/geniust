@@ -289,9 +289,7 @@ class Database:
         )
 
     @get_session
-    def get_tokens(
-        self, chat_id: int, session=None
-    ) -> Dict[str, Optional[str]]:
+    def get_tokens(self, chat_id: int, session=None) -> Dict[str, Optional[str]]:
         """Gets user's tokens from database.
 
         Args:
@@ -299,11 +297,14 @@ class Database:
 
         Returns:
             Dict[str, Optional[str]]: Dict with two keys.
-                If key value is None, that token is not available. 
+                If key value is None, that token is not available.
         """
-        res = session.query(Users.genius_token, Users.spotify_token).filter(Users.chat_id == chat_id).one()
+        res = (
+            session.query(Users.genius_token, Users.spotify_token)
+            .filter(Users.chat_id == chat_id)
+            .one()
+        )
         return dict(genius_token=res[0], spotify_token=res[1])
-        
 
     @get_session
     def get_language(self, chat_id: int, session=None) -> str:

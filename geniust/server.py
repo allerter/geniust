@@ -133,6 +133,7 @@ class TokenHandler(RequestHandler):
 
 class GenresHandler(RequestHandler):
     """Returns a list of available genres to the request"""
+
     def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
@@ -165,6 +166,7 @@ class GenresHandler(RequestHandler):
 
 class SearchHandler(RequestHandler):
     """Searches artists and returns matches"""
+
     def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
@@ -191,6 +193,7 @@ class SearchHandler(RequestHandler):
 
 class PreferencesHandler(RequestHandler):
     """Returns preferences based user's data on Spotify/Genius"""
+
     def initialize(self, auths, recommender) -> None:
         self.auths = auths
         self.recommender = recommender
@@ -233,6 +236,7 @@ class PreferencesHandler(RequestHandler):
 
 class RecommendationsHandler(RequestHandler):
     """Returns song recommendations based on user's preferences"""
+
     def initialize(self, recommender) -> None:
         self.recommender = recommender
         self.logger = logging.getLogger(__name__)
