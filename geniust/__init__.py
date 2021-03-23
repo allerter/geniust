@@ -9,9 +9,7 @@ import tekore as tk
 from lyricsgenius import OAuth2
 import yaml
 
-from geniust.db import Database
 from geniust.constants import (
-    DATABASE_URL,
     GENIUS_CLIENT_ID,
     GENIUS_REDIRECT_URI,
     GENIUS_CLIENT_SECRET,
@@ -21,8 +19,6 @@ from geniust.constants import (
 )
 
 username: str = "genius_the_bot"  # Bot(BOT_TOKEN).get_me().username
-
-database = Database(DATABASE_URL.replace("postgres", "postgresql+psycopg2"))
 
 RT = TypeVar("RT")
 

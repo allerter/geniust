@@ -33,7 +33,7 @@ from geniust.functions import (
     annotation,
     user,
 )
-from geniust import get_user, texts, auths, database, username
+from geniust import get_user, texts, auths, username
 from geniust.utils import log
 from geniust.db import Database
 from geniust.api import GeniusT
@@ -41,6 +41,7 @@ from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
+    DATABASE_URL,
     TYPING_ALBUM,
     TYPING_SONG,
     SERVER_PORT,
@@ -290,7 +291,10 @@ def main():
 
     dp = updater.dispatcher
     dp.bot_data["texts"]: Dict[Any, str] = texts
-    dp.bot_data["db"]: Database = database
+    dp.bot_data["db"]: Database = Database(
+        DATABASE_URL.replace("postgres", "postgresql+psycopg2")
+    )
+
     dp.bot_data["genius"]: GeniusT = GeniusT()
     dp.bot_data["spotify"]: tk.Spotify = tk.Spotify(
         tk.RefreshingCredentials(
