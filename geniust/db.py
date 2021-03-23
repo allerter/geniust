@@ -34,8 +34,8 @@ def get_session(func: Callable[..., RT]) -> Callable[..., RT]:
             try:
                 res = func(
                     self,
-                    session,
                     *args,
+                    session=session,
                     **kwargs,
                 )
             except Exception as e:
@@ -138,7 +138,7 @@ class Database:
 
     @log
     @get_session
-    def user(self, session, chat_id: int, user_data: dict) -> None:
+    def user(self, chat_id: int, user_data: dict, session=None) -> None:
         """Check for user in database, and create one if there's none
 
         This method will try to get user data from database and if it
@@ -177,7 +177,9 @@ class Database:
         )
 
     @get_session
-    def update_include_annotations(self, session, chat_id: int, data: bool) -> None:
+    def update_include_annotations(
+        self, chat_id: int, data: bool, session=None
+    ) -> None:
         """Updates inclusing annotations in lyrics.
 
         Args:
@@ -189,7 +191,7 @@ class Database:
         )
 
     @get_session
-    def update_lyrics_language(self, session, chat_id: int, data: str) -> None:
+    def update_lyrics_language(self, chat_id: int, data: str, session=None) -> None:
         """Updates the language of the lyrics.
 
         Args:
@@ -201,7 +203,7 @@ class Database:
         )
 
     @get_session
-    def update_bot_language(self, session, chat_id: int, data: str) -> None:
+    def update_bot_language(self, chat_id: int, data: str, session=None) -> None:
         """Updates the language of the bot.
 
         Args:
@@ -213,7 +215,9 @@ class Database:
         )
 
     @get_session
-    def update_token(self, session, chat_id: int, data: str, platform: str) -> None:
+    def update_token(
+        self, chat_id: int, data: str, platform: str = None, session=None
+    ) -> None:
         """Updates user's token.
 
         Args:
@@ -227,7 +231,7 @@ class Database:
         )
 
     @get_session
-    def delete_token(self, session, chat_id: int, platform: str) -> None:
+    def delete_token(self, chat_id: int, platform: str = None, session=None) -> None:
         """Removes user's token from database.
 
         Args:
@@ -240,7 +244,7 @@ class Database:
         )
 
     @get_session
-    def get_token(self, session, chat_id: int, platform: str) -> str:
+    def get_token(self, chat_id: int, platform: str, session=None) -> str:
         """Gets user's token from database.
 
         Args:
@@ -258,7 +262,9 @@ class Database:
         )
 
     @get_session
-    def get_tokens(self, session, chat_id: int) -> Tuple[Optional[str], Optional[str]]:
+    def get_tokens(
+        self, chat_id: int, session=None
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Gets user's tokens from database.
 
         Args:
@@ -274,7 +280,7 @@ class Database:
         )
 
     @get_session
-    def get_language(self, session, chat_id: int) -> str:
+    def get_language(self, chat_id: int, session=None) -> str:
         """Gets user's bot language.
 
         Args:
@@ -286,12 +292,12 @@ class Database:
         return session.query(Users.bot_lang).filter(Users.chat_id == chat_id).one()[0]
 
     @get_session
-    def get_preferences(self, session, chat_id: int) -> Optional[Preferences]:
+    def get_preferences(self, chat_id: int, session=None) -> Optional[Preferences]:
         return session.get(Preferences, chat_id)
 
     @get_session
     def update_preferences(
-        self, session, chat_id: int, user_preferences: Preferences
+        self, chat_id: int, user_preferences: Preferences, session=None
     ) -> None:
         pref = session.get(Preferences, chat_id)
         if pref is None:
@@ -310,5 +316,5 @@ class Database:
             )
 
     @get_session
-    def delete_preferences(self, session, chat_id: int) -> None:
+    def delete_preferences(self, chat_id: int, session=None) -> None:
         session.query(Preferences).filter(Preferences.chat_id == chat_id).delete()

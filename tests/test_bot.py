@@ -120,7 +120,8 @@ def test_main():
     with patch(current_module + ".SERVER_PORT", 5000), patch(
         current_module + ".WebhookThread", webhoook
     ), patch(current_module + ".Updater", updater), warnings.catch_warnings(), patch(
-        current_module + ".tk.RefreshingCredentials", MagicMock()), patch(
+        current_module + ".tk.RefreshingCredentials", MagicMock()
+    ), patch(
         current_module + ".Database", database
     ):
         warnings.filterwarnings("ignore", category=UserWarning)
