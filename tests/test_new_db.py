@@ -1,7 +1,7 @@
 import pytest
 
-from geniust import new_db as db
-from geniust.new_db import Users, Preferences
+from geniust import db
+from geniust.db import Users, Preferences
 
 
 @pytest.fixture(scope="function")
