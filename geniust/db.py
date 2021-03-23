@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-from typing import TypeVar, Callable, Optional, Tuple, Union, List
+from typing import TypeVar, Callable, Optional, Tuple, Union, List, Any
 
 from geniust.utils import log
 from sqlalchemy import (
@@ -33,12 +33,12 @@ class DBList(TypeDecorator):
         self.sep = sep
 
     def process_bind_param(
-        self, value: Union[Tuple[str, ...], List[str]], dialect: str
+        self, value: Union[Tuple[str, ...], List[str]], dialect: Any
     ) -> str:
         return f"{self.sep}".join(value)
 
     def process_result_value(
-        self, value: str, dialect: str
+        self, value: str, dialect: Any
     ) -> List[str]:
         return value.split(self.sep) if value else []
 
