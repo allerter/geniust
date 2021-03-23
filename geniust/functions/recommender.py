@@ -2,7 +2,7 @@ import logging
 import difflib
 from os.path import join
 from itertools import zip_longest
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Iterable, Iterator
 from dataclasses import dataclass, asdict
 
 import tekore as tk
@@ -66,7 +66,12 @@ class Song:
 
 
 class Recommender:
-    # classical - country - instrumental - persian - pop - rap - rnb - rock -traditional
+    """GeniusT Recommender
+    
+    Available genres:
+    classical,  country, instrumental, persian, pop, rap, rnb, rock, traditional
+    """
+
     def __init__(self):
         # Read tracks
         en = pd.read_csv(join(data_path, "tracks en.csv"))
@@ -138,6 +143,16 @@ class Recommender:
         }
 
     def genres_by_age(self, age: int) -> List[str]:
+        """Returns genres based on age group
+
+        Args:
+            age (int): User's age.
+
+        Returns:
+            List[str]: List of corresponding genres which is
+                the first list with a smaller number than
+                the age parameter (e.g. 29 would correspond to genres_by_age[24])
+        """
         age_groups = list(self.genres_by_age_group.keys())
         for age_group in age_groups:
             if age >= age_group:
@@ -150,6 +165,19 @@ class Recommender:
     def preferences_from_platform(
         self, token: str, platform: str
     ) -> Optional[Preferences]:
+        """Processes user's data from Spotify/Genius to generate preferences
+
+        Processes activity data from Spotify/Genius to generate user's favorite
+        artists and genres. In case of insufficient data, it returns None.
+
+        Args:
+            token (str): Token used to log into platform.
+            platform (str): Platform to get data from
+
+        Returns:
+            Optional[Preferences]: Generated preferences if sufficient data
+                is avaialbe, else None.
+        """
         if platform == "genius":
             user_genius = api.GeniusT(token)
             account = user_genius.account()["user"]
@@ -213,11 +241,28 @@ class Recommender:
         return Preferences(genres, found_artists) if genres else None
 
     def search_artist(self, artist: str) -> List[str]:
+        """Searches for artist in artists
+
+        Args:
+            artist (str): Artist.
+
+        Returns:
+            List[str]: List of possible matches.
+        """
         artist = artist.lower()
         matches = difflib.get_close_matches(artist, self.lowered_artists_names.keys())
         return [self.lowered_artists_names[m] for m in matches]
 
     def binarize(self, genres: List[str]) -> np.ndarray:
+        """Converts genres to an array of ones and zeroes.
+
+        Args:
+            genres (List[str]): Genres.
+
+        Returns:
+            np.ndarray: Numpy array of ones and zeroes
+            (one if user has that genre, else zero).
+        """
         return self.binarizer.transform([genres]).toarray()[0]
 
     def shuffle(
@@ -226,6 +271,17 @@ class Recommender:
         # language: str = 'any',
         song_type="any",
     ) -> List[Song]:
+        """Generates song recommendations based on preferences
+
+        Args:
+            user_preferences (Preferences): User's favorite genres and artists.
+            song_type (str, optional): Type of song to include in recommendations.
+                Can be one of "any", "any_file", "preview", "full"
+                or "preview,full". Defaults to "any".
+
+        Returns:
+            List[Song]: List of recommended Songs. 
+        """
         user_genres = self.binarize(user_preferences.genres)
         persian_index = np.where(self.binarize(["persian"]) == 1)[0][0]
         persian_user = True if user_genres[persian_index] == 1 else False
@@ -319,6 +375,21 @@ class Recommender:
         return hits
 
     def song(self, id: int = None, id_spotify: str = None) -> Song:
+        """Gets Song from its ID or Spotify ID
+
+        You must pass either id or spotify_id.
+
+        Args:
+            id (int, optional): Song ID. Defaults to None.
+            id_spotify (str, optional): Song's Spotify ID. Defaults to None.
+
+        Raises:
+            AssertionError: If neither id nor spotify_id is passed.
+            If both are supplied, id is used.
+
+        Returns:
+            Song: Song info.
+        """
         if not any([id is not None, id_spotify]):
             raise AssertionError("Must supply either id or id_spotify.")
         if id:
@@ -467,10 +538,25 @@ def select_genres(update: Update, context: CallbackContext):
         buttons.append(IButton(button_text, callback_data=f"genre_{id}"))
 
     # 3 genres in each row
-    def grouper(n, iterable, fillvalue=None):
+    def grouper(n: int, iterable: Iterable , fillvalue: Optional[str] = None) -> Iterator:
+        """Groups iterable values by n
+
+        Limits buttons to n button in every row
+        and if there are any remaining spaces
+        left in the last group, fills them with
+        the value of fillvalue.
+
+        Args:
+            n ([type]): [description]
+            iterable (Iterable): An iterable to be grouped.
+            fillvalue ([type], optional): Value to fill remaining items of group. Defaults to None.
+
+        Returns:
+            Iterator: Iterator of grouped items.
+        """
         # from https://stackoverflow.com/a/3415150
         args = [iter(iterable)] * n
-        return zip_longest(fillvalue=IButton("⬛️", callback_data="None"), *args)
+        return zip_longest(fillvalue=IButton(fillvalue, callback_data="None"), *args)
 
     keyboard_buttons = []
     for button_set in grouper(3, buttons):
@@ -622,6 +708,7 @@ def process_preferences(update: Update, context: CallbackContext):
 @log
 @get_user
 def reset_shuffle(update: Update, context: CallbackContext) -> int:
+    """Resets user's preferences"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["reset_shuffle"]
     chat_id = update.effective_chat.id
