@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock
+
 import pytest
 
-from geniust import db
+from geniust import db, get_user
 from geniust.db import Users, Preferences
 
 
@@ -22,6 +24,21 @@ def database():
         session.add(pref)
         session.commit()
     return database
+
+
+@pytest.mark.parametrize("user_data", [{"bot_lang": "en"}, {}])
+def test_get_user(update_message, context, user_data):
+    update = update_message
+    context.user_data = user_data
+    func = MagicMock()
+
+    res = get_user(func)
+    res(update, context)
+
+    func.assert_called_once_with(update, context)
+
+    if user_data:
+        context.bot_data['db'].assert_not_called()
 
 
 @pytest.mark.parametrize("chat_id", (1, 2))
