@@ -33,12 +33,12 @@ extras_require["dev"] = extras_require["checks"] + extras_require["tests"]
 
 setup(
     name="geniust",
-    author="Allerter",
+    author="allerter",
     license="MIT",
     description="Genius T gets you music info and lyrics on Telegram.",
     long_description=readme_file.read_text(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Allerter/geniust",
+    url="https://github.com/allerter/geniust",
     version=version,
     packages=find_packages(
         exclude=(

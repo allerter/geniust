@@ -10,7 +10,7 @@ cryptg~=0.2
 decorator==4.4.2
 future==0.18.2
 idna==2.9
-git+https://github.com/Allerter/LyricsGenius.git@fix-auth-init
+git+https://github.com/allerter/LyricsGenius.git@fix-auth-init
 joblib==1.0.0
 jsonschema==3.2.0
 numpy==1.19.4
