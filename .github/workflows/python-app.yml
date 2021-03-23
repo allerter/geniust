@@ -16,6 +16,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Compare version with git tag
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        file_version=$(cat test.txt)
+        echo ::set-output name=tag_version::${GITHUB_REF/refs\/tags\//}
+        if test "$file_version" = "$tag_version";
+        then
+          echo "Versions match! >> $file_version"
+        else
+          echo "Versions don't match! >> FILE=$file_version != TAG=$tag_version"
+          exit 1
+        fi
+
     - name: Set up Python 3.8
       uses: actions/setup-python@v2
       with:
