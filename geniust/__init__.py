@@ -40,7 +40,7 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
         else:
             chat_id = update.inline_query.from_user.id
         if "bot_lang" not in context.user_data:
-            context.bot_data['database'].user(chat_id, context.user_data)
+            context.bot_data['db'].user(chat_id, context.user_data)
         result = func(*args, **kwargs)
         return result
 
