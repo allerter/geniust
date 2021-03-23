@@ -521,7 +521,12 @@ class GeniusT(Genius):
         return all_annotations
 
     def fetch(self, track: Dict[str, Any], include_annotations: bool) -> None:
-        """fetches song from Genius adds it to the artist object"""
+        """fetches song from Genius adds it to the artist objecty
+
+        Args:
+            track (Dict[str, Any]): Track dict including track information.
+            include_annotations (bool): True or False.
+        """
         song = track["song"]
 
         annotations: Dict[int, str] = {}
@@ -590,7 +595,15 @@ class GeniusT(Genius):
     def async_album_search(
         self, album_id: int, include_annotations: bool = False
     ) -> Dict[str, Any]:
-        """gets the album from Genius and returns a dictionary"""
+        """gets the album from Genius and returns a dictionary
+
+        Args:
+            album_id (int): Album ID.
+            include_annotations (bool, optional): Include annotations in album. Defaults to False.
+
+        Returns:
+            Dict[str, Any]: Album data and lyrics.
+        """
         q: queue.Queue = queue.Queue(1)
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
