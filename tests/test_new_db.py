@@ -18,7 +18,7 @@ def database():
         )
         session.add(user)
 
-        pref = Preferences(chat_id=1, genres=['pop'], artists=[])
+        pref = Preferences(chat_id=1, genres=["pop"], artists=[])
         session.add(pref)
         session.commit()
     return database
