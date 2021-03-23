@@ -38,7 +38,7 @@ class DBList(TypeDecorator):
         return f"{self.sep}".join(value)
 
     def process_result_value(
-        self, value: Union[Tuple[str, ...], List[str], None], dialect: str
+        self, value: str, dialect: str
     ) -> List[str]:
         return value.split(self.sep) if value else []
 
