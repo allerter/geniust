@@ -5,6 +5,7 @@ import pytest
 from telegram.ext import Updater
 
 from geniust import constants, bot
+from geniust.db import Database
 from geniust.constants import Preferences
 
 
@@ -113,12 +114,14 @@ def test_contact_us(update_message, context):
 def test_main():
     webhoook = MagicMock()
     updater = MagicMock(spec=Updater)
+    database = MagicMock(spec=Database)
 
     current_module = "geniust.bot"
     with patch(current_module + ".SERVER_PORT", 5000), patch(
         current_module + ".WebhookThread", webhoook
     ), patch(current_module + ".Updater", updater), warnings.catch_warnings(), patch(
-        current_module + ".tk.RefreshingCredentials", MagicMock()
+        current_module + ".tk.RefreshingCredentials", MagicMock()), patch(
+        current_module + ".Database", database
     ):
         warnings.filterwarnings("ignore", category=UserWarning)
         bot.main()
