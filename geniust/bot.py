@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import tekore as tk
 from notifiers.logging import NotificationHandler
-from telegram import Update
+from telegram import Update, Message
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -84,7 +84,15 @@ class NewShuffleUser(MessageFilter):
         self.database = database
 
     @log
-    def filter(self, message):
+    def filter(self, message: Message) -> bool:
+        """determines whether user should enter conv or not
+
+        Args:
+            message (telegram.Message): Message from user. 
+
+        Returns:
+            bool: True if user has no preferences, else False.
+        """
         chat_id = message.from_user.id
         if "bot_lang" not in self.user_data[chat_id]:
             self.database.user(chat_id, self.user_data[chat_id])
