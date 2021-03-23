@@ -19,14 +19,22 @@ Base = declarative_base()
 RT = TypeVar("RT")
 
 
-def init_db(db_uri: str):
+def init_db(db_uri: str) -> scoped_session:
+    """initializes db using db_uri
+
+    Args:
+        db_uri (str): URI of database.
+
+    Returns:
+        scoped_session: Session factory.
+    """
     engine = create_engine(db_uri)
     Base.metadata.create_all(engine)
     return scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
 
 def get_session(func: Callable[..., RT]) -> Callable[..., RT]:
-    """Returns a DB cursor for the wrapped functions"""
+    """Returns a DB session for the wrapped functions"""
 
     @wraps(func)
     def wrapper(self, *args, **kwargs) -> RT:
@@ -58,9 +66,28 @@ class DBList(TypeDecorator):
     def process_bind_param(
         self, value: Union[Tuple[str, ...], List[str]], dialect: Any
     ) -> str:
+        """processes values for database
+
+        Args:
+            value (Union[Tuple[str, ...], List[str]]): List or tuple of
+                strings which contain either genres or artists.
+            dialect (Any): DBAPI dialect.
+
+        Returns:
+            str: self.sep seperated string for insertion into database.
+        """
         return f"{self.sep}".join(value)
 
     def process_result_value(self, value: str, dialect: Any) -> List[str]:
+        """processes values returned from database
+
+        Args:
+            value (str): self.sep seperated values.
+            dialect (Any): DBAPI dialect.
+
+        Returns:
+            List[str]: List of artists or genres.
+        """
         return value.split(self.sep) if value else []
 
 
@@ -264,20 +291,19 @@ class Database:
     @get_session
     def get_tokens(
         self, chat_id: int, session=None
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Dict[str, Optional[str]]:
         """Gets user's tokens from database.
 
         Args:
             chat_id (int): Chat ID.
 
         Returns:
-            str: Genius user token.
+            Dict[str, Optional[str]]: Dict with two keys.
+                If key value is None, that token is not available. 
         """
-        return (
-            session.query(Users.genius_token, Users.spotify_token)
-            .filter(Users.chat_id == chat_id)
-            .one()
-        )
+        res = session.query(Users.genius_token, Users.spotify_token).filter(Users.chat_id == chat_id).one()
+        return dict(genius_token=res[0], spotify_token=res[1])
+        
 
     @get_session
     def get_language(self, chat_id: int, session=None) -> str:
@@ -293,12 +319,29 @@ class Database:
 
     @get_session
     def get_preferences(self, chat_id: int, session=None) -> Optional[Preferences]:
+        """returns user's preferences
+
+        Args:
+            chat_id (int): Chat ID.
+
+        Returns:
+            Optional[Preferences]: User's preferences if user has some, else None.
+        """
         return session.get(Preferences, chat_id)
 
     @get_session
     def update_preferences(
         self, chat_id: int, user_preferences: Preferences, session=None
     ) -> None:
+        """Upserts user preferences
+
+        If user has preferences, updates them. Otherwise creates new preferences
+        entry for user.
+
+        Args:
+            chat_id (int): Chat ID.
+            user_preferences (Preferences): User preferences.
+        """
         pref = session.get(Preferences, chat_id)
         if pref is None:
             preferences = Preferences(
@@ -317,4 +360,9 @@ class Database:
 
     @get_session
     def delete_preferences(self, chat_id: int, session=None) -> None:
+        """Deletes user preferences from database
+
+        Args:
+            chat_id (int): Chat ID.
+        """
         session.query(Preferences).filter(Preferences.chat_id == chat_id).delete()
