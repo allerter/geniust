@@ -19,10 +19,33 @@ Base = declarative_base()
 RT = TypeVar("RT")
 
 
-def create_session(db_uri: str):
+def init_db(db_uri: str):
     engine = create_engine(db_uri)
     Base.metadata.create_all(engine)
     return scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
+
+
+def get_session(func: Callable[..., RT]) -> Callable[..., RT]:
+    """Returns a DB cursor for the wrapped functions"""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs) -> RT:
+        with self.Session() as session:
+            try:
+                res = func(
+                    self,
+                    session,
+                    *args,
+                    **kwargs,
+                )
+            except Exception as e:
+                session.rollback()
+                raise e
+            else:
+                session.commit()
+            return res
+
+    return wrapper
 
 
 class DBList(TypeDecorator):
@@ -37,9 +60,7 @@ class DBList(TypeDecorator):
     ) -> str:
         return f"{self.sep}".join(value)
 
-    def process_result_value(
-        self, value: str, dialect: Any
-    ) -> List[str]:
+    def process_result_value(self, value: str, dialect: Any) -> List[str]:
         return value.split(self.sep) if value else []
 
 
@@ -113,29 +134,7 @@ class Database:
     """Database class for all communications with the database."""
 
     def __init__(self, db_uri: str):
-        self.Session = create_session(db_uri)
-
-    def get_session(func: Callable[..., RT]) -> Callable[..., RT]:
-        """Returns a DB cursor for the wrapped functions"""
-
-        @wraps(func)
-        def wrapper(self, *args, **kwargs) -> RT:
-            with self.Session() as session:
-                try:
-                    res = func(
-                        self,
-                        session,
-                        *args,
-                        **kwargs,
-                    )
-                except Exception as e:
-                    session.rollback()
-                    raise e
-                else:
-                    session.commit()
-                return res
-
-        return wrapper
+        self.Session = init_db(db_uri)
 
     @log
     @get_session
