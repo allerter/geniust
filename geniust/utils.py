@@ -57,6 +57,7 @@ def deep_link(
         id (str): ID of the entity.
         type (str): Type of the entity.
         platform (str, optional): Platform which the entity is from.
+        download (bool, optional): Whether user wants to download something or not.
 
     Raises:
         ValueError: If it comes accross an unknown
