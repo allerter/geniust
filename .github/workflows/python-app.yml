@@ -22,8 +22,8 @@ jobs:
     - name: Compare version with git tag
       if: startsWith(github.ref, 'refs/tags/')
       run: |
-        file_version=$(cat test.txt)
-        echo ::set-output name=tag_version::${GITHUB_REF/refs\/tags\//}
+        file_version=$(cat geniust/VERSION)
+        tag_version=${GITHUB_REF#refs/*/}
         if test "$file_version" = "$tag_version";
         then
           echo "Versions match! >> $file_version"
@@ -96,10 +96,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: code-coverage-report
-
-      - name: Check coverage file
-        run: |
-          ls
 
       - name: Upload results to Code Climate
         run: |
