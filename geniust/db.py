@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-from typing import TypeVar, Callable, Optional, Tuple, Union, List, Any
+from typing import TypeVar, Dict, Callable, Optional, Tuple, Union, List, Any
 
 from geniust.utils import log
 from sqlalchemy import (
