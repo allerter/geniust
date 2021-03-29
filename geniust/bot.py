@@ -36,7 +36,7 @@ from geniust.functions import (
 from geniust import get_user, texts, auths, username
 from geniust.utils import log
 from geniust.db import Database
-from geniust.api import GeniusT
+from geniust.api import GeniusT, Recommender
 from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
@@ -307,7 +307,7 @@ def main():
             SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
         ).request_client_token()
     )
-    dp.bot_data["recommender"] = recommender.Recommender()
+    dp.bot_data["recommender"] = Recommender()
 
     my_states = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),

@@ -1,5 +1,4 @@
 import logging
-import difflib
 from os.path import join
 from itertools import zip_longest
 from typing import List, Optional, Iterable, Iterator
@@ -34,7 +33,7 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     photo = join(data_path, "shuffle.jpg")
 
-    caption = text["body"].format(len(recommender.songs))
+    caption = text["body"].format(recommender.num_songs)
 
     buttons = [
         [IButton(text["enter_preferences"], callback_data="shuffle_manual")],
@@ -233,19 +232,16 @@ def select_artists(update: Update, context: CallbackContext):
 
     if update.message:
         input_text = update.message.text
-        matches = difflib.get_close_matches(
-            input_text,
-            recommender.artists.name.to_list(),
-            n=5,
-        )
+        matches = recommender.search_artist(input_text)
         if not matches:
             update.message.reply_text(text["no_match"])
             return SELECT_ARTISTS
 
         buttons = []
         for match in matches:
-            index = recommender.artists[recommender.artists["name"] == match].index[0]
-            buttons.append([IButton(match, callback_data=f"artist_{index}")])
+            if match.name.lower() == input_text.lower():
+                index = match.id
+                buttons.append([IButton(match, callback_data=f"artist_{index}")])
 
         buttons.append([IButton(text["not_in_matches"], callback_data="artist_none")])
         update.message.reply_text(
@@ -263,7 +259,7 @@ def select_artists(update: Update, context: CallbackContext):
     else:
         _, artist = query.data.split("_")
         if artist != "none":
-            ud["artists"].append(recommender.artists.name.loc[int(artist)])
+            ud["artists"].append(recommender.artist(int(artist)).name)
             query.answer(text["artist_added"])
         buttons = [
             [IButton(text["add_artist"], callback_data="input")],
