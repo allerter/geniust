@@ -5,9 +5,12 @@ name: build
 
 on:
   push:
-    branches: [ master, development ]
+    branches: [ master, develop ]
+    tags:        
+      - '**'
   pull_request:
     branches: [ master ]
+
 
 jobs:
   build-and-test:
@@ -16,6 +19,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Compare version with git tag
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        file_version=$(cat geniust/VERSION)
+        tag_version=${GITHUB_REF#refs/*/}
+        if test "$file_version" = "$tag_version";
+        then
+          echo "Versions match! >> $file_version"
+        else
+          echo "Versions don't match! >> FILE=$file_version != TAG=$tag_version"
+          exit 1
+        fi
+
     - name: Set up Python 3.8
       uses: actions/setup-python@v2
       with:
@@ -44,6 +60,7 @@ jobs:
         SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
         SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+        RECOMMENDER_TOKEN: TEST_TOKEN
       run: tox
 
     - name: Archive code coverage results
@@ -80,10 +97,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: code-coverage-report
-
-      - name: Check coverage file
-        run: |
-          ls
 
       - name: Upload results to Code Climate
         run: |

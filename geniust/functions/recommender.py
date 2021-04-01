@@ -1,18 +1,8 @@
 import logging
-import difflib
 from os.path import join
 from itertools import zip_longest
-from typing import List, Optional, Dict
-from dataclasses import dataclass, asdict
-
+from typing import List, Optional, Iterable, Iterator
 import tekore as tk
-import lyricsgenius as lg
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-from sklearn.metrics.pairwise import linear_kernel
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
@@ -28,306 +18,9 @@ from geniust.constants import (
     SPOTIFY_CLIENT_SECRET,
 )
 from geniust.utils import log
-from geniust import api, get_user, data_path, utils
+from geniust import get_user, data_path, utils
 
 logger = logging.getLogger("geniust")
-
-# based on https://www.statista.com/statistics/253915/favorite-music-genres-in-the-us/
-genres_by_age_group: Dict[int, List[str]] = {
-    19: ["pop", "rap", "rock"],
-    24: ["pop", "rap", "rock"],
-    34: ["pop", "rock", "rap", "country", "traditional"],
-    44: ["pop", "rock", "rap", "country", "traditional"],
-    54: ["rock", "pop", "country", "traditional"],
-    64: ["rock", "country", "traditional"],
-    65: ["rock", "country", "traditional"],
-}
-
-
-@dataclass
-class Song:
-    """A Song from the Recommender"""
-
-    id: int
-    artist: str
-    name: str
-    genres: list
-    id_spotify: str = None
-    isrc: str = None
-    cover_art: str = None
-    preview_url: str = None
-    download_url: str = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    def __repr__(self):
-        return f"Song(id={self.id})"
-
-
-class Recommender:
-    # classical - country - instrumental - persian - pop - rap - rnb - rock -traditional
-    def __init__(self):
-        # Read tracks
-        en = pd.read_csv(join(data_path, "tracks en.csv"))
-        fa = pd.read_csv(join(data_path, "tracks fa.csv"))
-        self.songs: pd.DataFrame = pd.merge(
-            en.drop(columns=["download_url"]), fa, how="outer"
-        )
-        self.songs.replace({np.NaN: None}, inplace=True)
-
-        # Read artists
-        en_artists = pd.read_csv(join(data_path, "artists en.csv"))
-        fa_artists = pd.read_csv(join(data_path, "artists fa.csv"))
-        self.artists: pd.DataFrame = pd.merge(en_artists, fa_artists, how="outer")
-        self.artists["description"] = self.artists["description"].str.replace(r"\n", "")
-        self.artists.description.fillna("", inplace=True)
-
-        self.artists_names = self.artists.name.to_list()
-        self.lowered_artists_names = {p.lower(): p for p in self.artists_names}
-        # No duplicate values
-        # no_duplicates = songs['id_spotify'].dropna().duplicated(
-        # ).value_counts().all(False)
-        # assert no_duplicates, True
-
-        self.songs["genres"] = self.songs["genres"].str.split(",")
-        songs_copy = self.songs.copy()
-        # One-hot encode genres
-        mlb = MultiLabelBinarizer(sparse_output=True)
-        df = songs_copy.join(
-            pd.DataFrame.sparse.from_spmatrix(
-                mlb.fit_transform(songs_copy.pop("genres")),
-                index=songs_copy.index,
-                columns=mlb.classes_,
-            )
-        )
-        self.binarizer = mlb
-        # Convert df to numpy array
-        numpy_df = df.drop(
-            columns=[
-                "id_spotify",
-                "artist",
-                "name",
-                "download_url",
-                "preview_url",
-                "isrc",
-                "cover_art",
-            ]
-        )
-        self.genres = list(numpy_df.columns)
-        self.genres_by_number = {}
-        for i, genre in enumerate(self.genres):
-            self.genres_by_number[i] = genre
-        # dtype=[(genre, int) for genre in self.genres]
-        self.numpy_songs = numpy_df.to_numpy()
-
-        with open(join(data_path, "persian_stopwords.txt"), "r", encoding="utf8") as f:
-            PERSIAN_STOP_WORDS = f.read().strip().split()
-        stop_words = list(ENGLISH_STOP_WORDS) + PERSIAN_STOP_WORDS
-        self.tfidf = TfidfVectorizer(analyzer="word", stop_words=stop_words)
-        self.tfidf = self.tfidf.fit_transform(self.artists["description"])
-
-        self.genres_by_age_group: Dict[int, List[str]] = {
-            19: ["pop", "rap", "rock"],
-            24: ["pop", "rap", "rock"],
-            34: ["pop", "rock", "rap", "country", "traditional"],
-            44: ["pop", "rock", "rap", "country", "traditional"],
-            54: ["rock", "pop", "country", "traditional"],
-            64: ["rock", "country", "traditional"],
-            65: ["rock", "country", "traditional"],
-        }
-
-    def genres_by_age(self, age: int) -> List[str]:
-        age_groups = list(self.genres_by_age_group.keys())
-        for age_group in age_groups:
-            if age >= age_group:
-                break
-        else:
-            age_group = age_groups[-1]
-        return self.genres_by_age_group[age_group]
-
-    @log
-    def preferences_from_platform(
-        self, token: str, platform: str
-    ) -> Optional[Preferences]:
-        if platform == "genius":
-            user_genius = api.GeniusT(token)
-            account = user_genius.account()["user"]
-            pyongs = user_genius.user_pyongs(account["id"])
-            pyonged_songs = []
-            for contribution in pyongs["contribution_groups"]:
-                pyong = contribution["contributions"][0]
-                if pyong["pyongable_type"] == "song":
-                    api_path = pyong["pyongable"]["api_path"]
-                    pyonged_songs.append(int(api_path[api_path.rfind("/") + 1 :]))
-
-            public_genius = lg.PublicAPI(timeout=10)
-
-            genres = []
-            artists = []
-            for song_id in pyonged_songs:
-                song = public_genius.song(song_id)["song"]
-                artists.append(song["primary_artist"]["name"])
-                for tag in song["tags"]:
-                    for genre in self.genres:
-                        if genre in tag:
-                            genres.append(genre)
-        else:
-            user_spotify = tk.Spotify(token, sender=tk.RetryingSender())
-            top_tracks = user_spotify.current_user_top_tracks("short_term")
-            top_artists = user_spotify.current_user_top_artists(limit=5)
-            user_spotify.close()
-
-            # Add track genres to genres list
-            genres = []
-            for track in top_tracks.items:
-                track_genres = api.lastfm(
-                    "Track.getTopTags",
-                    {"artist": track.artists[0], "track": track.name},
-                )
-                if "toptags" in track_genres:
-                    for tag in track_genres["toptags"]["tag"]:
-                        for genre in self.genres:
-                            if genre in tag:
-                                genres.append(genre)
-
-            artists = [artist.name for artist in top_artists.items]
-
-        # get count of genres and only keep genres with a >=30% occurance
-        unique_elements, counts_elements = np.unique(genres, return_counts=True)
-        counts_elements = counts_elements.astype(float)
-        counts_elements /= counts_elements.sum()
-        genres = np.asarray((unique_elements, counts_elements))
-        genres = genres[0][genres[1] >= 0.30].tolist()
-
-        if genres:
-            # find user artists in recommender artists
-            found_artists = []
-            for artist in artists:
-                found_artist = self.artists[self.artists.name == artist].name.values
-                if found_artist.size > 0:
-                    found_artists.append(found_artist[0])
-        else:
-            found_artists = []
-
-        return Preferences(genres, found_artists) if genres else None
-
-    def search_artist(self, artist: str) -> List[str]:
-        artist = artist.lower()
-        matches = difflib.get_close_matches(artist, self.lowered_artists_names.keys())
-        return [self.lowered_artists_names[m] for m in matches]
-
-    def binarize(self, genres: List[str]) -> np.ndarray:
-        return self.binarizer.transform([genres]).toarray()[0]
-
-    def shuffle(
-        self,
-        user_preferences: Preferences,
-        # language: str = 'any',
-        song_type="any",
-    ) -> List[Song]:
-        user_genres = self.binarize(user_preferences.genres)
-        persian_index = np.where(self.binarize(["persian"]) == 1)[0][0]
-        persian_user = True if user_genres[persian_index] == 1 else False
-        similar = []
-        for index, song in enumerate(self.numpy_songs):
-            # skip song if it doesn't match user language
-            if bool(song[persian_index]) != persian_user:
-                continue
-            for i, genre in enumerate(song):
-                if i != persian_index and genre == 1 and user_genres[i] == 1:
-                    similar.append(index)
-                    break
-            # no need for language parameter since
-            # the first if statement enforeces the value of "persian" genre
-            #        if ((language == 'any')
-            #            or (language == 'en' and song[persian_index] == 0)
-            #                or (language == 'fa' and song[persian_index] == 1)):
-
-        # Randomly choose 20 songs from similar songs
-        # This is to avoid sending the same set of songs each time
-        if similar:
-            selected = np.random.choice(
-                similar,
-                20,
-            )  # TODO: set probability array
-        else:
-            return []
-
-        # sort songs by most similar song artists to user artists
-        user_artists = [
-            self.artists[self.artists.name == artist]
-            for artist in user_preferences.artists
-        ]
-        if user_artists:
-            song_artists = [
-                self.artists[self.artists.name == self.songs.loc[song].artist]
-                for song in selected
-            ]
-            cosine_similarities = []
-            user_tfifd = self.tfidf[[artist.index[0] for artist in user_artists], :]
-            for index, artist in enumerate(song_artists):
-                cosine_similarity = (
-                    linear_kernel(self.tfidf[artist.index[0]], user_tfifd)
-                    .flatten()
-                    .sum()
-                )
-                if artist.name.values[0] in [x.name.values[0] for x in user_artists]:
-                    cosine_similarity += 1
-                cosine_similarities.append((index, cosine_similarity))
-            cosine_similarities.sort(key=lambda x: x[1], reverse=True)
-            hits = []
-            for row in cosine_similarities:
-                song = self.song(selected[row[0]])
-                if song_type == "any":
-                    hits.append(song)
-                elif song_type == "any_file":
-                    if song.preview_url or song.download_url:
-                        hits.append(song)
-                elif song_type == "preview":
-                    if song.preview_url:
-                        hits.append(song)
-                elif song_type == "full":
-                    if song.download_url:
-                        hits.append(song)
-                elif song_type == "preview,full":
-                    if song.preview_url and song.download_url:
-                        hits.append(song)
-                if len(hits) == 5:
-                    break
-        else:
-            hits = []
-            for index in selected:
-                song = self.song(index)
-                if song_type == "any":
-                    hits.append(song)
-                elif song_type == "any_file":
-                    if song.preview_url or song.download_url:
-                        hits.append(song)
-                elif song_type == "preview":
-                    if song.preview_url:
-                        hits.append(song)
-                elif song_type == "full":
-                    if song.download_url:
-                        hits.append(song)
-                elif song_type == "preview,full":
-                    if song.preview_url and song.download_url:
-                        hits.append(song)
-                if len(hits) == 5:
-                    break
-
-        return hits
-
-    def song(self, id: int = None, id_spotify: str = None) -> Song:
-        if not any([id is not None, id_spotify]):
-            raise AssertionError("Must supply either id or id_spotify.")
-        if id:
-            row = self.songs.iloc[id]
-        else:
-            rows = self.songs[self.songs.id_spotify == id_spotify]
-            id = rows.index[0]
-            row = rows.iloc[0]
-        return Song(id=int(id), **row.to_dict())
 
 
 @log
@@ -340,7 +33,7 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     photo = join(data_path, "shuffle.jpg")
 
-    caption = text["body"].format(len(recommender.songs))
+    caption = text["body"].format(recommender.num_songs)
 
     buttons = [
         [IButton(text["enter_preferences"], callback_data="shuffle_manual")],
@@ -467,10 +160,28 @@ def select_genres(update: Update, context: CallbackContext):
         buttons.append(IButton(button_text, callback_data=f"genre_{id}"))
 
     # 3 genres in each row
-    def grouper(n, iterable, fillvalue=None):
+    def grouper(
+        n: int, iterable: Iterable, fillvalue: Optional[str] = None
+    ) -> Iterator:
+        """Groups iterable values by n
+
+        Limits buttons to n button in every row
+        and if there are any remaining spaces
+        left in the last group, fills them with
+        the value of fillvalue.
+
+        Args:
+            n ([type]): [description]
+            iterable (Iterable): An iterable to be grouped.
+            fillvalue ([type], optional): Value to fill
+            remaining items of group. Defaults to None.
+
+        Returns:
+            Iterator: Iterator of grouped items.
+        """
         # from https://stackoverflow.com/a/3415150
         args = [iter(iterable)] * n
-        return zip_longest(fillvalue=IButton("⬛️", callback_data="None"), *args)
+        return zip_longest(fillvalue=IButton(fillvalue, callback_data="None"), *args)
 
     keyboard_buttons = []
     for button_set in grouper(3, buttons):
@@ -521,19 +232,16 @@ def select_artists(update: Update, context: CallbackContext):
 
     if update.message:
         input_text = update.message.text
-        matches = difflib.get_close_matches(
-            input_text,
-            recommender.artists.name.to_list(),
-            n=5,
-        )
+        matches = recommender.search_artist(input_text)
         if not matches:
             update.message.reply_text(text["no_match"])
             return SELECT_ARTISTS
 
         buttons = []
         for match in matches:
-            index = recommender.artists[recommender.artists["name"] == match].index[0]
-            buttons.append([IButton(match, callback_data=f"artist_{index}")])
+            if match.name.lower() == input_text.lower():
+                index = match.id
+                buttons.append([IButton(match, callback_data=f"artist_{index}")])
 
         buttons.append([IButton(text["not_in_matches"], callback_data="artist_none")])
         update.message.reply_text(
@@ -551,7 +259,7 @@ def select_artists(update: Update, context: CallbackContext):
     else:
         _, artist = query.data.split("_")
         if artist != "none":
-            ud["artists"].append(recommender.artists.name.loc[int(artist)])
+            ud["artists"].append(recommender.artist(int(artist)).name)
             query.answer(text["artist_added"])
         buttons = [
             [IButton(text["add_artist"], callback_data="input")],
@@ -622,6 +330,7 @@ def process_preferences(update: Update, context: CallbackContext):
 @log
 @get_user
 def reset_shuffle(update: Update, context: CallbackContext) -> int:
+    """Resets user's preferences"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["reset_shuffle"]
     chat_id = update.effective_chat.id

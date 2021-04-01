@@ -4,11 +4,13 @@ import re
 import os
 import asyncio
 import queue
-import time
+from json.decoder import JSONDecodeError
 from typing import Any, Tuple, Optional, Union, List, Dict
+from dataclasses import dataclass
 
 import requests
 import telethon
+from requests.exceptions import HTTPError, Timeout
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius, PublicAPI
 from lyricsgenius.utils import clean_str
@@ -17,63 +19,16 @@ from telethon.sessions import StringSession
 from telethon import types
 
 from geniust.constants import (
+    RECOMMENDER_TOKEN,
     TELETHON_API_ID,
+    Preferences,
     TELETHON_API_HASH,
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN,
-    LASTFM_API_KEY,
 )
 
 logger = logging.getLogger("geniust")
-
-
-def lastfm(method: str, parameters_input: dict) -> dict:  # pragma: no cover
-    api_key_lastfm = LASTFM_API_KEY
-    user_agent_lastfm = "GeniusT"
-    api_url_lastfm = "http://ws.audioscrobbler.com/2.0/"
-    # Last.fm API header and default parameters
-    headers = {"user-agent": user_agent_lastfm}
-    parameters = {"method": method, "api_key": api_key_lastfm, "format": "json"}
-    parameters.update(parameters_input)
-    # Responses and error codes
-    state = False
-    while state is False:
-        try:
-            response = requests.get(
-                api_url_lastfm, headers=headers, params=parameters, timeout=10
-            )
-            if response.status_code == 200:
-                logger.debug(
-                    ("Last.fm API: 200" " - Response was successfully received.")
-                )
-                state = True
-            elif response.status_code == 401:
-                logger.debug(
-                    ("Last.fm API: 401" " - Unauthorized. Please check your API key.")
-                )
-            elif response.status_code == 429:
-                logger.debug(
-                    ("Last.fm API: 429" " - Too many requests. Waiting 60 seconds.")
-                )
-                time.sleep(5)
-                state = False
-            else:
-                logger.debug(
-                    (
-                        "Last.fm API: Unspecified error %s."
-                        " No response was received."
-                        " Trying again after 60 seconds..."
-                    ),
-                    response.status_code,
-                )
-                time.sleep(1)
-                state = False
-        except OSError as err:
-            logger.debug("Error: %s. Trying again...", str(err))
-            time.sleep(3)
-            state = False
-    return response.json()
 
 
 def get_channel() -> types.TypeInputPeer:
@@ -521,7 +476,12 @@ class GeniusT(Genius):
         return all_annotations
 
     def fetch(self, track: Dict[str, Any], include_annotations: bool) -> None:
-        """fetches song from Genius adds it to the artist object"""
+        """fetches song from Genius adds it to the artist objecty
+
+        Args:
+            track (Dict[str, Any]): Track dict including track information.
+            include_annotations (bool): True or False.
+        """
         song = track["song"]
 
         annotations: Dict[int, str] = {}
@@ -590,7 +550,16 @@ class GeniusT(Genius):
     def async_album_search(
         self, album_id: int, include_annotations: bool = False
     ) -> Dict[str, Any]:
-        """gets the album from Genius and returns a dictionary"""
+        """gets the album from Genius and returns a dictionary
+
+        Args:
+            album_id (int): Album ID.
+            include_annotations (bool, optional): Include annotations
+                in album. Defaults to False.
+
+        Returns:
+            Dict[str, Any]: Album data and lyrics.
+        """
         q: queue.Queue = queue.Queue(1)
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
@@ -600,3 +569,156 @@ class GeniusT(Genius):
         new_loop.run_until_complete(future)
         new_loop.close()
         return q.get()
+
+
+@dataclass
+class SimpleArtist:
+    """An artist without full info"""
+
+    id: int
+    name: str
+
+    def __repr__(self):
+        return f"SimpleArtist(id={self.id})"
+
+
+@dataclass
+class Artist(SimpleArtist):
+    """A Artist from the Recommender"""
+
+    description: str
+
+    def __repr__(self):
+        return f"Artist(id={self.id})"
+
+
+@dataclass
+class Song:
+    """A Song from the Recommender"""
+
+    id: int
+    artist: str
+    name: str
+    genres: List[str]
+    id_spotify: Optional[str]
+    isrc: Optional[str]
+    cover_art: Optional[str]
+    preview_url: Optional[str]
+    download_url: Optional[str]
+
+    def __repr__(self):
+        return f"Song(id={self.id})"
+
+
+class Recommender:
+    API_ROOT = "https://geniust-recommender.herokuapp.com/"
+
+    def __init__(
+        self, genres: Optional[List[str]] = None, num_songs: Optional[int] = None
+    ):
+        self._sender = Sender(self.API_ROOT, access_token=RECOMMENDER_TOKEN, retries=3)
+        self.num_songs: int = (
+            self._sender.request("songs/len")["len"] if num_songs is None else num_songs
+        )
+        self.genres: List[str] = (
+            self._sender.request("genres")["genres"] if genres is None else genres
+        )
+        self.genres_by_number = {}
+        for i, genre in enumerate(self.genres):
+            self.genres_by_number[i] = genre
+
+    def artist(self, id: int) -> Artist:
+        res = self._sender.request(f"artists/{id}")["artist"]
+        return Artist(**res)
+
+    def genres_by_age(self, age: int) -> List[str]:
+        return self._sender.request("genres", params={"age": age})["genres"]
+
+    def preferences_from_platform(
+        self, token: str, platform: str
+    ) -> Optional[Preferences]:
+        res = self._sender.request(
+            "preferences", params={"token": token, "platform": platform}
+        )["preferences"]
+        return Preferences(**res) if res["genres"] else None
+
+    def search_artist(self, q: str) -> List[SimpleArtist]:
+        res = self._sender.request("search/artists", params={"q": q})["hits"]
+        return [SimpleArtist(**x) for x in res]
+
+    def shuffle(self, pref: Preferences) -> List[Song]:
+        params = {"genres": ",".join(pref.genres)}
+        artists = ",".join(pref.artists)
+        if artists:
+            params["artists"] = artists
+        res = self._sender.request(
+            "recommendations",
+            params=params,
+        )["recommendations"]
+        return [Song(**x) for x in res]
+
+    def song(self, id: int) -> Song:
+        res = self._sender.request(f"songs/{id}")["song"]
+        return Song(**res)
+
+
+class Sender:
+    """Sends requests to the GeniusT Recommender."""
+
+    def __init__(
+        self,
+        api_root: str,
+        access_token: str = None,
+        timeout: int = 5,
+        retries: int = 0,
+    ):
+        self.api_root = api_root
+        self._session = requests.Session()
+        self._session.headers = {
+            "application": "GeniusT TelegramBot",
+            "User-Agent": "https://github.com/allerter/geniust",
+        }  # type: ignore
+        if access_token:
+            self._session.headers["Authorization"] = f"Bearer {access_token}"
+        self.timeout: int = timeout
+        self.retries: int = retries
+
+    def request(
+        self, path: str, method: str = "GET", params: dict = None, **kwargs
+    ) -> dict:
+        """Makes a request to Genius."""
+        uri = self.api_root
+        uri += path
+        params = params if params else {}
+
+        # Make the request
+        response = None
+        tries = 0
+        while response is None and tries <= self.retries:
+            tries += 1
+            try:
+                response = self._session.request(
+                    method, uri, timeout=self.timeout, params=params, **kwargs
+                )
+                response.raise_for_status()
+            except Timeout as e:  # pragma: no cover
+                error = "Request timed out:\n{e}".format(e=e)
+                logger.warn(error)
+                if tries > self.retries:
+                    raise Timeout(error)
+            except HTTPError as e:  # pragma: no cover
+                error = get_description(e)
+                if response.status_code < 500 or tries > self.retries:
+                    raise HTTPError(response.status_code, error)
+        return response.json()
+
+
+def get_description(e: HTTPError) -> str:  # pragma: no cover
+    error = str(e)
+    try:
+        res = e.response.json()
+    except JSONDecodeError:
+        res = {}
+    description = res["detail"] if res.get("detail") else res.get("error_description")
+    error += "\n{}".format(description) if description else ""
+    return error

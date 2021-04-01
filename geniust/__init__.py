@@ -9,7 +9,6 @@ import tekore as tk
 from lyricsgenius import OAuth2
 import yaml
 
-from geniust.db import Database
 from geniust.constants import (
     GENIUS_CLIENT_ID,
     GENIUS_REDIRECT_URI,
@@ -20,8 +19,6 @@ from geniust.constants import (
 )
 
 username: str = "genius_the_bot"  # Bot(BOT_TOKEN).get_me().username
-
-database = Database("user_data", "user_preferences")
 
 RT = TypeVar("RT")
 
@@ -43,7 +40,7 @@ def get_user(func: Callable[..., RT]) -> Callable[..., RT]:
         else:
             chat_id = update.inline_query.from_user.id
         if "bot_lang" not in context.user_data:
-            database.user(chat_id, context.user_data)
+            context.bot_data["db"].user(chat_id, context.user_data)
         result = func(*args, **kwargs)
         return result
 

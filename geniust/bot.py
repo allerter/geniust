@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import tekore as tk
 from notifiers.logging import NotificationHandler
-from telegram import Update
+from telegram import Update, Message
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -33,14 +33,15 @@ from geniust.functions import (
     annotation,
     user,
 )
-from geniust import get_user, texts, auths, database, username
+from geniust import get_user, texts, auths, username
 from geniust.utils import log
 from geniust.db import Database
-from geniust.api import GeniusT
+from geniust.api import GeniusT, Recommender
 from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
+    DATABASE_URL,
     TYPING_ALBUM,
     TYPING_SONG,
     SERVER_PORT,
@@ -64,7 +65,6 @@ from geniust.constants import (
     END,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
-    Preferences,
 )
 
 # Enable logging
@@ -79,14 +79,23 @@ logging.getLogger().addHandler(hdlr)
 
 
 class NewShuffleUser(MessageFilter):
-    def __init__(self, user_data):
+    def __init__(self, database, user_data):
         self.user_data = user_data
+        self.database = database
 
     @log
-    def filter(self, message):
+    def filter(self, message: Message) -> bool:
+        """determines whether user should enter conv or not
+
+        Args:
+            message (telegram.Message): Message from user.
+
+        Returns:
+            bool: True if user has no preferences, else False.
+        """
         chat_id = message.from_user.id
         if "bot_lang" not in self.user_data[chat_id]:
-            database.user(chat_id, self.user_data[chat_id])
+            self.database.user(chat_id, self.user_data[chat_id])
 
         return True if not self.user_data[chat_id]["preferences"] else False
 
@@ -290,6 +299,7 @@ def main():
 
     dp = updater.dispatcher
     dp.bot_data["texts"]: Dict[Any, str] = texts
+    database = Database(DATABASE_URL.replace("postgres", "postgresql+psycopg2"))
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
     dp.bot_data["spotify"]: tk.Spotify = tk.Spotify(
@@ -297,7 +307,7 @@ def main():
             SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
         ).request_client_token()
     )
-    dp.bot_data["recommender"] = recommender.Recommender()
+    dp.bot_data["recommender"] = Recommender()
 
     my_states = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),
@@ -574,12 +584,12 @@ def main():
             CommandHandler(
                 "shuffle",
                 recommender.welcome_to_shuffle,
-                NewShuffleUser(user_data=dp.user_data),
+                NewShuffleUser(database=database, user_data=dp.user_data),
             ),
             CallbackQueryHandler(
                 recommender.welcome_to_shuffle,
                 "shuffle",
-                pattern=NewShuffleUser(user_data=dp.user_data),
+                pattern=NewShuffleUser(database=database, user_data=dp.user_data),
             ),
             CommandHandler("shuffle", recommender.display_recommendations),
             CallbackQueryHandler(recommender.reset_shuffle, pattern=r"^shuffle_reset$"),

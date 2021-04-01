@@ -1,38 +1,171 @@
 import logging
 from functools import wraps
-from typing import Any, List, TypeVar, Callable, Optional, Tuple, Union, Dict
+from typing import TypeVar, Dict, Callable, Optional, Tuple, Union, List, Any
 
-import psycopg2
-
-from geniust.constants import DATABASE_URL, Preferences
 from geniust.utils import log
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Boolean,
+    BigInteger,
+    String,
+)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.types import TypeDecorator
 
-logging.getLogger("geniust").setLevel(logging.DEBUG)
-
+logger = logging.getLogger("geniust")
+Base = declarative_base()
 RT = TypeVar("RT")
 
 
-def get_cursor(func: Callable[..., RT]) -> Callable[..., RT]:
-    """Returns a DB cursor for the wrapped functions"""
+def init_db(db_uri: str) -> scoped_session:
+    """initializes db using db_uri
+
+    Args:
+        db_uri (str): URI of database.
+
+    Returns:
+        scoped_session: Session factory.
+    """
+    engine = create_engine(db_uri)
+    Base.metadata.create_all(engine)
+    return scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
+
+
+def get_session(func: Callable[..., RT]) -> Callable[..., RT]:
+    """Returns a DB session for the wrapped functions"""
 
     @wraps(func)
     def wrapper(self, *args, **kwargs) -> RT:
-        with psycopg2.connect(DATABASE_URL, sslmode="require") as con:
-            with con.cursor() as cursor:
-                return func(self, *args, **kwargs, cursor=cursor)
+        with self.Session() as session:
+            try:
+                res = func(
+                    self,
+                    *args,
+                    session=session,
+                    **kwargs,
+                )
+            except Exception as e:
+                session.rollback()
+                raise e
+            else:
+                session.commit()
+            return res
 
     return wrapper
+
+
+class DBList(TypeDecorator):
+    impl = String
+
+    def __init__(self, sep: str = ",", **kwargs):
+        super().__init__(**kwargs)
+        self.sep = sep
+
+    def process_bind_param(
+        self, value: Union[Tuple[str, ...], List[str]], dialect: Any
+    ) -> str:
+        """processes values for database
+
+        Args:
+            value (Union[Tuple[str, ...], List[str]]): List or tuple of
+                strings which contain either genres or artists.
+            dialect (Any): DBAPI dialect.
+
+        Returns:
+            str: self.sep seperated string for insertion into database.
+        """
+        return f"{self.sep}".join(value)
+
+    def process_result_value(self, value: str, dialect: Any) -> List[str]:
+        """processes values returned from database
+
+        Args:
+            value (str): self.sep seperated values.
+            dialect (Any): DBAPI dialect.
+
+        Returns:
+            List[str]: List of artists or genres.
+        """
+        return value.split(self.sep) if value else []
+
+
+class Users(Base):
+    __tablename__ = "user_data"
+    chat_id = Column(BigInteger, primary_key=True)
+    include_annotations = Column(Boolean)
+    lyrics_lang = Column(String)
+    bot_lang = Column(String)
+    genius_token = Column(String)
+    spotify_token = Column(String)
+
+    def __init__(
+        self,
+        chat_id: int,
+        include_annotations: bool,
+        lyrics_lang: str,
+        bot_lang: str,
+        genius_token: Optional[str],
+        spotify_token: Optional[str],
+    ):
+        self.chat_id = chat_id
+        self.include_annotations = include_annotations
+        self.lyrics_lang = lyrics_lang
+        self.bot_lang = bot_lang
+        self.genius_token = genius_token
+        self.spotify_token = spotify_token
+
+    def __repr__(self):
+        return (
+            "User(chat_id={chat_id!r}, "
+            "include_annotations={include_annotations!r}, "
+            "lyrics_lang={lyrics_lang!r}, "
+            "bot_lang={bot_lang!r}, "
+            "genius_token={genius_token!r}, "
+            "spotify_token={spotify_token!r})"
+        ).format(
+            chat_id=self.chat_id,
+            include_annotations=self.include_annotations,
+            lyrics_lang=self.lyrics_lang,
+            bot_lang=self.bot_lang,
+            genius_token=True if self.genius_token else False,
+            spotify_token=True if self.spotify_token else False,
+        )
+
+
+class Preferences(Base):
+    __tablename__ = "user_preferences"
+    chat_id = Column(BigInteger, primary_key=True)
+    genres = Column(DBList(sep=","))
+    artists = Column(DBList(sep=","))
+
+    def __init__(
+        self,
+        genres: Tuple[str, ...],
+        artists: Tuple[str, ...],
+        chat_id: Optional[int] = None,
+    ):
+        self.chat_id = chat_id
+        self.genres = genres
+        self.artists = artists
+
+    def __repr__(self):
+        return "Preferences(Genres=({genres}), Artists=({artists}))".format(
+            genres=", ".join(self.genres),
+            artists=", ".join(self.artists),
+        )
 
 
 class Database:
     """Database class for all communications with the database."""
 
-    def __init__(self, data_table, preferences_table):
-        self.preferences_table = preferences_table
-        self.data_table = data_table
+    def __init__(self, db_uri: str):
+        self.Session = init_db(db_uri)
 
     @log
-    def user(self, chat_id: int, user_data: dict) -> None:
+    @get_session
+    def user(self, chat_id: int, user_data: dict, session=None) -> None:
         """Check for user in database, and create one if there's none
 
         This method will try to get user data from database and if it
@@ -43,187 +176,75 @@ class Database:
             chat_id (int): Chat ID.
             user_data (dict): User data dictionary to update.
         """
-        res = self.select(chat_id)
-        if res:
+        user = session.get(Users, chat_id)
+        if user:
             preferences = self.get_preferences(chat_id)
-            res.update({"preferences": preferences})
-            user_data.update(res)
         else:
             # create user data with default preferences
-            include_annotations = True
-            lyrics_language = "English + Non-English"
-            bot_language = "en"
-            genius_token = None
-            spotify_token = None
-            preferences = None
-            user_data.update(
-                {
-                    "include_annotations": include_annotations,
-                    "lyrics_lang": lyrics_language,
-                    "bot_lang": bot_language,
-                    "genius_token": genius_token,
-                    "spotify_token": spotify_token,
-                    "preferences": preferences,
-                }
+            user = Users(
+                chat_id=chat_id,
+                include_annotations=True,
+                lyrics_lang="English + Non-English",
+                bot_lang="en",
+                genius_token=None,
+                spotify_token=None,
             )
-            self.insert(chat_id, include_annotations, lyrics_language, bot_language)
-            logging.debug("created user")
+            preferences = None
+            session.add(user)
+            logger.debug("created user")
+        user_data.update(
+            {
+                "include_annotations": user.include_annotations,
+                "lyrics_lang": user.lyrics_lang,
+                "bot_lang": user.bot_lang,
+                "genius_token": user.genius_token,
+                "spotify_token": user.spotify_token,
+                "preferences": preferences,
+            }
+        )
 
-    @log
-    @get_cursor
-    def insert(
-        self,
-        chat_id: int,
-        *data: Tuple[bool, str, str, Optional[str]],
-        table: str = "user_data",
-        cursor: Any,
+    @get_session
+    def update_include_annotations(
+        self, chat_id: int, data: bool, session=None
     ) -> None:
-        """Inserts data into database.
-
-        Args:
-            chat_id (int): Chat ID.
-            data (tuple): data fields for user.
-            table (str): table to insert into.
-            cursor (Any): database cursor.
-        """
-        values = (chat_id, *data)
-        if table == self.data_table:
-            query = f"""INSERT INTO {table} VALUES (%s, %s, %s, %s);"""
-        else:
-            query = f"""INSERT INTO {table} VALUES (%s, %s, %s);"""
-
-        cursor.execute(query, values)
-
-    @log
-    @get_cursor
-    def upsert(
-        self, chat_id: int, *data: List, table: str = "user_data", cursor: Any
-    ) -> None:
-        """Inserts data if chat_id is not duplicate, otherwise updates.
-
-        Args:
-            chat_id (int): Chat ID.
-            data (tuple): data fields for user.
-            table (str): table to insert into.
-            cursor (Any): database cursor.
-        """
-        values = (chat_id, *data)
-        if table == self.data_table:
-            query = f"""INSERT INTO {table} VALUES (%s, %s, %s, %s)
-              ON CONFLICT (chat_id) DO UPDATE
-              SET include_annotations = excluded.include_annotations,
-                  lyrics_lang = excluded.lyrics_lang
-                  bot_lang = excluded.bot_lang;"""
-        else:
-            query = f"""INSERT INTO {table} VALUES (%s, %s, %s)
-              ON CONFLICT (chat_id) DO UPDATE
-              SET genres = excluded.genres,
-                  artists = excluded.artists;"""
-
-        cursor.execute(query, values)
-
-    @log
-    @get_cursor
-    def select(
-        self, chat_id: int, cursor: Any, column: str = "*", table: str = "user_data"
-    ) -> Dict[str, Any]:
-        """Selects values from table.
-
-        Args:
-            chat_id (int): Chat ID.
-            cursor (Any): Database cursor.
-            column (str, optional): Column to get value from.
-                Defaults to all columns ('*').
-
-        Returns:
-            Dict[str, Any]: User data.
-        """
-        query = f"""
-        SELECT {column}
-        FROM {table}
-        WHERE chat_id = {chat_id};
-        """
-
-        # connect to database
-        cursor.execute(query)
-        res = cursor.fetchone()
-        if res is not None:
-            if column == "*":
-                assert table, self.data_table
-                res = {
-                    "chat_id": res[0],
-                    "include_annotations": res[1],
-                    "lyrics_lang": res[2],
-                    "bot_lang": res[3],
-                    "genius_token": res[4],
-                    "spotify_token": res[5],
-                }
-            elif len(column.split(",")) > 1:
-                values = {}
-                for i, column in enumerate(column.split(",")):
-                    values[column] = res[i]
-                res = values
-            else:
-                res = {column: res[0]}
-
-        return res
-
-    @log
-    @get_cursor
-    def update(
-        self,
-        chat_id: int,
-        data: Any,
-        update: str,
-        cursor: Any,
-        table: str = "user_data",
-    ):
-        """Updates user data.
-
-        Args:
-            chat_id (int): Chat ID.
-            data (Union[bool, str, None]): New data.
-            update (str): Column to update.
-            cursor (Any): Database cursor.
-        """
-        if table == "user_data":
-            query = f"UPDATE {table} SET {update} = %s WHERE chat_id = {chat_id};"
-        else:
-            query = f"UPDATE {table} SET genres = %s, artists = %s WHERE chat_id = {chat_id};"
-
-        values = (data,) if not isinstance(data, (list, tuple)) else data
-
-        # connect to database
-        cursor.execute(query, values)
-
-    def update_include_annotations(self, chat_id: int, data: bool) -> None:
         """Updates inclusing annotations in lyrics.
 
         Args:
             chat_id (int): Chat ID.
             data (bool): True or False.
         """
-        self.update(chat_id, data, "include_annotations")
+        session.query(Users).filter(Users.chat_id == chat_id).update(
+            {Users.include_annotations: data}, synchronize_session=False
+        )
 
-    def update_lyrics_language(self, chat_id: int, data: str) -> None:
+    @get_session
+    def update_lyrics_language(self, chat_id: int, data: str, session=None) -> None:
         """Updates the language of the lyrics.
 
         Args:
             chat_id (int): Chat ID.
             data (str): 'English', 'Non-English' or 'English + Non-English'.
         """
-        self.update(chat_id, data, "lyrics_lang")
+        session.query(Users).filter(Users.chat_id == chat_id).update(
+            {Users.lyrics_lang: data}, synchronize_session=False
+        )
 
-    def update_bot_language(self, chat_id: int, data: str) -> None:
+    @get_session
+    def update_bot_language(self, chat_id: int, data: str, session=None) -> None:
         """Updates the language of the bot.
 
         Args:
             chat_id (int): Chat ID.
             data (str): 'en', 'fa' or etc (ISO 639-1 codes).
         """
-        self.update(chat_id, data, "bot_lang")
+        session.query(Users).filter(Users.chat_id == chat_id).update(
+            {Users.bot_lang: data}, synchronize_session=False
+        )
 
-    def update_token(self, chat_id: int, data: str, platform: str) -> None:
+    @get_session
+    def update_token(
+        self, chat_id: int, data: str, platform: str = None, session=None
+    ) -> None:
         """Updates user's token.
 
         Args:
@@ -232,9 +253,12 @@ class Database:
             platform (str): Platform token to update (e.g. genius).
         """
         column = f"{platform}_token"
-        self.update(chat_id, data, column)
+        session.query(Users).filter(Users.chat_id == chat_id).update(
+            {column: data}, synchronize_session=False
+        )
 
-    def delete_token(self, chat_id: int, platform: str) -> None:
+    @get_session
+    def delete_token(self, chat_id: int, platform: str = None, session=None) -> None:
         """Removes user's token from database.
 
         Args:
@@ -242,9 +266,12 @@ class Database:
             platform (str): Platform token to delete (e.g. genius).
         """
         column = f"{platform}_token"
-        self.update(chat_id, None, column)
+        session.query(Users).filter(Users.chat_id == chat_id).update(
+            {column: None}, synchronize_session=False
+        )
 
-    def get_token(self, chat_id: int, platform: str) -> str:
+    @get_session
+    def get_token(self, chat_id: int, platform: str, session=None) -> str:
         """Gets user's token from database.
 
         Args:
@@ -255,20 +282,32 @@ class Database:
             str: Genius user token.
         """
         column = f"{platform}_token"
-        return self.select(chat_id, column=column).get(column)  # type: ignore
+        return (
+            session.query(getattr(Users, column))
+            .filter(Users.chat_id == chat_id)
+            .one()[0]
+        )
 
-    def get_tokens(self, chat_id: int) -> Dict[str, Any]:
+    @get_session
+    def get_tokens(self, chat_id: int, session=None) -> Dict[str, Optional[str]]:
         """Gets user's tokens from database.
 
         Args:
             chat_id (int): Chat ID.
 
         Returns:
-            str: Genius user token.
+            Dict[str, Optional[str]]: Dict with two keys.
+                If key value is None, that token is not available.
         """
-        return self.select(chat_id, column="genius_token,spotify_token")  # type: ignore
+        res = (
+            session.query(Users.genius_token, Users.spotify_token)
+            .filter(Users.chat_id == chat_id)
+            .one()
+        )
+        return dict(genius_token=res[0], spotify_token=res[1])
 
-    def get_language(self, chat_id: int) -> str:
+    @get_session
+    def get_language(self, chat_id: int, session=None) -> str:
         """Gets user's bot language.
 
         Args:
@@ -277,27 +316,54 @@ class Database:
         Returns:
             str: 'en', 'fa' or etc (ISO 639-1 codes).
         """
-        return self.select(chat_id, column="bot_lang").get("bot_lang")  # type: ignore
+        return session.query(Users.bot_lang).filter(Users.chat_id == chat_id).one()[0]
 
-    def get_preferences(self, chat_id: int) -> Optional[Preferences]:
-        res = self.select(
-            chat_id, column="genres,artists", table=self.preferences_table
-        )
+    @get_session
+    def get_preferences(self, chat_id: int, session=None) -> Optional[Preferences]:
+        """returns user's preferences
 
-        if res is None or not res["genres"]:
-            return None
+        Args:
+            chat_id (int): Chat ID.
+
+        Returns:
+            Optional[Preferences]: User's preferences if user has some, else None.
+        """
+        return session.get(Preferences, chat_id)
+
+    @get_session
+    def update_preferences(
+        self, chat_id: int, user_preferences: Preferences, session=None
+    ) -> None:
+        """Upserts user preferences
+
+        If user has preferences, updates them. Otherwise creates new preferences
+        entry for user.
+
+        Args:
+            chat_id (int): Chat ID.
+            user_preferences (Preferences): User preferences.
+        """
+        pref = session.get(Preferences, chat_id)
+        if pref is None:
+            preferences = Preferences(
+                chat_id=chat_id,
+                genres=user_preferences.genres,
+                artists=user_preferences.artists,
+            )
+            session.add(preferences)
         else:
-            return Preferences(res["genres"], res["artists"])
+            update = dict(
+                genres=user_preferences.genres, artists=user_preferences.artists
+            )
+            session.query(Preferences).filter(Preferences.chat_id == chat_id).update(
+                update, synchronize_session=False
+            )
 
-    def update_preferences(self, chat_id: int, user_preferences: Preferences) -> None:
-        self.upsert(
-            chat_id,
-            user_preferences.genres,
-            user_preferences.artists,
-            table=self.preferences_table,
-        )
+    @get_session
+    def delete_preferences(self, chat_id: int, session=None) -> None:
+        """Deletes user preferences from database
 
-    def delete_preferences(self, chat_id: int) -> None:
-        self.update(
-            chat_id, data=(None, None), update=None, table=self.preferences_table
-        )
+        Args:
+            chat_id (int): Chat ID.
+        """
+        session.query(Preferences).filter(Preferences.chat_id == chat_id).delete()

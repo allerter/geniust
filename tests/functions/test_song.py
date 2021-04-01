@@ -108,7 +108,8 @@ def song_dict_no_description(song_dict):
     ],
 )
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
-def test_display_song(update, context, song_data, platform):
+@pytest.mark.parametrize("search_result", [{"match": None}, {"match": {"id": 1}}])
+def test_display_song(update, context, song_data, platform, search_result):
     context.bot_data["recommender"] = MagicMock()
     if update.callback_query:
         update.callback_query.data = f"song_1_{platform}"
@@ -117,7 +118,7 @@ def test_display_song(update, context, song_data, platform):
 
     genius = context.bot_data["genius"]
     genius.song.return_value = song_data
-    genius.search_songs.return_value = MagicMock()
+    genius.search_songs.return_value = search_result
 
     res = song.display_song(update, context)
 
