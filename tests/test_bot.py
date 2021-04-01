@@ -5,6 +5,7 @@ import pytest
 from telegram.ext import Updater
 
 from geniust import constants, bot
+from geniust.api import Recommender
 from geniust.db import Database
 from geniust.constants import Preferences
 
@@ -115,6 +116,7 @@ def test_main():
     webhoook = MagicMock()
     updater = MagicMock(spec=Updater)
     database = MagicMock(spec=Database)
+    recommender = MagicMock(spec=Recommender)
 
     current_module = "geniust.bot"
     with patch(current_module + ".SERVER_PORT", 5000), patch(
@@ -123,6 +125,8 @@ def test_main():
         current_module + ".tk.RefreshingCredentials", MagicMock()
     ), patch(
         current_module + ".Database", database
+    ), patch(
+        current_module + ".Recommender", recommender
     ):
         warnings.filterwarnings("ignore", category=UserWarning)
         bot.main()

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+import sqlalchemy
 
 from geniust import db, get_user
 from geniust.db import Users, Preferences
@@ -69,7 +70,7 @@ def test_get_token(database, platform):
 
 def test_get_tokens(database):
     res = database.get_tokens(1)
-    assert res == ("test_token", None)
+    assert res == {"genius_token": "test_token", "spotify_token": None}
 
 
 def test_get_language(database):
@@ -89,6 +90,15 @@ def test_update_include_annotations(database):
         user = session.get(Users, 1)
 
     assert user.include_annotations is False
+
+
+def test_update_include_annotations_error(database):
+    with pytest.raises(sqlalchemy.exc.StatementError):
+        database.update_include_annotations(1, "False")
+    with database.Session() as session:
+        user = session.get(Users, 1)
+
+    assert user.include_annotations is True
 
 
 def test_update_lyrics_language(database):

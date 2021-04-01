@@ -3,96 +3,9 @@ from collections import namedtuple
 
 import pytest
 
-from geniust import constants
+from geniust import constants, api
 from geniust.constants import Preferences
 from geniust.functions import recommender as rcr
-
-
-@pytest.mark.parametrize("age", [0, 10, 20, 50, 70, 100])
-def test_genres_by_age(recommender, age):
-    res = recommender.genres_by_age(age)
-
-    assert isinstance(res, (list, tuple))
-    for genre in res:
-        assert genre in recommender.genres
-
-
-@pytest.mark.parametrize("artist", ["Eminem", "test", ""])
-def test_search_artists(recommender, artist):
-    res = recommender.search_artist(artist)
-
-    if artist == "Eminem":
-        assert artist in res
-
-
-@pytest.mark.parametrize("genres", [[], ["pop", "rap"], ["persian"]])
-def test_binarize(recommender, genres):
-    res = recommender.binarize(genres)
-
-    assert sum(res) == len(genres)
-
-
-class TopArtists:
-    Artist = namedtuple("Artist", "name")
-
-    def __init__(self, artist_names):
-        self.items = [self.Artist(name=name) for name in artist_names]
-
-
-class TopTracks:
-    Track = namedtuple("Track", "name, artists")
-
-    def __init__(self, track_names):
-        self.items = [self.Track(name=name, artists=[name]) for name in track_names]
-
-
-@pytest.fixture(scope="module")
-def client(song_dict, user_pyongs_dict, lastfm_track_toptags):
-    top_tracks = TopTracks(["one", "two", "three"])
-    top_artists = TopArtists(["Blackbear", "Eminem", "Unknown Artist"])
-    client = MagicMock()
-    client().song.return_value = song_dict
-    client().user_pyongs.return_value = user_pyongs_dict
-    client.Spotify().current_user_top_tracks.return_value = top_tracks
-    client.Spotify().current_user_top_artists.return_value = top_artists
-    client.lastfm().return_value = lastfm_track_toptags
-    return client
-
-
-@pytest.mark.parametrize("platform", ["genius", "spotify"])
-def test_preferences_from_platform(recommender, client, platform):
-    token = "test_token"
-
-    current_module = "geniust.functions.recommender"
-    with patch(current_module + ".tk", client), patch(
-        current_module + ".lg.PublicAPI", client
-    ), patch("geniust.api.GeniusT", client), patch("geniust.api.lastfm", client):
-        recommender.preferences_from_platform(token, platform)
-
-
-@pytest.mark.parametrize("genres", [["pop", "rap"], ["persian"]])
-@pytest.mark.parametrize("artists", [["Eminem"], []])
-@pytest.mark.parametrize("song_type", ["any", "preview", "full", "preview,full"])
-def test_shuffle(recommender, genres, artists, song_type):
-    preferences = Preferences(genres=genres, artists=artists)
-
-    res = recommender.shuffle(preferences, song_type)
-
-    for song in res:
-        if song_type == "preview,full":
-            assert song.download_url and song.preview_url
-        elif song_type == "preview":
-            assert song.preview_url
-        elif song_type == "full":
-            assert song.download_url
-        has_user_genres = False
-        for genre in genres:
-            has_user_genres = genre in song.genres or has_user_genres
-        assert has_user_genres
-        if "persian" in genres:
-            assert "persian" in song.genres
-        else:
-            assert "persian" not in song.genres
 
 
 @pytest.mark.parametrize("genius_token", ["test_token", None])
@@ -122,13 +35,23 @@ def test_input_preferences(update_callback_query, context):
         pytest.lazy_fixture("update_callback_query"),
     ],
 )
-def test_input_age(update, context):
+@pytest.mark.parametrize("age", ["_invalid", "20"])
+def test_input_age(
+    update,
+    context,
+    requests_mock,
+    age,
+    recommender_genres_age_20,
+):
     if update.message:
-        update.message.text = "20"
+        update.message.text = age
+    if age == "20":
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(api_root + "genres?age=20", json=recommender_genres_age_20)
 
     res = rcr.input_age(update, context)
 
-    if update.callback_query:
+    if update.callback_query or age != "20":
         assert res == constants.SELECT_GENRES
     else:
         assert res == constants.SELECT_ARTISTS
@@ -175,17 +98,33 @@ def test_input_artist(update_callback_query, context):
         pytest.lazy_fixture("update_callback_query"),
     ],
 )
-@pytest.mark.parametrize("query", ["select_none", "select_0", "done"])
-@pytest.mark.parametrize("text", ["Eminem", "0"])
-def test_select_artists(update, context, query, text):
+@pytest.mark.parametrize("query", ["select_none", "select_1", "done"])
+@pytest.mark.parametrize("text", ["Eminem", "no_matches"])
+def test_select_artists(
+    update,
+    context,
+    query,
+    text,
+    requests_mock,
+    recommender_search_artists,
+    recommender_artist,
+):
     context.user_data["artists"] = []
+    api_root = api.Recommender.API_ROOT
     if update.message:
         update.message.text = text
     else:
         update.callback_query.data = query
+        requests_mock.get(api_root + "artists/1", json=recommender_artist)
         if query == "done":
             context.user_data["genres"] = ["pop"]
             context.user_data["artists"] = []
+    if text == "Eminem":
+        requests_mock.get(
+            api_root + f"search/artists?q={text}", json=recommender_search_artists
+        )
+    else:
+        requests_mock.get(api_root + "search/artists?q=no_matches", json={"hits": []})
 
     rcr.select_artists(update, context)
 
@@ -194,23 +133,32 @@ def test_select_artists(update, context, query, text):
 
 
 @pytest.mark.parametrize("platform", ["genius", "spotify"])
-@pytest.mark.parametrize("result", [None, Preferences(genres=["pop"], artists=[])])
+@pytest.mark.parametrize(
+    "result",
+    [
+        {"preferences": {"genres": [], "artists": []}},
+        pytest.lazy_fixture("recommender_preferences"),
+    ])
 def test_process_preferences(
-    update_callback_query, song_dict, context, platform, result
+    update_callback_query,
+    song_dict,
+    context,
+    platform,
+    result,
+    requests_mock,
 ):
     update = update_callback_query
     update.callback_query.data = f"process_{platform}"
     context.user_data["genius_token"] = "test_token"
     context.user_data["spotify_token"] = "test_token"
-    recommender = MagicMock()
-    recommender.preferences_from_platform.return_value = result
-    context.bot_data["recommender"] = recommender
+    api_root = api.Recommender.API_ROOT
+    endpoint = f"preferences?token=test_token&platform={platform}"
+    requests_mock.get(api_root + endpoint, json=result)
 
     client = MagicMock()
+    client.RefreshingCredentials().refresh_user_token.return_value = "test_token"
     current_module = "geniust.functions.recommender"
-    with patch(current_module + ".tk", client), patch(
-        current_module + ".lg.PublicAPI", client
-    ), patch("geniust.api.GeniusT", client):
+    with patch(current_module + ".tk", client):
         rcr.process_preferences(update, context)
 
 
@@ -231,8 +179,22 @@ def test_reset_shuffle(update_callback_query, context):
         pytest.lazy_fixture("update_callback_query"),
     ],
 )
-def test_display_recommendations(update, context):
+def test_display_recommendations(
+    update,
+    context,
+    requests_mock,
+    recommender_recommendations
+):
+    # modify songs to cover all possible cases
+    songs = recommender_recommendations.copy()["recommendations"]
+    for key in ("id_spotify", "preview_url", "download_url"):
+        songs[0][key] = None
+    songs[1]["download_url"] = "some_url"
     context.user_data["preferences"] = Preferences(genres=["pop"], artists=[])
+    api_root = api.Recommender.API_ROOT
+    requests_mock.get(
+        api_root + "recommendations?genres=pop",
+        json=recommender_recommendations)
 
     res = rcr.display_recommendations(update, context)
 

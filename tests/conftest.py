@@ -15,7 +15,6 @@ from telegram.ext import CallbackContext
 from geniust import api
 from geniust import db
 from geniust import data
-from geniust.functions.recommender import Recommender
 from geniust.constants import Preferences
 
 
@@ -39,19 +38,19 @@ def data_path():
 
 @pytest.fixture(scope="session")
 def full_album(data_path):
-    with open(join(data_path, "full_album.json"), "r") as f:
+    with open(join(data_path, "full_album.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def search_albums_dict(data_path):
-    with open(join(data_path, "search_albums.json"), "r") as f:
+    with open(join(data_path, "search_albums.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def search_artists_dict(data_path):
-    with open(join(data_path, "search_artists.json"), "r") as f:
+    with open(join(data_path, "search_artists.json"), encoding="utf8") as f:
         return json.load(f)
 
 
@@ -75,31 +74,31 @@ def search_users_dict(data_path):
 
 @pytest.fixture(scope="session")
 def album_dict(data_path):
-    with open(join(data_path, "album.json"), "r") as f:
+    with open(join(data_path, "album.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def artist_dict(data_path):
-    with open(join(data_path, "artist.json"), "r") as f:
+    with open(join(data_path, "artist.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def annotation(data_path):
-    with open(join(data_path, "annotation.json"), "r") as f:
+    with open(join(data_path, "annotation.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def song_dict(data_path):
-    with open(join(data_path, "song.json"), "r") as f:
+    with open(join(data_path, "song.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def user_dict(data_path):
-    with open(join(data_path, "user.json"), "r") as f:
+    with open(join(data_path, "user.json"), encoding="utf8") as f:
         return json.load(f)
 
 
@@ -111,13 +110,13 @@ def user_pyongs_dict(data_path):
 
 @pytest.fixture(scope="session")
 def lastfm_track_toptags(data_path):
-    with open(join(data_path, "lastfm_track_toptags.json"), "r") as f:
+    with open(join(data_path, "lastfm_track_toptags.json"), encoding="utf8") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def annotations(data_path):
-    with open(join(data_path, "annotations.json"), "r") as f:
+    with open(join(data_path, "annotations.json"), encoding="utf8") as f:
         return json.load(f)
 
 
@@ -129,7 +128,57 @@ def page(data_path):
 
 @pytest.fixture(scope="session")
 def account_dict(data_path):
-    with open(join(data_path, "account.json"), "r") as f:
+    with open(join(data_path, "account.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_genres(data_path):
+    with open(join(data_path, "recommender_genres.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_artist(data_path):
+    with open(join(data_path, "recommender_artist.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_genres_age_20(data_path):
+    with open(join(data_path, "recommender_genres_age_20.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_num_songs(data_path):
+    with open(join(data_path, "recommender_num_songs.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_preferences(data_path):
+    with open(join(data_path, "recommender_preferences.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_recommendations(data_path):
+    with open(
+        join(data_path, "recommender_recommendations.json"), encoding="utf8"
+    ) as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_search_artists(data_path):
+    with open(join(data_path, "recommender_search_artists.json"), encoding="utf8") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def recommender_song(data_path):
+    with open(join(data_path, "recommender_song.json"), encoding="utf8") as f:
         return json.load(f)
 
 
@@ -212,8 +261,10 @@ for language in languages:
 
 
 @pytest.fixture(scope="session")
-def recommender():
-    return Recommender()
+def recommender(recommender_genres, recommender_num_songs):
+    return api.Recommender(
+        genres=recommender_genres["genres"], num_songs=recommender_num_songs["len"]
+    )
 
 
 @pytest.fixture(scope="session")
@@ -231,6 +282,7 @@ def context_class(recommender):
     context.bot_data["spotify"] = create_autospec(tk.Spotify, spec_set=True)
     context.bot_data["texts"] = texts
     context.bot_data["recommender"] = recommender
+
     return context
 
 

@@ -26,6 +26,7 @@ extras_require = {
         "pytest-asyncio==0.14.0",
         "pytest-lazy-fixture==0.6.3",
         "coverage==5.3",
+        "requests-mock==1.8.0",
     ],
 }
 

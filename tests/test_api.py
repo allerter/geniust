@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from telethon import TelegramClient
 
 from geniust import api
+from geniust.constants import Preferences
 
 
 @pytest.fixture(scope="function")
@@ -189,17 +190,15 @@ def genius():
 
 
 @pytest.mark.parametrize("html", [pytest.lazy_fixture("page"), "None"])
-def test_lyrics_no_annotations(genius, song_id, song_url, html):
-    page = MagicMock(return_value=html)
+def test_lyrics_no_annotations(genius, song_id, song_url, html, requests_mock):
+    requests_mock.get(song_url, text=html)
 
-    current_module = "geniust.api"
-    with patch(current_module + ".GeniusT._make_request", page):
-        lyrics, annotations = genius.lyrics(
-            song_id=song_id,
-            song_url=song_url,
-            include_annotations=False,
-            telegram_song=False,
-        )
+    lyrics, annotations = genius.lyrics(
+        song_id=song_id,
+        song_url=song_url,
+        include_annotations=False,
+        telegram_song=False,
+    )
     assert isinstance(lyrics, str), "Lyrics wasn't a string"
     assert annotations == {}, "Annotations weren't empty"
     if html == "None":
@@ -224,3 +223,104 @@ def test_lyrics_telegram_song(genius, song_id, song_url, page, annotations):
             telegram_song=True,
         )
     assert type(lyrics) is not str, "Lyrics was a string"
+
+
+class TestRecommender:
+    def test_init(self, requests_mock, recommender_num_songs, recommender_genres):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(api_root + "genres", json=recommender_genres)
+        requests_mock.get(api_root + "songs/len", json=recommender_num_songs)
+
+        rcr = api.Recommender()
+
+        assert rcr.num_songs == recommender_num_songs["len"]
+        assert rcr.genres == recommender_genres["genres"]
+
+    def test_artist(self, requests_mock, recommender, recommender_artist):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(api_root + "artists/1", json=recommender_artist)
+
+        artist = recommender.artist(1)
+
+        assert artist.id == recommender_artist["artist"]["id"]
+
+    def test_genres_age_20(
+        self,
+        requests_mock,
+        recommender,
+        recommender_genres_age_20,
+    ):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(api_root + "genres?age=20", json=recommender_genres_age_20)
+
+        genres = recommender.genres_by_age(age=20)
+
+        assert genres == recommender_genres_age_20["genres"]
+
+    def test_preferences(
+        self,
+        requests_mock,
+        recommender,
+        recommender_preferences,
+    ):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(
+            api_root + "preferences?token=test_token&platform=genius",
+            json=recommender_preferences,
+        )
+
+        pref = recommender.preferences_from_platform(
+            token="test_token", platform="genius"
+        )
+
+        rcr_pref = recommender_preferences["preferences"]
+        assert pref.genres == rcr_pref["genres"]
+        assert pref.artists == rcr_pref["artists"]
+
+    def test_search_artist(
+        self,
+        requests_mock,
+        recommender,
+        recommender_search_artists,
+    ):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(
+            api_root + "search/artists?q=Eminem", json=recommender_search_artists
+        )
+
+        hits = recommender.search_artist("Eminem")
+
+        assert hits[0].name == recommender_search_artists["hits"][0]["name"]
+        assert hits[-1].name == recommender_search_artists["hits"][-1]["name"]
+
+    def test_shuffle(
+        self,
+        requests_mock,
+        recommender,
+        recommender_recommendations,
+    ):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(
+            api_root + "recommendations?genres=pop&artists=Eminem",
+            json=recommender_recommendations,
+        )
+        pref = Preferences(genres=["pop"], artists=["Eminem"])
+
+        songs = recommender.shuffle(pref)
+
+        rcr_songs = recommender_recommendations["recommendations"]
+        assert songs[0].id == rcr_songs[0]["id"]
+        assert songs[-1].id == rcr_songs[-1]["id"]
+
+    def test_song(
+        self,
+        requests_mock,
+        recommender,
+        recommender_song,
+    ):
+        api_root = api.Recommender.API_ROOT
+        requests_mock.get(api_root + "songs/1", json=recommender_song)
+
+        song = recommender.song(1)
+
+        assert song.id == 1
