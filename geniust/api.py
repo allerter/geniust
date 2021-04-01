@@ -19,6 +19,7 @@ from telethon.sessions import StringSession
 from telethon import types
 
 from geniust.constants import (
+    RECOMMENDER_TOKEN,
     TELETHON_API_ID,
     Preferences,
     TELETHON_API_HASH,
@@ -615,7 +616,7 @@ class Recommender:
     def __init__(
         self, genres: Optional[List[str]] = None, num_songs: Optional[int] = None
     ):
-        self._sender = Sender(self.API_ROOT, retries=3)
+        self._sender = Sender(self.API_ROOT, access_token=RECOMMENDER_TOKEN, retries=3)
         self.num_songs: int = (
             self._sender.request("songs/len")["len"] if num_songs is None else num_songs
         )
@@ -667,6 +668,7 @@ class Sender:
     def __init__(
         self,
         api_root: str,
+        access_token: str = None,
         timeout: int = 5,
         retries: int = 0,
     ):
@@ -676,6 +678,8 @@ class Sender:
             "application": "GeniusT TelegramBot",
             "User-Agent": "https://github.com/allerter/geniust",
         }  # type: ignore
+        if access_token:
+            self._session.headers["Authorization"] = f"Bearer {access_token}"
         self.timeout: int = timeout
         self.retries: int = retries
 
