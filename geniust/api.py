@@ -610,77 +610,81 @@ class Song:
 
 
 class Recommender:
+    API_ROOT = "https://geniust-recommender.herokuapp.com/"
 
-    def __init__(self):
-        self._sender = Sender(retries=3)
-        self.num_songs: int = self._sender.request("songs/len")
-        self.genres: List[str] = self._sender.request("genres")
+    def __init__(
+        self, genres: Optional[List[str]] = None, num_songs: Optional[int] = None
+    ):
+        self._sender = Sender(self.API_ROOT, retries=3)
+        self.num_songs: int = (
+            self._sender.request("songs/len")["len"] if num_songs is None else num_songs
+        )
+        self.genres: List[str] = (
+            self._sender.request("genres")["genres"] if genres is None else genres
+        )
         self.genres_by_number = {}
         for i, genre in enumerate(self.genres):
             self.genres_by_number[i] = genre
 
     def artist(self, id: int) -> Artist:
-        res = self._sender.request(f"/artists/{id}")["artist"]
+        res = self._sender.request(f"artists/{id}")["artist"]
         return Artist(**res)
 
     def genres_by_age(self, age: int) -> List[str]:
-        return self._sender.request("/genres", params={"age": age})["genres"]
+        return self._sender.request("genres", params={"age": age})["genres"]
 
     def preferences_from_platform(
-        self,
-        token: str,
-        platform: str
+        self, token: str, platform: str
     ) -> Optional[Preferences]:
         res = self._sender.request(
-            "/preferences",
-            params={"token": token, "platform": platform}
+            "preferences", params={"token": token, "platform": platform}
         )["preferences"]
         return Preferences(**res) if res["genres"] else None
 
     def search_artist(self, q: str) -> List[SimpleArtist]:
-        res = self._sender.request("/search/artists", params={"q": q})["hits"]
+        res = self._sender.request("search/artists", params={"q": q})["hits"]
         return [SimpleArtist(**x) for x in res]
 
     def shuffle(self, pref: Preferences) -> List[Song]:
+        params = {"genres": ",".join(pref.genres)}
+        artists = ",".join(pref.artists)
+        if artists:
+            params["artists"] = artists
         res = self._sender.request(
-            "/recommendations",
-            params={"genres": ",".join(pref.genres), "artists": ",".join(pref.artists)}
+            "recommendations",
+            params=params,
         )["recommendations"]
         return [Song(**x) for x in res]
 
     def song(self, id: int) -> Song:
-        res = self._sender.request(f"/songs/{id}")["song"]
+        res = self._sender.request(f"songs/{id}")["song"]
         return Song(**res)
 
 
 class Sender:
     """Sends requests to the GeniusT Recommender."""
-    API_ROOT = 'https://geniust-recommender.herokuapp.com/'
 
     def __init__(
         self,
+        api_root: str,
         timeout: int = 5,
         retries: int = 0,
     ):
+        self.api_root = api_root
         self._session = requests.Session()
         self._session.headers = {
-            'application': 'GeniusT TelegramBot',
-            'User-Agent': 'https://github.com/allerter/geniust'
+            "application": "GeniusT TelegramBot",
+            "User-Agent": "https://github.com/allerter/geniust",
         }  # type: ignore
         self.timeout: int = timeout
         self.retries: int = retries
 
     def request(
-        self,
-        path: str,
-        method: str = 'GET',
-        params: dict = None,
-        **kwargs
+        self, path: str, method: str = "GET", params: dict = None, **kwargs
     ) -> dict:
         """Makes a request to Genius."""
-        uri = self.API_ROOT
+        uri = self.api_root
         uri += path
-
         params = params if params else {}
 
         # Make the request
@@ -689,31 +693,28 @@ class Sender:
         while response is None and tries <= self.retries:
             tries += 1
             try:
-                response = self._session.request(method, uri,
-                                                 timeout=self.timeout,
-                                                 params=params,
-                                                 **kwargs)
+                response = self._session.request(
+                    method, uri, timeout=self.timeout, params=params, **kwargs
+                )
                 response.raise_for_status()
-            except Timeout as e:
+            except Timeout as e:  # pragma: no cover
                 error = "Request timed out:\n{e}".format(e=e)
                 logger.warn(error)
                 if tries > self.retries:
                     raise Timeout(error)
-            except HTTPError as e:
+            except HTTPError as e:  # pragma: no cover
                 error = get_description(e)
                 if response.status_code < 500 or tries > self.retries:
                     raise HTTPError(response.status_code, error)
         return response.json()
 
 
-def get_description(e: HTTPError) -> str:
+def get_description(e: HTTPError) -> str:  # pragma: no cover
     error = str(e)
     try:
         res = e.response.json()
     except JSONDecodeError:
         res = {}
-    description = (res['detail']
-                   if res.get('detail')
-                   else res.get('error_description'))
-    error += '\n{}'.format(description) if description else ''
+    description = res["detail"] if res.get("detail") else res.get("error_description")
+    error += "\n{}".format(description) if description else ""
     return error
