@@ -138,7 +138,8 @@ def test_select_artists(
     [
         {"preferences": {"genres": [], "artists": []}},
         pytest.lazy_fixture("recommender_preferences"),
-    ])
+    ],
+)
 def test_process_preferences(
     update_callback_query,
     song_dict,
@@ -180,10 +181,7 @@ def test_reset_shuffle(update_callback_query, context):
     ],
 )
 def test_display_recommendations(
-    update,
-    context,
-    requests_mock,
-    recommender_recommendations
+    update, context, requests_mock, recommender_recommendations
 ):
     # modify songs to cover all possible cases
     songs = recommender_recommendations.copy()["recommendations"]
@@ -193,8 +191,8 @@ def test_display_recommendations(
     context.user_data["preferences"] = Preferences(genres=["pop"], artists=[])
     api_root = api.Recommender.API_ROOT
     requests_mock.get(
-        api_root + "recommendations?genres=pop",
-        json=recommender_recommendations)
+        api_root + "recommendations?genres=pop", json=recommender_recommendations
+    )
 
     res = rcr.display_recommendations(update, context)
 
