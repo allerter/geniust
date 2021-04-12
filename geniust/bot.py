@@ -588,8 +588,7 @@ def main():
             ),
             CallbackQueryHandler(
                 recommender.welcome_to_shuffle,
-                "shuffle",
-                pattern=NewShuffleUser(database=database, user_data=dp.user_data),
+                pattern=r"^shuffle$",
             ),
             CommandHandler("shuffle", recommender.display_recommendations),
             CallbackQueryHandler(recommender.reset_shuffle, pattern=r"^shuffle_reset$"),

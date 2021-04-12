@@ -90,6 +90,10 @@ download the song from a link to another Telegram bot. Some Persian
 songs have a preview URL and some a direct download URL for a 128-bit
 MP3 file.
 
+Fore more information about the recommender itself refer to the
+[GeniusT Recommender](https://github.com/allerter/geniust-recommender)
+repository.
+
 Users can start using shuffle by sending the /shuffle command. After
 submitting their genres and adding their favorite artists, their
 preferences are saved. From then on, sending /shuffle will return 5

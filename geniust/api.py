@@ -184,9 +184,6 @@ class GeniusT(Genius):
 
     This class inherits lyricsgenius.Genius and overrides some
     methods to provide the functionality needed for the bot.
-
-    Args:
-        Genius (lyricsgenius.Genius): The original Genius class.
     """
 
     def __init__(self, *args, **kwargs):

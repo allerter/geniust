@@ -19,6 +19,7 @@ from geniust.constants import (
 )
 from geniust.utils import log
 from geniust import get_user, data_path, utils
+from geniust.functions import account
 
 logger = logging.getLogger("geniust")
 
@@ -241,7 +242,7 @@ def select_artists(update: Update, context: CallbackContext):
         for match in matches:
             if match.name.lower() == input_text.lower():
                 index = match.id
-                buttons.append([IButton(match, callback_data=f"artist_{index}")])
+                buttons.append([IButton(match.name, callback_data=f"artist_{index}")])
 
         buttons.append([IButton(text["not_in_matches"], callback_data="artist_none")])
         update.message.reply_text(
@@ -295,6 +296,7 @@ def select_language(update: Update, context: CallbackContext):  # pragma: no cov
 def process_preferences(update: Update, context: CallbackContext):
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["process_preferences"]
+    db = context.bot_data["db"]
     recommender = context.bot_data["recommender"]
     chat_id = update.effective_chat.id
     bot = context.bot
@@ -311,7 +313,13 @@ def process_preferences(update: Update, context: CallbackContext):
         token = context.user_data["genius_token"]
     else:
         cred = tk.RefreshingCredentials(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
-        token = cred.refresh_user_token(context.user_data["spotify_token"])
+        try:
+            token = cred.refresh_user_token(context.user_data["spotify_token"])
+        except tk.BadRequest:
+            db.delete_token(chat_id, platform)
+            update.callback_query.message = message
+            update.callback_query.data = "login_spotify"
+            account.login(update, context)
 
     preferences = recommender.preferences_from_platform(token, platform)
 

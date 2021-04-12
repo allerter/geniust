@@ -64,7 +64,7 @@ class DBList(TypeDecorator):
         self.sep = sep
 
     def process_bind_param(
-        self, value: Union[Tuple[str, ...], List[str]], dialect: Any
+        self, value: Union[List[str], List[str]], dialect: Any
     ) -> str:
         """processes values for database
 
