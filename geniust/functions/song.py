@@ -133,24 +133,41 @@ def display_song(update: Update, context: CallbackContext) -> int:
     preview_url = None
     download_url = None
     if platform == "genius":
-        song_id = int(song_id_str)
+        genius_id = int(song_id_str)
         spotify_id = None
     else:
-        spotify_id = song_id_str
-        song = spotify.track(spotify_id)
-        recommender_song = recommender.song(id_spotify=spotify_id)
-        preview_url = recommender_song.preview_url
-        download_url = recommender_song.download_url
-        search = genius.search_songs(song.name, match=(song.artists[0].name, song.name))
+        if platform == "spotify":
+            spotify_id = song_id_str
+            song = spotify.track(spotify_id)
+            preview_url = song.preview_url
+            download_url = None
+            song_name = song.name
+            song_artist = song.artists[0].name
+            song_id = song.id
+        else:
+            song = recommender.song(int(song_id_str))
+            preview_url = song.preview_url
+            download_url = song.download_url
+            song_name = song.name
+            song_artist = song.artist
+            song_id = song.id
+            spotify_id = None
+        search = genius.search_songs(song_name, match=(song_artist, song.name))
         if search["match"] is not None:
-            song_id = search["match"]["id"]
+            genius_id = search["match"]["id"]
         else:
             song_url = download_url if download_url else preview_url
-            logger.debug("Song %s not found. Sending audio %s", spotify_id, song_url)
-            context.bot.send_audio(chat_id, song_url, caption=f"@{username}")
+            logger.debug("Song %s not found. Sending audio %s", song_id, song_url)
+            context.bot.send_audio(
+                chat_id,
+                song_url,
+                performer=song_artist,
+                title=song_name,
+                caption=f"@{username}",
+            )
             return END
 
-    song = genius.song(song_id)["song"]
+    song = genius.song(genius_id)["song"]
     cover_art = song["song_art_image_url"]
     caption = song_caption(update, context, song, text["caption"], language)
 
@@ -165,11 +182,15 @@ def display_song(update: Update, context: CallbackContext) -> int:
         buttons[0].append(button)
 
     if preview_url:
+        callback = "song_{song_id}_{platform}_preview".format(
+            song_id=song_id,
+            platform="spotify" if spotify_id else "recommender",
+        )
         buttons.append(
             [
                 IButton(
                     text["preview"],
-                    callback_data=f"song_{recommender_song.id}_recommender_preview",
+                    callback_data=callback,
                 )
             ]
         )
@@ -179,18 +200,19 @@ def display_song(update: Update, context: CallbackContext) -> int:
             [
                 IButton(
                     text["download"],
-                    callback_data=f"song_{recommender_song.id}_recommender_download",
+                    callback_data=f"song_{song_id}_recommender_download",
                 )
             ]
         )
     else:
-        artist = song["primary_artist"]["name"]
-        title = song["title"].replace("\u200b", "")
-        query = f"{title} artist:{artist}"
-        spotify_search = spotify.search(query, types=("track",), limit=5)[0]
-        for track in spotify_search.items:
-            if title in track.name and artist == track.artists[0].name:
-                spotify_id = track.id
+        if spotify_id is None:
+            artist = song["primary_artist"]["name"]
+            title = song["title"].replace("\u200b", "")
+            query = f"{title} artist:{artist}"
+            spotify_search = spotify.search(query, types=("track",), limit=5)[0]
+            for track in spotify_search.items:
+                if title in track.name and artist == track.artists[0].name:
+                    spotify_id = track.id
         if spotify_id:
             buttons.append(
                 [
