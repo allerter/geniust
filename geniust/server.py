@@ -1,5 +1,6 @@
 import threading
 import logging
+import json
 
 import tekore as tk
 import tornado.web
@@ -129,6 +130,47 @@ class TokenHandler(RequestHandler):
         self.bot.send_message(chat_id, text)
 
 
+class PreferencesHandler(RequestHandler):  # pragma: no cover
+    def initialize(self, auths, recommender) -> None:
+        self.auths = auths
+        self.recommender = recommender
+        self.logger = logging.getLogger(__name__)
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", "application/json")
+
+    @log
+    def get(self):
+        genius_code = self.get_argument("genius_code", default=None)
+        spotify_code = self.get_argument("spotify_code", default=None)
+        r = {}
+        if genius_code is None and spotify_code is None:
+            self.set_status(404)
+            r["error"] = "404 Not Found"
+            r["status_code"] = 404
+            token = None
+        elif genius_code:
+            token = self.auths["genius"].get_user_token(code=genius_code)
+            platform = "genius"
+        else:
+            token = self.auths["spotify"]._cred.request_user_token(spotify_code)
+            token = token.access_token
+            platform = "spotify"
+
+        if token is not None:
+            preferences = self.recommender.preferences_from_platform(token, platform)
+            r["preferences"] = {}
+            if preferences is not None:
+                r["preferences"]["genres"] = preferences.genres
+                r["preferences"]["artists"] = preferences.artists
+            else:
+                r["preferences"]["genres"] = []
+                r["preferences"]["artists"] = []
+
+        res = json.dumps(r)
+        self.write(res)
+
+
 class WebhookThread(threading.Thread):  # pragma: no cover
     """Starts a web-hook server
 
@@ -154,6 +196,11 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                         user_data=dispatcher.user_data,
                         username=username,
                     ),
+                ),
+                url(
+                    r"/preferences",
+                    PreferencesHandler,
+                    dict(auths=auths, recommender=dispatcher.bot_data["recommender"]),
                 ),
             ]
         )
