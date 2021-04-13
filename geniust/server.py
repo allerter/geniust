@@ -159,8 +159,8 @@ class PreferencesHandler(RequestHandler):  # pragma: no cover
 
         if token is not None:
             preferences = self.recommender.preferences_from_platform(token, platform)
+            r["preferences"] = {}
             if preferences is not None:
-                r["preferences"] = {}
                 r["preferences"]["genres"] = preferences.genres
                 r["preferences"]["artists"] = preferences.artists
             else:
