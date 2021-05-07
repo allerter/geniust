@@ -170,9 +170,10 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
     songs = []
     for track in genius.album_tracks(album_id, per_page=50)["tracks"]:
         num = track["number"]
+        num = f"{num:02d}" if num is not None else "--"
         song = track["song"]
         song = utils.deep_link(song["title"], song["id"], "song", "genius")
-        text = f"""\n{num:02d}. {song}"""
+        text = f"""\n{num}. {song}"""
 
         songs.append(text)
 
