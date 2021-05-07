@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import tekore as tk
 from notifiers.logging import NotificationHandler
-from telegram import Update, Message
+from telegram import Update, Message, error
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -145,12 +145,21 @@ def main_menu(update: Update, context: CallbackContext) -> int:
 
     keyboard = IBKeyboard(buttons)
 
+    send_as_message = False
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=text["body"], reply_markup=keyboard
-        )
+        try:
+            update.callback_query.edit_message_text(
+                text=text["body"], reply_markup=keyboard
+            )
+        except error.BadRequest as e:
+            logger.error("Error when sending main menu as message edit: %s", e)
+            logger.error(update.to_dict())
+            send_as_message = True
     else:
+        send_as_message = True
+
+    if send_as_message:
         context.bot.send_message(
             chat_id=chat_id, text=text["body"], reply_markup=keyboard
         )
