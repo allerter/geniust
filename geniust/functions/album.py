@@ -7,7 +7,7 @@ from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto
 from telegram import Update, Message
 from telegram.ext import CallbackContext
-from telegram.error import TimedOut, NetworkError
+from telegram.error import TimedOut, NetworkError, BadRequest
 
 from geniust.constants import TYPING_ALBUM, END
 from geniust import api, utils, get_user
@@ -266,13 +266,23 @@ def get_album(
     genius_t = api.GeniusT()
     chat_id = update.effective_chat.id
 
-    progress: Message = update.callback_query.edit_message_text(
-        msg
-    )  # type: ignore[assignment]
-
     if album_format not in ("zip", "pdf", "tgf"):
-        progress.edit_text("Unknown album format.")
+        context.bot.send_message(chat_id, "Unknown album format.")
         return
+
+    send_as_message = False
+    update.callback_query.answer()
+    try:
+        progress: Message = update.callback_query.edit_message_text(
+            msg
+        )  # type: ignore[assignment]
+    except BadRequest as e:
+        logger.error("Error when sending cbq edit in album: %s", e)
+        logger.error(update.to_dict())
+        send_as_message = True
+
+    if send_as_message:
+        context.bot.send_message(chat_id, msg)
 
     # get album
     album = genius_t.async_album_search(
