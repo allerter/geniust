@@ -438,7 +438,7 @@ def main():
 
     main_menu_conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler("start", main_menu, Filters.regex(r"^\D*$")),
+            CommandHandler("start", main_menu, Filters.regex(r"^$")),
             *my_states,
         ],
         states={SELECT_ACTION: my_states, **user_input},
