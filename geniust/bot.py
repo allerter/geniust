@@ -249,7 +249,7 @@ def contact_us(update: Update, context: CallbackContext) -> int:
     return TYPING_FEEDBACK
 
 
-def error(update: Update, context: CallbackContext) -> None:
+def error_handler(update: Update, context: CallbackContext) -> None:
     """Handles errors and alerts the developers"""
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible
