@@ -188,7 +188,7 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
     if update.effective_chat.username:
         text = (
             f"User: @{update.effective_chat.username}\n"
-            f"Chat ID: {update.message.chat.id}"
+            f"Chat ID: {update.message.chat.id}\n\n"
         )
     else:
         text = (
