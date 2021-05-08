@@ -188,14 +188,16 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
     if update.effective_chat.username:
         text = (
             f"User: @{update.effective_chat.username}\n"
-            f"Chat ID: {update.message.chat.id}\n\n"
+            f"Chat ID: {update.message.chat.id}\n"
+            f"Bot Lang: {language}\n\n"
         )
     else:
         text = (
             "User: "
             f"<a href={update.effective_user.id}>"
             f"{update.effective_user.first_name}</a>\n"
-            f"Chat ID: {update.message.chat.id}\n\n"
+            f"Chat ID: {update.message.chat.id}\n"
+            f"Bot Lang: {language}\n\n"
         )
     text += update.message.text
 
