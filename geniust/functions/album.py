@@ -270,19 +270,9 @@ def get_album(
         context.bot.send_message(chat_id, "Unknown album format.")
         return
 
-    send_as_message = False
     update.callback_query.answer()
-    try:
-        progress: Message = update.callback_query.edit_message_text(
-            msg
-        )  # type: ignore[assignment]
-    except BadRequest as e:
-        logger.error("Error when sending cbq edit in album: %s", e)
-        logger.error(update.to_dict())
-        send_as_message = True
 
-    if send_as_message:
-        context.bot.send_message(chat_id, msg)
+    progress = context.bot.send_message(chat_id, msg)
 
     # get album
     album = genius_t.async_album_search(
