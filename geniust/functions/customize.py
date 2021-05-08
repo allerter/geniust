@@ -178,9 +178,23 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
     # command
     if update.message or update.callback_query.data == str(INCLUDE):
         buttons = [
-            [IButton(context.bot_data["texts"][language][True], str(OPTION1))],
-            [IButton(context.bot_data["texts"][language][False], str(OPTION2))],
-            [IButton(context.bot_data["texts"][language]["back"], str(END))],
+            [
+                IButton(
+                    context.bot_data["texts"][language][True],
+                    callback_data=str(OPTION1),
+                )
+            ],
+            [
+                IButton(
+                    context.bot_data["texts"][language][False],
+                    callback_data=str(OPTION2),
+                )
+            ],
+            [
+                IButton(
+                    context.bot_data["texts"][language]["back"], callback_data=str(END)
+                )
+            ],
         ]
         keyboard = IBKeyboard(buttons)
 
