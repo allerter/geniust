@@ -187,6 +187,7 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
 
 
 @log
+@get_user
 def display_album_formats(update: Update, context: CallbackContext) -> int:
     """Displays available formats to get album lyrics"""
     language = context.user_data["bot_lang"]
