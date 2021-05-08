@@ -25,6 +25,7 @@ logger = logging.getLogger("geniust")
 
 
 @log
+@get_user
 def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["welcome_to_shuffle"]
