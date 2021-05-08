@@ -195,7 +195,7 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
             "User: "
             f"<a href={update.effective_user.id}>"
             f"{update.effective_user.first_name}</a>\n"
-            f"Chat ID: {update.message.chat.id}"
+            f"Chat ID: {update.message.chat.id}\n\n"
         )
     text += update.message.text
 
