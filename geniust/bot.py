@@ -655,7 +655,7 @@ def main():
     #    updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
     #    updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
     # else:
-    updater.start_polling(clean=True)
+    updater.start_polling()
 
     updater.idle()
 
