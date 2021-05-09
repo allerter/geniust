@@ -31,7 +31,8 @@ none: "None"
 
 send_feedback: Thanks for the feedback!
 
-end_describing: Canceled.
+canceled: Canceled.
+end_describing: Conversation finished. You can now use all available commands.
 
 help_message: |-
     ◻️ Welcome to the Genius T bot!

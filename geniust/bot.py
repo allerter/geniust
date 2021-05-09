@@ -213,16 +213,15 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
 def end_describing(update: Update, context: CallbackContext) -> int:
     """Ends conversation altogether or returns to upper level"""
     language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["end_describing"]
-
-    if update.message:
-        update.message.reply_text(text)
-        return END
+    texts = context.bot_data["texts"][language]
+    chat_id = update.effective_user.id
 
     # noinspection PyUnreachableCode
     level = context.user_data.get("level")
 
-    if level is None:
+    if update.message or level is None:
+        text = texts["canceled"] if update.message else texts["end_describing"]
+        context.bot.send_message(chat_id, text)
         return END
 
     level = level if level else MAIN_MENU + 1
