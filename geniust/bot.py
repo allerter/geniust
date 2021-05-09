@@ -19,6 +19,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler,
     MessageFilter,
+    TypeHandler,
 )
 from telegram.utils.helpers import mention_html
 
