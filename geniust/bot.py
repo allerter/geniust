@@ -447,7 +447,7 @@ def main():
         fallbacks=[
             CommandHandler("cancel", end_describing),
             CommandHandler("stop", stop),
-            TypeHandler(end_describing),
+            TypeHandler(Update, end_describing),
         ],
     )
     dp.add_handler(main_menu_conv_handler)
