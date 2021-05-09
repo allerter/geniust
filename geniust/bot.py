@@ -108,6 +108,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     ud = context.user_data
     chat_id = update.effective_chat.id
     context.user_data["command"] = False
+    context.user_data.pop('level', None)
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["main_menu"]
 
