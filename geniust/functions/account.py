@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 import tekore as tk
 
-from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, END
+from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, MAIN_MENU, END
 from geniust import utils, auths, get_user
 from geniust.utils import log
 from geniust import api
@@ -79,14 +79,13 @@ def logged_in(update: Update, context: CallbackContext) -> int:
     """Displays options for a logged-in user"""
     bd = context.bot_data
     ud = context.user_data
-    ud["level"] = ACCOUNT_MENU
     language = ud["bot_lang"]
     texts = bd["texts"][language]["logged_in"]
 
     buttons = [
         [IButton(texts["view_account"], callback_data="account")],
         [IButton(texts["log_out"], callback_data=str(LOGOUT))],
-        [IButton(bd["texts"][language]["back"], callback_data=str(END))],
+        [IButton(bd["texts"][language]["back"], callback_data=str(MAIN_MENU))],
     ]
     keyboard = IBKeyboard(buttons)
 
@@ -121,7 +120,6 @@ def display_account(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     bd = context.bot_data
     ud = context.user_data
-    ud["level"] = ACCOUNT_MENU + 1
     language = ud["bot_lang"]
     texts = bd["texts"][language]["display_account"]
 

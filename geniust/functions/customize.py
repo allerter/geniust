@@ -10,6 +10,7 @@ from geniust.constants import (
     CUSTOMIZE_MENU,
     END,
     LYRICS_LANG,
+    MAIN_MENU,
     SELECT_ACTION,
     BOT_LANG,
     OPTION1,
@@ -28,7 +29,6 @@ logger = logging.getLogger("geniust")
 def customize_menu(update: Update, context: CallbackContext) -> int:
     """Main menu for lyrics customizations"""
     language = context.user_data["bot_lang"]
-    context.user_data["level"] = CUSTOMIZE_MENU
     text = context.bot_data["texts"][language]["customize_menu"]
 
     include = context.user_data["include_annotations"]
@@ -52,7 +52,12 @@ def customize_menu(update: Update, context: CallbackContext) -> int:
     buttons = [
         [IButton(text["lyrics_language"], callback_data=str(LYRICS_LANG))],
         [IButton(text["annotations"], callback_data=str(INCLUDE))],
-        [IButton(context.bot_data["texts"][language]["back"], callback_data=str(END))],
+        [
+            IButton(
+                context.bot_data["texts"][language]["back"],
+                callback_data=str(MAIN_MENU),
+            )
+        ],
     ]
     keyboard = IBKeyboard(buttons)
 
@@ -69,7 +74,6 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["lyrics_language"]
     ud = context.user_data
-    ud["level"] = CUSTOMIZE_MENU + 1
     chat_id = update.effective_chat.id
 
     # command
@@ -78,7 +82,11 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
         buttons = [
             [IButton(text["only_english"], callback_data=str(OPTION1))],
             [IButton(text["only_non_english"], callback_data=str(OPTION2))],
-            [IButton(text["enligh_and_non_english"], callback_data=str(OPTION3))],
+            [
+                IButton(
+                    text["enligh_and_non_english"], callback_data=str(CUSTOMIZE_MENU)
+                )
+            ],
             [
                 IButton(
                     context.bot_data["texts"][language]["back"], callback_data=str(END)
@@ -127,7 +135,6 @@ def bot_language(update: Update, context: CallbackContext) -> int:
     ud = context.user_data
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["bot_language"]
-    ud["level"] = CUSTOMIZE_MENU + 1
     chat_id = update.effective_chat.id
 
     # command

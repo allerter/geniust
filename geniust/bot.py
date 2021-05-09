@@ -108,7 +108,6 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     ud = context.user_data
     chat_id = update.effective_chat.id
     context.user_data["command"] = False
-    context.user_data.pop('level', None)
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["main_menu"]
 
@@ -217,21 +216,10 @@ def end_describing(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]
     chat_id = update.effective_user.id
 
-    # noinspection PyUnreachableCode
-    level = context.user_data.get("level")
-    logger.debug("level: %s", level)
-
-    if update.message or level is None:
+    if update.message:
         text = texts["canceled"] if update.message else texts["end_describing"]
         context.bot.send_message(chat_id, text)
         return END
-
-    level = level if level else MAIN_MENU + 1
-
-    if level - 1 == MAIN_MENU or level == ACCOUNT_MENU:
-        main_menu(update, context)
-    elif level - 1 == CUSTOMIZE_MENU:
-        customize.customize_menu(update, context)
 
     return SELECT_ACTION
 
