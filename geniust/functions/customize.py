@@ -143,6 +143,12 @@ def bot_language(update: Update, context: CallbackContext) -> int:
         buttons = []
         for key in context.bot_data["texts"].keys():
             buttons.append([IButton(text[key], callback_data=key)])
+        buttons.append([
+            IButton(
+                context.bot_data["texts"][language]["back"],
+                callback_data=str(MAIN_MENU),
+            )
+        ])
         keyboard = IBKeyboard(buttons)
 
         msg = text["body"]
