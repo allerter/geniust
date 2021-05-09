@@ -12,6 +12,7 @@ from geniust.constants import (
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
+    MAIN_MENU,
     END,
     SPOTIFY_CLIENT_ID,
     Preferences,
@@ -70,6 +71,8 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
                 )
             ]
         )
+
+    buttons.append([IButton(text["back"], callback_data=str(MAIN_MENU))])
 
     bot.send_photo(
         chat_id, open(photo, "rb"), caption, reply_markup=IBKeyboard(buttons)
