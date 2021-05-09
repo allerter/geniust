@@ -421,17 +421,17 @@ def main():
         ],
         INCLUDE: [
             CallbackQueryHandler(
-                customize.include_annotations, pattern="^(?!" + str(END) + ").*$"
+                customize.include_annotations, pattern=fr"^(?!{CUSTOMIZE_MENU}).*$"
             )
         ],
         LYRICS_LANG: [
             CallbackQueryHandler(
-                customize.lyrics_language, pattern="^(?!" + str(END) + ").*$"
+                customize.lyrics_language, pattern=fr"^(?!{CUSTOMIZE_MENU}).*$"
             )
         ],
         BOT_LANG: [
             CallbackQueryHandler(
-                customize.bot_language, pattern="^(?!" + str(END) + ").*$"
+                customize.bot_language, pattern=fr"^(?!{MAIN_MENU}).*$"
             )
         ],
     }
