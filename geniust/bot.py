@@ -218,6 +218,7 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 
     # noinspection PyUnreachableCode
     level = context.user_data.get("level")
+    logger.debug("level: %s", level)
 
     if update.message or level is None:
         text = texts["canceled"] if update.message else texts["end_describing"]
