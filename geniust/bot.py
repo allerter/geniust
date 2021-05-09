@@ -153,9 +153,8 @@ def main_menu(update: Update, context: CallbackContext) -> int:
             update.callback_query.edit_message_text(
                 text=text["body"], reply_markup=keyboard
             )
-        except error.BadRequest as e:
-            logger.error("Error when sending main menu as message edit: %s", e)
-            logger.error(update.to_dict())
+        except error.BadRequest:
+            update.callback_query.delete_message()
             send_as_message = True
     else:
         send_as_message = True
