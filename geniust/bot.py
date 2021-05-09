@@ -640,6 +640,7 @@ def main():
         fallbacks=[
             CommandHandler("cancel", end_describing),
             CommandHandler("stop", stop),
+            CommandHandler("start", main_menu),
             CallbackQueryHandler(end_describing),
         ],
     )
