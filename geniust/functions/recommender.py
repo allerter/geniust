@@ -35,6 +35,9 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
     photo = join(data_path, "shuffle.jpg")
 
+    if update.callback_query:
+        update.callback_query.delete_message()
+
     caption = text["body"].format(recommender.num_songs)
 
     buttons = [
