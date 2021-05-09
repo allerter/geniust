@@ -641,7 +641,7 @@ def main():
             CommandHandler("cancel", end_describing),
             CommandHandler("stop", stop),
             CommandHandler("start", main_menu),
-            CallbackQueryHandler(end_describing),
+            TypeHandler(Update, end_describing),
         ],
     )
     dp.add_handler(shuffle_preferences_conv_handler)
