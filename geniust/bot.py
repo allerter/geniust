@@ -219,7 +219,12 @@ def end_describing(update: Update, context: CallbackContext) -> int:
         return END
 
     # noinspection PyUnreachableCode
-    level = context.user_data.get("level", MAIN_MENU + 1)
+    level = context.user_data.get("level")
+
+    if level is None:
+        return END
+
+    level = level if level else MAIN_MENU + 1
 
     if level - 1 == MAIN_MENU or level == ACCOUNT_MENU:
         main_menu(update, context)
