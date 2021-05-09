@@ -84,12 +84,12 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
             [IButton(text["only_non_english"], callback_data=str(OPTION2))],
             [
                 IButton(
-                    text["enligh_and_non_english"], callback_data=str(CUSTOMIZE_MENU)
+                    text["enligh_and_non_english"], callback_data=str(OPTION3)
                 )
             ],
             [
                 IButton(
-                    context.bot_data["texts"][language]["back"], callback_data=str(END)
+                    context.bot_data["texts"][language]["back"], callback_data=str(CUSTOMIZE_MENU)
                 )
             ],
         ]
