@@ -207,7 +207,8 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
             ],
             [
                 IButton(
-                    context.bot_data["texts"][language]["back"], callback_data=str(END)
+                    context.bot_data["texts"][language]["back"],
+                    callback_data=str(CUSTOMIZE_MENU),
                 )
             ],
         ]

@@ -215,12 +215,18 @@ def end_describing(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]
     chat_id = update.effective_user.id
 
-    if update.message:
-        text = texts["canceled"] if update.message else texts["end_describing"]
-        context.bot.send_message(chat_id, text)
-        return END
+    if update.callback_query:
+        query = update.callback_query.data
+        if query == str(CUSTOMIZE_MENU):
+            return customize.customize_menu(update, context)
+        elif query == str(MAIN_MENU):
+            return main_menu(update, context)
 
-    return SELECT_ACTION
+    text = texts["canceled"] if update.message else texts["end_describing"]
+    context.bot.send_message(chat_id, text)
+    return END
+
+    return END
 
 
 @log
