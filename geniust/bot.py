@@ -368,12 +368,21 @@ def main():
             customize.customize_menu, pattern="^" + str(CUSTOMIZE_MENU) + "$"
         ),
         CallbackQueryHandler(
-            customize.lyrics_language, pattern="^" + str(LYRICS_LANG) + "$"
+            customize.lyrics_language,
+            pattern=(
+                fr"^{LYRICS_LANG}|"
+                fr"{ONLY_ENGLIGH}|"
+                fr"{ONLY_NON_ENGLISH}|"
+                fr"{ENGLISH_AND_NON_ENGLISH}$"
+            ),
         ),
         CallbackQueryHandler(
-            customize.include_annotations, pattern="^" + str(INCLUDE) + "$"
+            customize.include_annotations,
+            pattern=(fr"^{INCLUDE}|"
+                     fr"{INCLUDE_ANNOTATIONS}|"
+                     fr"{DONT_INCLUDE_ANNOTATIONS}]$"),
         ),
-        CallbackQueryHandler(customize.bot_language, pattern="^" + str(BOT_LANG) + "$"),
+        CallbackQueryHandler(customize.bot_language, pattern=fr"^bot_lang.*$"),
         CallbackQueryHandler(
             annotation.display_annotation, pattern=r"^annotation_[0-9]+$"
         ),
@@ -421,21 +430,6 @@ def main():
         ],
         TYPING_FEEDBACK: [
             MessageHandler(Filters.text & (~Filters.command), send_feedback)
-        ],
-        INCLUDE: [
-            CallbackQueryHandler(
-                customize.include_annotations, pattern=fr"^(?!{CUSTOMIZE_MENU}).*$"
-            )
-        ],
-        LYRICS_LANG: [
-            CallbackQueryHandler(
-                customize.lyrics_language, pattern=fr"^(?!{CUSTOMIZE_MENU}).*$"
-            )
-        ],
-        BOT_LANG: [
-            CallbackQueryHandler(
-                customize.bot_language, pattern=fr"^(?!{MAIN_MENU}).*$"
-            )
         ],
     }
 
