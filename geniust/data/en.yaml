@@ -390,6 +390,7 @@ input_preferences:
     First, I'd like to know your favorite genres. You can either
     choose your favorites from available genres or let me guess
     them by entering your age.
+    ⚠️ You can send /cancel to cancel submitting your preferences at any point.
   choose_genres: Choose Genres
   enter_age: Enter Age
 
