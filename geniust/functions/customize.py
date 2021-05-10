@@ -11,11 +11,11 @@ from geniust.constants import (
     END,
     LYRICS_LANG,
     MAIN_MENU,
-    SELECT_ACTION,
-    BOT_LANG,
-    OPTION1,
-    OPTION2,
-    OPTION3,
+    ENGLISH_AND_NON_ENGLISH,
+    ONLY_ENGLIGH,
+    ONLY_NON_ENGLISH,
+    INCLUDE_ANNOTATIONS,
+    DONT_INCLUDE_ANNOTATIONS,
 )
 from geniust import get_user
 from geniust.utils import log
@@ -64,7 +64,7 @@ def customize_menu(update: Update, context: CallbackContext) -> int:
     update.callback_query.answer()
     update.callback_query.edit_message_text(text=msg, reply_markup=keyboard)
 
-    return SELECT_ACTION
+    return END
 
 
 @log
@@ -80,9 +80,14 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
     if update.message or update.callback_query.data == str(LYRICS_LANG):
 
         buttons = [
-            [IButton(text["only_english"], callback_data=str(OPTION1))],
-            [IButton(text["only_non_english"], callback_data=str(OPTION2))],
-            [IButton(text["enligh_and_non_english"], callback_data=str(OPTION3))],
+            [IButton(text["only_english"], callback_data=str(ONLY_ENGLIGH))],
+            [IButton(text["only_non_english"], callback_data=str(ONLY_NON_ENGLISH))],
+            [
+                IButton(
+                    text["enligh_and_non_english"],
+                    callback_data=str(ENGLISH_AND_NON_ENGLISH),
+                )
+            ],
             [
                 IButton(
                     context.bot_data["texts"][language]["back"],
@@ -100,16 +105,16 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
-        return LYRICS_LANG
+        return END
 
     data = update.callback_query.data
-    if data == str(OPTION1):
+    if data == str(ONLY_ENGLIGH):
         ud["lyrics_lang"] = "English"
         language_display = "only_english"
-    elif data == str(OPTION2):
+    elif data == str(ONLY_NON_ENGLISH):
         ud["lyrics_lang"] = "Non-English"
         language_display = "only_non_english"
-    elif data == str(OPTION3):
+    elif data == str(ENGLISH_AND_NON_ENGLISH):
         language_display = "enligh_and_non_english"
         ud["lyrics_lang"] = "English + Non-English"
     else:
@@ -135,11 +140,11 @@ def bot_language(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
 
     # command
-    if update.message or update.callback_query.data == str(BOT_LANG):
+    if update.message or update.callback_query.data == "bot_lang":
 
         buttons = []
         for key in context.bot_data["texts"].keys():
-            buttons.append([IButton(text[key], callback_data=key)])
+            buttons.append([IButton(text[key], callback_data=f"bot_lang_{key}")])
         buttons.append(
             [
                 IButton(
@@ -158,9 +163,9 @@ def bot_language(update: Update, context: CallbackContext) -> int:
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
-        return BOT_LANG
+        return END
 
-    data = update.callback_query.data
+    data = update.callback_query.data.replace("bot_lang_", "")
     for key in context.bot_data["texts"].keys():
         if data == key:
             ud["bot_lang"] = data
@@ -193,13 +198,13 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
             [
                 IButton(
                     context.bot_data["texts"][language][True],
-                    callback_data=str(OPTION1),
+                    callback_data=str(INCLUDE_ANNOTATIONS),
                 )
             ],
             [
                 IButton(
                     context.bot_data["texts"][language][False],
-                    callback_data=str(OPTION2),
+                    callback_data=str(DONT_INCLUDE_ANNOTATIONS),
                 )
             ],
             [
@@ -219,12 +224,12 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
 
-        return INCLUDE
+        return END
 
     data = update.callback_query.data
-    if data == str(OPTION1):
+    if data == str(INCLUDE_ANNOTATIONS):
         ud["include_annotations"] = True
-    elif data == str(OPTION2):
+    elif data == str(DONT_INCLUDE_ANNOTATIONS):
         ud["include_annotations"] = False
     else:
         return END

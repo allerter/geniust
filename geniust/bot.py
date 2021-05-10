@@ -50,7 +50,6 @@ from geniust.constants import (
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
-    BOT_LANG,
     LYRICS_LANG,
     INCLUDE,
     TYPING_FEEDBACK,
@@ -62,10 +61,14 @@ from geniust.constants import (
     CUSTOMIZE_MENU,
     LOGGED_IN,
     LOGOUT,
-    ACCOUNT_MENU,
     END,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
+    ONLY_ENGLIGH,
+    ONLY_NON_ENGLISH,
+    ENGLISH_AND_NON_ENGLISH,
+    INCLUDE_ANNOTATIONS,
+    DONT_INCLUDE_ANNOTATIONS,
 )
 
 # Enable logging
@@ -129,7 +132,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
         [IButton(text["lyrics"], callback_data=str(TYPING_LYRICS))],
         [
             IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
-            IButton(text["change_language"], callback_data=str(BOT_LANG)),
+            IButton(text["change_language"], callback_data="bot_lang"),
         ],
     ]
 
