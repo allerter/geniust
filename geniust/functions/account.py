@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 import tekore as tk
 
-from geniust.constants import LOGOUT, ACCOUNT_MENU, SELECT_ACTION, MAIN_MENU, END
+from geniust.constants import LOGOUT, MAIN_MENU, END
 from geniust import utils, auths, get_user
 from geniust.utils import log
 from geniust import api
@@ -92,7 +92,7 @@ def logged_in(update: Update, context: CallbackContext) -> int:
     update.callback_query.answer()
     update.callback_query.edit_message_text(texts["body"], reply_markup=keyboard)
 
-    return SELECT_ACTION
+    return END
 
 
 @log
