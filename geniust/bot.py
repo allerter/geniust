@@ -458,14 +458,8 @@ def main():
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
         CommandHandler("song", song.type_song),
-        CommandHandler("lyrics_language", customize.lyrics_language),
-        CommandHandler("bot_language", customize.bot_language),
-        CommandHandler("include_annotations", customize.include_annotations),
-        CommandHandler("login", account.login_choices),
-        CommandHandler("help", help_message),
         CommandHandler("contact_us", contact_us),
     ]
-
     commands_conv_handler = ConversationHandler(
         entry_points=commands,
         states={**user_input},
@@ -476,6 +470,16 @@ def main():
         ],
     )
     dp.add_handler(commands_conv_handler)
+
+    non_input_commands = [
+        CommandHandler("lyrics_language", customize.lyrics_language),
+        CommandHandler("bot_language", customize.bot_language),
+        CommandHandler("include_annotations", customize.include_annotations),
+        CommandHandler("login", account.login_choices),
+        CommandHandler("help", help_message),
+    ]
+    for command in non_input_commands:
+        dp.add_handler(command)
 
     # ----------------- INLINE QUERIES -----------------
 
