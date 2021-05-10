@@ -391,7 +391,7 @@ def main():
                 fr"{DONT_INCLUDE_ANNOTATIONS}$"
             ),
         ),
-        CallbackQueryHandler(customize.bot_language, pattern=fr"^bot_lang.*$"),
+        CallbackQueryHandler(customize.bot_language, pattern=r"^bot_lang.*$"),
         CallbackQueryHandler(
             annotation.display_annotation, pattern=r"^annotation_[0-9]+$"
         ),
