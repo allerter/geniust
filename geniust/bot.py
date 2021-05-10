@@ -442,30 +442,13 @@ def main():
         ],
     }
 
-    # ----------------- MAIN MENU -----------------
-
-    main_menu_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler("start", main_menu, Filters.regex(r"^\D*$")),
-            *my_states,
-        ],
-        states={SELECT_ACTION: my_states, **user_input},
-        fallbacks=[
-            CommandHandler("cancel", end_describing),
-            CommandHandler("stop", stop),
-            TypeHandler(Update, end_describing),
-        ],
-    )
-    dp.add_handler(main_menu_conv_handler)
-
-    # ----------------- COMMANDS -----------------
-
     commands = [
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
         CommandHandler("song", song.type_song),
         CommandHandler("contact_us", contact_us),
     ]
+    commands.extend(callback_query_handlers)
     commands_conv_handler = ConversationHandler(
         entry_points=commands,
         states={**user_input},
