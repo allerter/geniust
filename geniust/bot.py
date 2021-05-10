@@ -378,9 +378,11 @@ def main():
         ),
         CallbackQueryHandler(
             customize.include_annotations,
-            pattern=(fr"^{INCLUDE}|"
-                     fr"{INCLUDE_ANNOTATIONS}|"
-                     fr"{DONT_INCLUDE_ANNOTATIONS}]$"),
+            pattern=(
+                fr"^{INCLUDE}|"
+                fr"{INCLUDE_ANNOTATIONS}|"
+                fr"{DONT_INCLUDE_ANNOTATIONS}]$"
+            ),
         ),
         CallbackQueryHandler(customize.bot_language, pattern=fr"^bot_lang.*$"),
         CallbackQueryHandler(
