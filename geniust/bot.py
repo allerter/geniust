@@ -323,7 +323,14 @@ def main():
     )
     dp.bot_data["recommender"] = Recommender()
 
-    my_states = [
+    # ----------------- MAIN MENU -----------------
+
+    main_menu_handler = CommandHandler("start", main_menu, Filters.regex(r"^\D*$"))
+    dp.add_handler(main_menu_handler)
+
+    # ----------------- COMMANDS -----------------
+
+    callback_query_handlers = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),
         CallbackQueryHandler(album.type_album, pattern="^" + str(TYPING_ALBUM) + "$"),
         CallbackQueryHandler(
