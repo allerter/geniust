@@ -81,12 +81,14 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     TYPING_FEEDBACK,
     INCLUDE,
     LYRICS_LANG,
-    BOT_LANG,
     SELECT_ACTION,
-) = num.assign(10)
+) = num.assign(9)
 
-# Input Options
-OPTION1, OPTION2, OPTION3 = num.assign(3)
+# Lyircs Language Options
+ONLY_ENGLIGH, ONLY_NON_ENGLISH, ENGLISH_AND_NON_ENGLISH = num.assign(3)
+
+# Include Annotations Options
+INCLUDE_ANNOTATIONS, DONT_INCLUDE_ANNOTATIONS = num.assign(2)
 
 LOGIN, LOGGED_IN, LOGOUT = num.assign(3)
 
