@@ -37,32 +37,37 @@ end_describing: Conversation finished. You can now use all available commands.
 help_message: |-
     ◻️ Welcome to the Genius T bot!
     Genius T offers the following services:
-    ▪️Getting album, artist and song data from Genius.
+    ▪️Getting mustic info and lyrics from Genius.
     ▪️Customizing lyrics to include annotations and removing English/Non-English characters from lyrics
 
     🔶 You can search for song lyrics using inline search too! Genius T will automatically apply your customizations.
 
-    The bot has a menu with an InlineKeyboardMarkup that can be accessed using /start. But the commands below are there for convenience.
+    The bot has a menu with a menu that can be accessed using /start. You can also use the commands below for convenience.
     ➖➖ Available commands ➖➖
-    /song   - search songs
-    /album  - search albums
+    /song - search songs
+    /album - search albums
     /artist - search artists
+    /user - search Genius users
     /bot_language - Language of the bot
     /lyrics_language - Language of the lyrics (ASCII/non-ASCII/both)
-    /include_annotations - include annotations in lyrics or not
-    /cancel - cancel the current task
-    /stop - stop and end the conversation
+    /include_annotations - Include annotations in lyrics or not
+    /shuffle - Get song recommendations
+    /cancel - cancel the current task (use this if the bot is unresponsive)
     /help - gets you this message
     /contact_us - send us a message
 
     ➖➖ Inline Mode ➖➖
-    To use inline mode just type the bot's username and some results show up that will help you search different things.
+    To use inline mode just type the bot's username ({username}) and some results show up that will help you search different things.
+    Alternatively, click on the button below.
 
-    ➖➖ Album Formats ➖➖
+    ➖➖ Album Lyrics ➖➖
+    ⚠️ This feature is deprecated and may not work very well.
     User customizations (including annotations and lyrics language) are automatically applied to the provided lyrics.
     ▪️ PDF: works fine with English and Persian (languages with Arabic alphabet) songs.
     ▪️ ZIP: a zip file contatining text files of song lyrics. Includations are seperated using <code>!--!</code> and <code>!__!</code> identifiers specifing beginning and ending of each annotation respectively.
     ▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
+
+inline_mode: Inline Mode
 
 contact_us: Send us what's on your mind :)
 

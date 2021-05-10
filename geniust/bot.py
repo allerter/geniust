@@ -237,9 +237,20 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["help_message"]
+    text = context.bot_data["texts"][language]["help_message"].format(username=username)
 
-    update.message.reply_text(text)
+    keyboard = IBKeyboard(
+        [
+            [
+                IButton(
+                    text=context.bot_data["texts"][language]["inline_mode"],
+                    switch_inline_query_current_chat="",
+                )
+            ]
+        ]
+    )
+
+    update.message.reply_text(text, reply_markup=keyboard)
     return END
 
 
