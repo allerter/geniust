@@ -381,7 +381,7 @@ def main():
             pattern=(
                 fr"^{INCLUDE}|"
                 fr"{INCLUDE_ANNOTATIONS}|"
-                fr"{DONT_INCLUDE_ANNOTATIONS}]$"
+                fr"{DONT_INCLUDE_ANNOTATIONS}$"
             ),
         ),
         CallbackQueryHandler(customize.bot_language, pattern=fr"^bot_lang.*$"),
