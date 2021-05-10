@@ -167,7 +167,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
             chat_id=chat_id, text=text["body"], reply_markup=keyboard
         )
 
-    return SELECT_ACTION
+    return END
 
 
 @log
