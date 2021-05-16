@@ -14,6 +14,7 @@ main_menu:
   reset_shuffle: Reset Shuffle Preferences
 
 error: "Sorry. Something went wrong :(\nStart again by clicking /start"
+genius_403_error: "Sorry. Genius said no this request :( Maybe try again later."
 
 spotify: Spotify
 genius: Genius

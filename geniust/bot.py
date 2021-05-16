@@ -22,6 +22,7 @@ from telegram.ext import (
     TypeHandler,
 )
 from telegram.utils.helpers import mention_html
+from requests.exceptions import HTTPError
 
 from geniust.functions import (
     account,
@@ -267,6 +268,8 @@ def contact_us(update: Update, context: CallbackContext) -> int:
 
 def error_handler(update: Update, context: CallbackContext) -> None:
     """Handles errors and alerts the developers"""
+    exception = context.error
+    logger.error(msg="Exception while handling an update:", exc_info=exception)
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible
     payload = ""
@@ -291,7 +294,10 @@ def error_handler(update: Update, context: CallbackContext) -> None:
                 language = "en"
 
             try:
-                msg = texts[language]["error"]
+                if isinstance(exception, HTTPError) and exception.status_code == 403:
+                    msg = texts[language]["genius_403_error"]
+                else:
+                    msg = texts[language]["error"]
             except NameError:
                 logger.error("texts global was unaccessable in error handler")
                 msg = "Something went wrong. Start again using /start"
@@ -303,7 +309,12 @@ def error_handler(update: Update, context: CallbackContext) -> None:
             f" happened{payload}. The full traceback:\n\n<code>{trace}</code>"
         )
     if text == "":
-        text = "Empty Error\n" + payload + trace
+        text = (
+            "Empty Error\n"
+            + payload
+            + trace
+            + getattr(exception, "__traceback__", "")
+        )
 
     # and send it to the dev(s)
     for dev_id in DEVELOPERS:
