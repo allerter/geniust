@@ -294,7 +294,10 @@ def error_handler(update: Update, context: CallbackContext) -> None:
                 language = "en"
 
             try:
-                if isinstance(exception, HTTPError) and exception.status_code == 403:
+                if (
+                    isinstance(exception, HTTPError)
+                    and exception.response.status_code == 403
+                ):
                     msg = texts[language]["genius_403_error"]
                 else:
                     msg = texts[language]["error"]
@@ -310,10 +313,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         )
     if text == "":
         text = (
-            "Empty Error\n"
-            + payload
-            + trace
-            + getattr(exception, "__traceback__", "")
+            "Empty Error\n" + payload + trace + getattr(exception, "__traceback__", "")
         )
 
     # and send it to the dev(s)
