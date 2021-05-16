@@ -230,8 +230,6 @@ def end_describing(update: Update, context: CallbackContext) -> int:
     context.bot.send_message(chat_id, text)
     return END
 
-    return END
-
 
 @log
 @get_user
