@@ -51,7 +51,7 @@ def test_logged_in(update_callback_query, context):
 
     update.callback_query.answer.assert_called_once()
 
-    assert res == constants.SELECT_ACTION
+    assert res == constants.END
 
 
 def test_logout(update_callback_query, context):

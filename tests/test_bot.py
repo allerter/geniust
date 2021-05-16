@@ -25,7 +25,7 @@ def test_main_menu(update_callback_query, context, token, preferences):
     update.callback_query.answer.assert_called_once()
 
     # Check if bot returned the correct state to maintain the conversation
-    assert res == constants.SELECT_ACTION
+    assert res == constants.END
 
 
 def test_stop(update_message, context):
@@ -64,34 +64,26 @@ def test_send_feedback(update_message, context):
     ],
 )
 @pytest.mark.parametrize(
-    "level",
-    [
-        constants.MAIN_MENU,
-        constants.ACCOUNT_MENU,
-        constants.CUSTOMIZE_MENU,
-    ],
+    "query", [str(constants.MAIN_MENU), str(constants.CUSTOMIZE_MENU), "other"]
 )
-def test_end_describing(update, context, level):
-    context.user_data["level"] = level
-
+def test_end_describing(update, context, query):
     main_menu = MagicMock()
     customize_menu = MagicMock()
+
+    if update.callback_query:
+        update.callback_query.data = query
 
     with patch("geniust.bot.main_menu", main_menu), patch(
         "geniust.functions.customize.customize_menu", customize_menu
     ):
-        res = bot.end_describing(update, context)
+        bot.end_describing(update, context)
 
     if update.callback_query:
-        if level == constants.MAIN_MENU:
-            main_menu.assert_not_called()
+        if query == str(constants.MAIN_MENU):
+            main_menu.assert_called()
             customize_menu.assert_not_called()
-        elif level == constants.ACCOUNT_MENU or level == constants.CUSTOMIZE_MENU:
-            main_menu.assert_called_once()
-
-        assert res == constants.SELECT_ACTION
-    else:
-        assert res == constants.END
+        elif query == str(constants.CUSTOMIZE_MENU):
+            customize_menu.assert_called_once()
 
 
 def test_help_message(update_message, context):

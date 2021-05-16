@@ -84,11 +84,7 @@ class TestTokenHandler:
             and user_state == "test-state"
             and code == "some_code"
         ):
-            url = (
-                "https://test-app.com/callback"
-                "?code=some_code&state=1_genius_test-state"
-            )
-            handler.auths["genius"].get_user_token.assert_called_once_with(url=url)
+            handler.auths["genius"].get_user_token.assert_called_once_with(code=code)
             handler.database.update_token.assert_called_once_with(
                 1, "test_token", platform
             )
