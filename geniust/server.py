@@ -5,6 +5,7 @@ import json
 import tekore as tk
 import tornado.web
 import tornado.ioloop
+from lyricsgenius.utils import parse_redirected_url
 from requests import HTTPError
 from telegram import Bot
 from telegram.utils.webhookhandler import WebhookServer
@@ -96,12 +97,9 @@ class TokenHandler(RequestHandler):
             return
 
         # get token from code
-        redirected_url = "{}://{}{}".format(
-            self.request.protocol, self.request.host, self.request.uri
-        )
         if platform == "genius":
             try:
-                token = self.auths["genius"].get_user_token(url=redirected_url)
+                token = self.auths["genius"].get_user_token(code=code)
             except HTTPError as e:
                 self.logger.debug("%s for %s", str(e), state)
                 return

@@ -7,7 +7,7 @@ from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto
 from telegram import Update, Message
 from telegram.ext import CallbackContext
-from telegram.error import TimedOut, NetworkError
+from telegram.error import TimedOut, NetworkError, BadRequest
 
 from geniust.constants import TYPING_ALBUM, END
 from geniust import api, utils, get_user
@@ -170,9 +170,10 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
     songs = []
     for track in genius.album_tracks(album_id, per_page=50)["tracks"]:
         num = track["number"]
+        num = f"{num:02d}" if num is not None else "--"
         song = track["song"]
         song = utils.deep_link(song["title"], song["id"], "song", "genius")
-        text = f"""\n{num:02d}. {song}"""
+        text = f"""\n{num}. {song}"""
 
         songs.append(text)
 
@@ -186,6 +187,7 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
 
 
 @log
+@get_user
 def display_album_formats(update: Update, context: CallbackContext) -> int:
     """Displays available formats to get album lyrics"""
     language = context.user_data["bot_lang"]
@@ -265,13 +267,13 @@ def get_album(
     genius_t = api.GeniusT()
     chat_id = update.effective_chat.id
 
-    progress: Message = update.callback_query.edit_message_text(
-        msg
-    )  # type: ignore[assignment]
-
     if album_format not in ("zip", "pdf", "tgf"):
-        progress.edit_text("Unknown album format.")
+        context.bot.send_message(chat_id, "Unknown album format.")
         return
+
+    update.callback_query.answer()
+
+    progress = context.bot.send_message(chat_id, msg)
 
     # get album
     album = genius_t.async_album_search(

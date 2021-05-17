@@ -12,6 +12,7 @@ from geniust.constants import (
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
+    MAIN_MENU,
     END,
     SPOTIFY_CLIENT_ID,
     Preferences,
@@ -25,6 +26,7 @@ logger = logging.getLogger("geniust")
 
 
 @log
+@get_user
 def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["welcome_to_shuffle"]
@@ -33,6 +35,9 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
     bot = context.bot
     chat_id = update.effective_chat.id
     photo = join(data_path, "shuffle.jpg")
+
+    if update.callback_query:
+        update.callback_query.delete_message()
 
     caption = text["body"].format(recommender.num_songs)
 
@@ -66,6 +71,15 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
                 )
             ]
         )
+
+    buttons.append(
+        [
+            IButton(
+                context.bot_data["texts"][language]["back"],
+                callback_data=str(MAIN_MENU),
+            )
+        ]
+    )
 
     bot.send_photo(
         chat_id, open(photo, "rb"), caption, reply_markup=IBKeyboard(buttons)

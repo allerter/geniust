@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import tekore as tk
 from notifiers.logging import NotificationHandler
-from telegram import Update, Message
+from telegram import Update, Message, error
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -19,8 +19,10 @@ from telegram.ext import (
     CallbackQueryHandler,
     InlineQueryHandler,
     MessageFilter,
+    TypeHandler,
 )
 from telegram.utils.helpers import mention_html
+from requests.exceptions import HTTPError
 
 from geniust.functions import (
     account,
@@ -49,7 +51,6 @@ from geniust.constants import (
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
-    BOT_LANG,
     LYRICS_LANG,
     INCLUDE,
     TYPING_FEEDBACK,
@@ -61,10 +62,14 @@ from geniust.constants import (
     CUSTOMIZE_MENU,
     LOGGED_IN,
     LOGOUT,
-    ACCOUNT_MENU,
     END,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
+    ONLY_ENGLIGH,
+    ONLY_NON_ENGLISH,
+    ENGLISH_AND_NON_ENGLISH,
+    INCLUDE_ANNOTATIONS,
+    DONT_INCLUDE_ANNOTATIONS,
 )
 
 # Enable logging
@@ -128,7 +133,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
         [IButton(text["lyrics"], callback_data=str(TYPING_LYRICS))],
         [
             IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
-            IButton(text["change_language"], callback_data=str(BOT_LANG)),
+            IButton(text["change_language"], callback_data="bot_lang"),
         ],
     ]
 
@@ -145,17 +150,25 @@ def main_menu(update: Update, context: CallbackContext) -> int:
 
     keyboard = IBKeyboard(buttons)
 
+    send_as_message = False
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=text["body"], reply_markup=keyboard
-        )
+        try:
+            update.callback_query.edit_message_text(
+                text=text["body"], reply_markup=keyboard
+            )
+        except error.BadRequest:
+            update.callback_query.delete_message()
+            send_as_message = True
     else:
+        send_as_message = True
+
+    if send_as_message:
         context.bot.send_message(
             chat_id=chat_id, text=text["body"], reply_markup=keyboard
         )
 
-    return SELECT_ACTION
+    return END
 
 
 @log
@@ -179,14 +192,16 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
     if update.effective_chat.username:
         text = (
             f"User: @{update.effective_chat.username}\n"
-            f"Chat ID: {update.message.chat.id}"
+            f"Chat ID: {update.message.chat.id}\n"
+            f"Bot Lang: {language}\n\n"
         )
     else:
         text = (
             "User: "
             f"<a href={update.effective_user.id}>"
             f"{update.effective_user.first_name}</a>\n"
-            f"Chat ID: {update.message.chat.id}"
+            f"Chat ID: {update.message.chat.id}\n"
+            f"Bot Lang: {language}\n\n"
         )
     text += update.message.text
 
@@ -201,21 +216,19 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
 def end_describing(update: Update, context: CallbackContext) -> int:
     """Ends conversation altogether or returns to upper level"""
     language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["end_describing"]
+    texts = context.bot_data["texts"][language]
+    chat_id = update.effective_user.id
 
-    if update.message:
-        update.message.reply_text(text)
-        return END
+    if update.callback_query:
+        query = update.callback_query.data
+        if query == str(CUSTOMIZE_MENU):
+            return customize.customize_menu(update, context)
+        elif query == str(MAIN_MENU):
+            return main_menu(update, context)
 
-    # noinspection PyUnreachableCode
-    level = context.user_data.get("level", MAIN_MENU + 1)
-
-    if level - 1 == MAIN_MENU or level == ACCOUNT_MENU:
-        main_menu(update, context)
-    elif level - 1 == CUSTOMIZE_MENU:
-        customize.customize_menu(update, context)
-
-    return SELECT_ACTION
+    text = texts["canceled"] if update.message else texts["end_describing"]
+    context.bot.send_message(chat_id, text)
+    return END
 
 
 @log
@@ -223,9 +236,20 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["help_message"]
+    text = context.bot_data["texts"][language]["help_message"].format(username=username)
 
-    update.message.reply_text(text)
+    keyboard = IBKeyboard(
+        [
+            [
+                IButton(
+                    text=context.bot_data["texts"][language]["inline_mode"],
+                    switch_inline_query_current_chat="",
+                )
+            ]
+        ]
+    )
+
+    update.message.reply_text(text, reply_markup=keyboard)
     return END
 
 
@@ -240,8 +264,10 @@ def contact_us(update: Update, context: CallbackContext) -> int:
     return TYPING_FEEDBACK
 
 
-def error(update: Update, context: CallbackContext) -> None:
+def error_handler(update: Update, context: CallbackContext) -> None:
     """Handles errors and alerts the developers"""
+    exception = context.error
+    logger.error(msg="Exception while handling an update:", exc_info=exception)
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible
     payload = ""
@@ -266,7 +292,13 @@ def error(update: Update, context: CallbackContext) -> None:
                 language = "en"
 
             try:
-                msg = texts[language]["error"]
+                if (
+                    isinstance(exception, HTTPError)
+                    and exception.response.status_code == 403
+                ):
+                    msg = texts[language]["genius_403_error"]
+                else:
+                    msg = texts[language]["error"]
             except NameError:
                 logger.error("texts global was unaccessable in error handler")
                 msg = "Something went wrong. Start again using /start"
@@ -278,7 +310,9 @@ def error(update: Update, context: CallbackContext) -> None:
             f" happened{payload}. The full traceback:\n\n<code>{trace}</code>"
         )
     if text == "":
-        text = "Empty Error\n" + payload + trace
+        text = (
+            "Empty Error\n" + payload + trace + getattr(exception, "__traceback__", "")
+        )
 
     # and send it to the dev(s)
     for dev_id in DEVELOPERS:
@@ -309,7 +343,14 @@ def main():
     )
     dp.bot_data["recommender"] = Recommender()
 
-    my_states = [
+    # ----------------- MAIN MENU -----------------
+
+    main_menu_handler = CommandHandler("start", main_menu, Filters.regex(r"^\D*$"))
+    dp.add_handler(main_menu_handler)
+
+    # ----------------- COMMANDS -----------------
+
+    callback_query_handlers = [
         CallbackQueryHandler(main_menu, pattern="^" + str(MAIN_MENU) + "$"),
         CallbackQueryHandler(album.type_album, pattern="^" + str(TYPING_ALBUM) + "$"),
         CallbackQueryHandler(
@@ -354,12 +395,23 @@ def main():
             customize.customize_menu, pattern="^" + str(CUSTOMIZE_MENU) + "$"
         ),
         CallbackQueryHandler(
-            customize.lyrics_language, pattern="^" + str(LYRICS_LANG) + "$"
+            customize.lyrics_language,
+            pattern=(
+                fr"^{LYRICS_LANG}|"
+                fr"{ONLY_ENGLIGH}|"
+                fr"{ONLY_NON_ENGLISH}|"
+                fr"{ENGLISH_AND_NON_ENGLISH}$"
+            ),
         ),
         CallbackQueryHandler(
-            customize.include_annotations, pattern="^" + str(INCLUDE) + "$"
+            customize.include_annotations,
+            pattern=(
+                fr"^{INCLUDE}|"
+                fr"{INCLUDE_ANNOTATIONS}|"
+                fr"{DONT_INCLUDE_ANNOTATIONS}$"
+            ),
         ),
-        CallbackQueryHandler(customize.bot_language, pattern="^" + str(BOT_LANG) + "$"),
+        CallbackQueryHandler(customize.bot_language, pattern=r"^bot_lang.*$"),
         CallbackQueryHandler(
             annotation.display_annotation, pattern=r"^annotation_[0-9]+$"
         ),
@@ -408,53 +460,15 @@ def main():
         TYPING_FEEDBACK: [
             MessageHandler(Filters.text & (~Filters.command), send_feedback)
         ],
-        INCLUDE: [
-            CallbackQueryHandler(
-                customize.include_annotations, pattern="^(?!" + str(END) + ").*$"
-            )
-        ],
-        LYRICS_LANG: [
-            CallbackQueryHandler(
-                customize.lyrics_language, pattern="^(?!" + str(END) + ").*$"
-            )
-        ],
-        BOT_LANG: [
-            CallbackQueryHandler(
-                customize.bot_language, pattern="^(?!" + str(END) + ").*$"
-            )
-        ],
     }
-
-    # ----------------- MAIN MENU -----------------
-
-    main_menu_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler("start", main_menu, Filters.regex(r"^\D*$")),
-            *my_states,
-        ],
-        states={SELECT_ACTION: my_states, **user_input},
-        fallbacks=[
-            CallbackQueryHandler(end_describing, pattern="^" + str(END) + "$"),
-            CommandHandler("cancel", end_describing),
-            CommandHandler("stop", stop),
-        ],
-    )
-    dp.add_handler(main_menu_conv_handler)
-
-    # ----------------- COMMANDS -----------------
 
     commands = [
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
         CommandHandler("song", song.type_song),
-        CommandHandler("lyrics_language", customize.lyrics_language),
-        CommandHandler("bot_language", customize.bot_language),
-        CommandHandler("include_annotations", customize.include_annotations),
-        CommandHandler("login", account.login_choices),
-        CommandHandler("help", help_message),
         CommandHandler("contact_us", contact_us),
     ]
-
+    commands.extend(callback_query_handlers)
     commands_conv_handler = ConversationHandler(
         entry_points=commands,
         states={**user_input},
@@ -465,6 +479,16 @@ def main():
         ],
     )
     dp.add_handler(commands_conv_handler)
+
+    non_input_commands = [
+        CommandHandler("lyrics_language", customize.lyrics_language),
+        CommandHandler("bot_language", customize.bot_language),
+        CommandHandler("include_annotations", customize.include_annotations),
+        CommandHandler("login", account.login_choices),
+        CommandHandler("help", help_message),
+    ]
+    for command in non_input_commands:
+        dp.add_handler(command)
 
     # ----------------- INLINE QUERIES -----------------
 
@@ -624,13 +648,13 @@ def main():
         fallbacks=[
             CommandHandler("cancel", end_describing),
             CommandHandler("stop", stop),
-            CallbackQueryHandler(end_describing),
+            TypeHandler(Update, end_describing),
         ],
     )
     dp.add_handler(shuffle_preferences_conv_handler)
 
     # log all errors
-    # dp.add_error_handler(error)
+    dp.add_error_handler(error)
 
     # web hook server to respond to GET cron jobs at /notify
     # and receive user tokens at /callback
@@ -644,7 +668,7 @@ def main():
     #    updater.start_webhook('0.0.0.0', port=SERVER_PORT, url_path=BOT_TOKEN)
     #    updater.bot.setWebhook(SERVER_ADDRESS + BOT_TOKEN)
     # else:
-    updater.start_polling(clean=True)
+    updater.start_polling()
 
     updater.idle()
 
