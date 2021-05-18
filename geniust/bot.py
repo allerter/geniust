@@ -78,9 +78,9 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
 logger.setLevel(logging.DEBUG)
 defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
-hdlr = NotificationHandler("telegram", defaults=defaults)
-hdlr.setLevel(logging.ERROR)
-logging.getLogger().addHandler(hdlr)
+notification_handler = NotificationHandler("telegram", defaults=defaults)
+notification_handler.setLevel(logging.ERROR)
+logging.getLogger().addHandler(notification_handler)
 
 
 class NewShuffleUser(MessageFilter):
