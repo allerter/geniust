@@ -270,58 +270,30 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     user_data = context.user_data.copy()
     for key in ("genius_token", "spotify_token"):
         user_data.pop(key, None)
+    # This log message will be sent to the devs by notifier's NotificationHandler.
+    # So no need to send a message explicitly.
     logger.error(
         "Exception while handling an update:\n\nUpdate:\n%s\n\nUser Data:\n%s\n\n",
         update, user_data, exc_info=exception)
-    trace = "".join(traceback.format_tb(sys.exc_info()[2]))
-    # lets try to get as much information from the telegram update as possible
-    payload = ""
-    text = ""
+
     # normally, we always have an user. If not, its either a channel or a poll update.
-    if update:
-        if update.effective_user:
-            user = mention_html(
-                update.effective_user.id, update.effective_user.first_name
-            )
-            payload += f" with the user {user}"
-        # there are more situations when you don't get a chat
-        if update.effective_chat:
-            payload += f" within the chat <i>{update.effective_chat.title}</i>"
-            if update.effective_chat.username:
-                payload += f" (@{update.effective_chat.username})"
-            chat_id = update.effective_chat.id
-
-            if context:
-                language = context.user_data["bot_lang"]
+    if update and update.effective_user:
+        language = user_data.get("bot_lang", "en")
+        chat_id = update.effective_user.id
+        try:
+            if (
+                isinstance(exception, HTTPError)
+                and exception.response.status_code == 403
+            ):
+                msg = texts[language]["genius_403_error"]
             else:
-                language = "en"
+                msg = texts[language]["error"]
+        except NameError:
+            logger.error("texts global was unaccessable in error handler")
+            msg = "Something went wrong. Start again using /start"
 
-            try:
-                if (
-                    isinstance(exception, HTTPError)
-                    and exception.response.status_code == 403
-                ):
-                    msg = texts[language]["genius_403_error"]
-                else:
-                    msg = texts[language]["error"]
-            except NameError:
-                logger.error("texts global was unaccessable in error handler")
-                msg = "Something went wrong. Start again using /start"
+        context.bot.send_message(chat_id=chat_id, text=msg)
 
-            context.bot.send_message(chat_id=chat_id, text=msg)
-        # lets put this in a "well" formatted text
-        text = (
-            f"Hey.\nThe error <code>{context.error if context else ''}</code>"
-            f" happened{payload}. The full traceback:\n\n<code>{trace}</code>"
-        )
-    if text == "":
-        text = (
-            "Empty Error\n" + payload + trace + getattr(exception, "__traceback__", "")
-        )
-
-    # and send it to the dev(s)
-    for dev_id in DEVELOPERS:
-        context.bot.send_message(dev_id, text, parse_mode="HTML")
     # we raise the error again, so the logger module catches it.
     # If you don't use the logger module, use it.
     raise  # type: ignore
