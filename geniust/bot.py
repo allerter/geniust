@@ -269,7 +269,8 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     exception = context.error
     user_data = context.user_data.copy()
     for key in ("genius_token", "spotify_token"):
-        user_data.pop(key, None)
+        token = user_data.get(key)
+        user_data[key] = "XXX" if token is not None else None
     # This log message will be sent to the devs by notifier's NotificationHandler.
     # So no need to send a message explicitly.
     logger.error(
