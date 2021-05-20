@@ -466,6 +466,7 @@ def main():
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
         CommandHandler("song", song.type_song),
+        CommandHandler("user", user.type_user),
         CommandHandler("contact_us", contact_us),
     ]
     commands.extend(callback_query_handlers)
