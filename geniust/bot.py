@@ -267,7 +267,12 @@ def contact_us(update: Update, context: CallbackContext) -> int:
 def error_handler(update: Update, context: CallbackContext) -> None:
     """Handles errors and alerts the developers"""
     exception = context.error
-    logger.error(msg="Exception while handling an update:", exc_info=exception)
+    user_data = context.user_data.copy()
+    for key in ("genius_token", "spotify_token"):
+        user_data.pop(key, None)
+    logger.error(
+        "Exception while handling an update:\n\nUpdate:\n%s\n\nUser Data:\n%s\n\n",
+        update, user_data, exc_info=exception)
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     # lets try to get as much information from the telegram update as possible
     payload = ""
