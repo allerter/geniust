@@ -294,10 +294,6 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
         context.bot.send_message(chat_id=chat_id, text=msg)
 
-    # we raise the error again, so the logger module catches it.
-    # If you don't use the logger module, use it.
-    raise  # type: ignore
-
 
 def main():
     """Main function that holds the handlers and starts the bot"""
