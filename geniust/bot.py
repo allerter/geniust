@@ -275,7 +275,10 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     # So no need to send a message explicitly.
     logger.error(
         "Exception while handling an update:\n\nUpdate:\n%s\n\nUser Data:\n%s\n\n",
-        update, user_data, exc_info=exception)
+        update,
+        user_data,
+        exc_info=exception,
+    )
 
     # normally, we always have an user. If not, its either a channel or a poll update.
     if update and update.effective_user:
