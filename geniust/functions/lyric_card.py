@@ -15,8 +15,8 @@ class Point:
 
 
 DOUBLE_QUOTES_IMAGE = Image.open(data_path / "double-quotes.png")
-FONT_PATH = str(data_path / "Programme-Regular.ttf")
-LYRICS_FONT = ImageFont.truetype(FONT_PATH, 59)
+FONT_PATH = str(data_path / "NotoSans-SemiCondensedMedium.ttf")
+LYRICS_FONT = ImageFont.truetype(FONT_PATH, 55)
 COVER_ART_BRIGHTNESS = 0.8
 METADATA_FONT_BIG = ImageFont.truetype(FONT_PATH, 37)
 METADATA_FONT_SMALL = ImageFont.truetype(FONT_PATH, 30)
@@ -29,7 +29,7 @@ OFFSET = Point(18, 451)
 TEXT_HEIGHT = LYRICS_FONT.getsize("LOREM IPSUM")[1]
 BOX_HEIGHT = TEXT_HEIGHT + 15
 LYRICS_BOX_OFFSET = Point(OFFSET.left + DOUBLE_QUOTES_IMAGE.width + 15, OFFSET.top)
-LYRICS_OFFSET = Point(LYRICS_BOX_OFFSET.left + 5, LYRICS_BOX_OFFSET.top)
+LYRICS_OFFSET = Point(LYRICS_BOX_OFFSET.left + 5, LYRICS_BOX_OFFSET.top - 5)
 
 
 def change_brightness(im: Image, value: float) -> Image:
@@ -53,13 +53,13 @@ def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point):
             if abs(width - last_line_width) < 20:
                 width = last_line_width
             last_line_width = width
-        box_start = Point(LYRICS_BOX_OFFSET.left, last_box_pos.top + 13)
-        box_end = Point(box_start.left + width + 17, box_start.top + BOX_HEIGHT)
+        box_start = Point(LYRICS_BOX_OFFSET.left, last_box_pos.top + 10)
+        box_end = Point(box_start.left + width + 15, box_start.top + BOX_HEIGHT - 5)
         draw.rectangle((astuple(box_start), astuple(box_end)), fill=BOX_COLOR)
 
         # Draw Lyrics
         top = last_box_pos.top
-        pos = (LYRICS_OFFSET.left + 5, top + 15)
+        pos = (LYRICS_OFFSET.left + 2, top + 5)
         draw.text(pos, line, fill=LYRICS_TEXT_COLOR, font=LYRICS_FONT)
         last_box_pos = box_end
     return last_box_pos
@@ -73,7 +73,7 @@ def add_lyrics(draw: ImageDraw, lyrics) -> Point:
         # since it should be aligned with the quotes
         # so we move it the same number of pixels up
         last_box_pos = (
-            Point(LYRICS_BOX_OFFSET.left, LYRICS_BOX_OFFSET.top - 13)
+            Point(LYRICS_BOX_OFFSET.left, LYRICS_BOX_OFFSET.top - 10)
             if pos_end == LYRICS_BOX_OFFSET
             else pos_end
         )
@@ -108,7 +108,7 @@ def add_metadata(
     )
 
     # Add featured artists
-    pos_metadata = Point(pos_metadata.left, pos_metadata.top + height)
+    pos_metadata = Point(pos_metadata.left, pos_metadata.top + height - 14)
     if featured_artists:
         text = "FT. "
         if len(featured_artists) == 1:
