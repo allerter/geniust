@@ -17,7 +17,7 @@ class Point:
 DOUBLE_QUOTES_IMAGE = Image.open(data_path / "double-quotes.png")
 FONT_PATH = str(data_path / "Programme-Regular.ttf")
 LYRICS_FONT = ImageFont.truetype(FONT_PATH, 59)
-COVER_ART_BRIGHTNESS = 0.5
+COVER_ART_BRIGHTNESS = 0.8
 METADATA_FONT_BIG = ImageFont.truetype(FONT_PATH, 37)
 METADATA_FONT_SMALL = ImageFont.truetype(FONT_PATH, 30)
 FEATURED_ARTIST_FONT_BIG = ImageFont.truetype(FONT_PATH, 32)
