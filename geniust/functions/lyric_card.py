@@ -1,6 +1,6 @@
 import textwrap
 from dataclasses import dataclass, astuple
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from io import BytesIO
 
 from PIL import Image, ImageEnhance, ImageFont, ImageDraw
