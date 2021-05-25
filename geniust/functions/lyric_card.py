@@ -95,10 +95,10 @@ def add_metadata(
         if len(text) > 52:
             text = textwrap.fill(text, 52, drop_whitespace=True)
         metadata_font = METADATA_FONT_SMALL
-        featured_font = METADATA_FONT_SMALL
+        featured_font = FEATURED_ARTIST_FONT_SMALL
     else:
         metadata_font = METADATA_FONT_BIG
-        featured_font = METADATA_FONT_BIG
+        featured_font = FEATURED_ARTIST_FONT_BIG
     _, height = metadata_font.getsize(text)
     draw.text(
         astuple(pos_metadata),
