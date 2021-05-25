@@ -26,15 +26,10 @@ LYRICS_TEXT_COLOR = "#000"
 METADATA_TEXT_COLOR = "#fff"
 BOX_COLOR = "#fff"
 OFFSET = Point(18, 451)
-TEXT_HEIGHT = 51
+TEXT_HEIGHT = LYRICS_FONT.getsize("LOREM IPSUM")[1]
 BOX_HEIGHT = TEXT_HEIGHT + 15
 LYRICS_BOX_OFFSET = Point(OFFSET.left + DOUBLE_QUOTES_IMAGE.width + 15, OFFSET.top)
 LYRICS_OFFSET = Point(LYRICS_BOX_OFFSET.left + 5, LYRICS_BOX_OFFSET.top)
-
-
-def get_text_size(text: str, font: ImageFont) -> Tuple[int, int]:
-    (width, height), _ = font.font.getsize(text)
-    return width, height
 
 
 def change_brightness(im: Image, value: float) -> Image:
@@ -49,7 +44,7 @@ def add_double_quotes(im: Image, box: Point) -> None:
 def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point):
     for i, line in enumerate(textwrap.wrap(lyric, 30, drop_whitespace=True)):
         # Draw box
-        width, _ = get_text_size(line, LYRICS_FONT)
+        width, _ = LYRICS_FONT.getsize(line)
         if i == 0:
             last_line_width = width
         else:
@@ -58,13 +53,13 @@ def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point):
             if abs(width - last_line_width) < 20:
                 width = last_line_width
             last_line_width = width
-        box_start = Point(LYRICS_BOX_OFFSET.left, last_box_pos.top + 15)
-        box_end = Point(box_start.left + width + 15, box_start.top + BOX_HEIGHT - 6)
+        box_start = Point(LYRICS_BOX_OFFSET.left, last_box_pos.top + 13)
+        box_end = Point(box_start.left + width + 17, box_start.top + BOX_HEIGHT)
         draw.rectangle((astuple(box_start), astuple(box_end)), fill=BOX_COLOR)
 
         # Draw Lyrics
         top = last_box_pos.top
-        pos = (LYRICS_OFFSET.left + 5, top + 13)
+        pos = (LYRICS_OFFSET.left + 5, top + 15)
         draw.text(pos, line, fill=LYRICS_TEXT_COLOR, font=LYRICS_FONT)
         last_box_pos = box_end
     return last_box_pos
@@ -73,12 +68,12 @@ def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point):
 def add_lyrics(draw: ImageDraw, lyrics) -> Point:
     pos_end = LYRICS_BOX_OFFSET
     for line in lyrics.split("\n"):
-        # add_line moves every box 10px down,
+        # add_line moves every box some pixels down,
         # but we don't want that for the first box
         # since it should be aligned with the quotes
-        # so we move it 10px up
+        # so we move it the same number of pixels up
         last_box_pos = (
-            Point(LYRICS_BOX_OFFSET.left, LYRICS_BOX_OFFSET.top - 15)
+            Point(LYRICS_BOX_OFFSET.left, LYRICS_BOX_OFFSET.top - 13)
             if pos_end == LYRICS_BOX_OFFSET
             else pos_end
         )
@@ -104,7 +99,7 @@ def add_metadata(
     else:
         metadata_font = METADATA_FONT_BIG
         featured_font = METADATA_FONT_BIG
-    _, height = get_text_size(text, metadata_font)
+    _, height = metadata_font.getsize(text)
     draw.text(
         astuple(pos_metadata),
         text.upper(),
