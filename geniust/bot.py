@@ -293,10 +293,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         language = user_data.get("bot_lang", "en")
         chat_id = update.effective_user.id
         try:
-            if (
-                isinstance(exception, HTTPError)
-                and getattr(exception.response, "status_code", None) == 403
-            ):
+            if isinstance(exception, HTTPError) and exception.args[0] == 403:
                 msg = texts[language]["genius_403_error"]
             else:
                 msg = texts[language]["error"]
