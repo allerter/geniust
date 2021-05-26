@@ -1,6 +1,6 @@
 import textwrap
 from dataclasses import dataclass, astuple
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from io import BytesIO
 
 import arabic_reshaper
