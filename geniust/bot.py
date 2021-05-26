@@ -1,5 +1,4 @@
 import logging
-import sys
 import traceback
 from typing import Dict, Any
 
@@ -21,7 +20,6 @@ from telegram.ext import (
     MessageFilter,
     TypeHandler,
 )
-from telegram.utils.helpers import mention_html
 from requests.exceptions import HTTPError
 
 from geniust.functions import (
@@ -273,12 +271,22 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         user_data[key] = "XXX" if token is not None else None
     # This log message will be sent to the devs by notifier's NotificationHandler.
     # So no need to send a message explicitly.
-    logger.error(
-        "Exception while handling an update:\n\nUpdate:\n%s\n\nUser Data:\n%s\n\n",
-        update,
-        user_data,
-        exc_info=exception,
+    error_msg = (
+        "Exception while handling an update:"
+        f"\n\nUpdate:\n{update}"
+        f"\n\nUser Data:\n{user_data}\n\nTraceback:\n"
     )
+    tb_list = traceback.format_exception(
+        None, context.error, context.error.__traceback__
+    )
+    tb_string = "".join(tb_list)
+    # Only get the last traceback to make the error log shorter
+    tb_string = tb_string[tb_string.rfind("Traceback (most recent call last):") :]
+    error_msg += tb_string
+    if len(error_msg) > 4096:
+        diff = len(error_msg) - 4096
+        error_msg = error_msg[diff:]
+    logger.error(error_msg)
 
     # normally, we always have an user. If not, its either a channel or a poll update.
     if update and update.effective_user:
@@ -287,7 +295,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         try:
             if (
                 isinstance(exception, HTTPError)
-                and exception.response.status_code == 403
+                and getattr(exception.response, "status_code", None) == 403
             ):
                 msg = texts[language]["genius_403_error"]
             else:
