@@ -4,6 +4,7 @@ from collections import namedtuple
 
 from telegram.ext import ConversationHandler
 
+LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "error").upper()
 BOT_TOKEN: str = os.environ["BOT_TOKEN"]
 DATABASE_URL: str = os.environ["DATABASE_URL"]
 TELEGRAPH_TOKEN: str = os.environ["TELEGRAPH_TOKEN"]
