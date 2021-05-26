@@ -1,4 +1,5 @@
 import logging
+import warnings
 import traceback
 from typing import Dict, Any
 
@@ -41,6 +42,7 @@ from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
+    LOG_LEVEL,
     DATABASE_URL,
     TYPING_ALBUM,
     TYPING_SONG,
@@ -70,11 +72,18 @@ from geniust.constants import (
     DONT_INCLUDE_ANNOTATIONS,
 )
 
+warnings.filterwarnings(
+    "ignore", message="If 'per_", module="telegram.ext.conversationhandler"
+)
+
 # Enable logging
-logging.getLogger("telegram").setLevel(logging.INFO)
+log_level_num: int = getattr(logging, LOG_LEVEL)
+logging.getLogger("telegram").setLevel(
+    logging.INFO if log_level_num <= logging.INFO else LOG_LEVEL
+)
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
 notification_handler = NotificationHandler("telegram", defaults=defaults)
 notification_handler.setLevel(logging.ERROR)
