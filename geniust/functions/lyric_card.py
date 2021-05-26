@@ -32,23 +32,23 @@ COVER_ART_BRIGHTNESS = 0.8
 
 # Fonts
 FONTS_PATH = data_path
-NotoSans_SCMedium = str(FONTS_PATH / "NotoSans-SemiCondensedMedium.ttf")
-NotoSansArabic_SCMedium = str(FONTS_PATH / "NotoSansArabic-SemiCondensedMedium.ttf")
+NotoSans = str(FONTS_PATH / "NotoSans-SemiBold.ttf")
+NotoSansArabic = str(FONTS_PATH / "NotoSansArabic-SemiCondensedMedium.ttf")
 # RTL changes the direction as well as the font to be used for Arabic/Persian glyphs.
 fonts: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
     LTR: {
-        "lyrics": ImageFont.truetype(NotoSans_SCMedium, 55),
-        "metadata_big": ImageFont.truetype(NotoSans_SCMedium, 37),
-        "metadata_small": ImageFont.truetype(NotoSans_SCMedium, 30),
-        "featured_artists_big": ImageFont.truetype(NotoSans_SCMedium, 32),
-        "featured_artists_small": ImageFont.truetype(NotoSans_SCMedium, 25),
+        "lyrics": ImageFont.truetype(NotoSans, 55),
+        "metadata_big": ImageFont.truetype(NotoSans, 37),
+        "metadata_small": ImageFont.truetype(NotoSans, 30),
+        "featured_artists_big": ImageFont.truetype(NotoSans, 32),
+        "featured_artists_small": ImageFont.truetype(NotoSans, 25),
     },
     RTL: {
-        "lyrics": ImageFont.truetype(NotoSansArabic_SCMedium, 55),
-        "metadata_big": ImageFont.truetype(NotoSansArabic_SCMedium, 37),
-        "metadata_small": ImageFont.truetype(NotoSansArabic_SCMedium, 30),
-        "featured_artists_big": ImageFont.truetype(NotoSansArabic_SCMedium, 32),
-        "featured_artists_small": ImageFont.truetype(NotoSansArabic_SCMedium, 25),
+        "lyrics": ImageFont.truetype(NotoSansArabic, 55),
+        "metadata_big": ImageFont.truetype(NotoSansArabic, 37),
+        "metadata_small": ImageFont.truetype(NotoSansArabic, 30),
+        "featured_artists_big": ImageFont.truetype(NotoSansArabic, 32),
+        "featured_artists_small": ImageFont.truetype(NotoSansArabic, 25),
     },
 }
 
