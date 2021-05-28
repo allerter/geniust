@@ -96,12 +96,12 @@ for direction in OFFSETS:
 BUILDER_IMAGE_SIZE = (1000, 1000)
 
 
-def change_brightness(im: Image, value: float) -> Image:
+def change_brightness(im: Image.Image, value: float) -> Image.Image:
     enhancer = ImageEnhance.Brightness(im)
     return enhancer.enhance(value)
 
 
-def add_double_quotes(im: Image, rtl: bool) -> None:
+def add_double_quotes(im: Image.Image, rtl: bool) -> None:
     double_quotes_image = images[rtl]["double_quotes"]
     box = OFFSETS[rtl]["offset"]
     if rtl:
@@ -116,7 +116,12 @@ def fix_text_direction(text: str, rtl: bool) -> str:
     return text
 
 
-def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point, rtl: bool) -> Point:
+def add_line(
+    draw: ImageDraw.ImageDraw,
+    lyric: str,
+    last_box_pos: Point,
+    rtl: bool,
+) -> Point:
     lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     box_height = OFFSETS[rtl]["box_height"].top
     lyrics_offset = OFFSETS[rtl]["lyrics_offset"]
@@ -152,7 +157,7 @@ def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point, rtl: bool) -> Poi
     return last_box_pos
 
 
-def add_lyrics(draw: ImageDraw, lyrics: str, rtl: bool) -> Point:
+def add_lyrics(draw: ImageDraw.ImageDraw, lyrics: str, rtl: bool) -> Point:
     pos_end = lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     for line in lyrics.split("\n"):
         # add_line moves every box some pixels down,
@@ -169,7 +174,7 @@ def add_lyrics(draw: ImageDraw, lyrics: str, rtl: bool) -> Point:
 
 
 def add_metadata(
-    draw: ImageDraw,
+    draw: ImageDraw.ImageDraw,
     last_box_pos: Point,
     song_title: str,
     primary_artists: List[str],
