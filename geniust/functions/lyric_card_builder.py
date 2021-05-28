@@ -73,16 +73,12 @@ BOX_COLOR = "#fff"
 OFFSETS: Dict[bool, Dict[str, ImmutablePoint]] = {
     LTR: {
         "offset": ImmutablePoint(18, 451),
-        "text_height": FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1],
         "box_height": ImmutablePoint(
             0, FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1] + 15
         ),
     },
     RTL: {
         "offset": ImmutablePoint(18, 451),
-        "text_height": ImmutablePoint(
-            0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]
-        ),
         "box_height": ImmutablePoint(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
     },
 }
