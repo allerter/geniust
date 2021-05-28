@@ -79,6 +79,10 @@ for direction in offsets:
         offsets[direction]["lyrics_box_offset"].left + 5,
         offsets[direction]["lyrics_box_offset"].top - 5,
     )
+# All the offsets and font sizes are configured for a 1000x1000 image,
+# so we'll resize the image to the builder image size and then resize it back to
+# its original size
+BUILDER_IMAGE_SIZE = (1000, 1000)
 
 
 def change_brightness(im: Image, value: float) -> Image:
@@ -230,6 +234,9 @@ def build_lyric_card(
 ) -> BytesIO:
     im = Image.open(cover_art)
     im = change_brightness(im, COVER_ART_BRIGHTNESS)
+    original_size = im.size
+    if original_size != BUILDER_IMAGE_SIZE:
+        im = im.resize(BUILDER_IMAGE_SIZE, Image.BOX)
     add_double_quotes(im, rtl=rtl)
     draw = ImageDraw.Draw(im)
     pos_end = add_lyrics(draw, lyrics, rtl=rtl)
@@ -241,6 +248,8 @@ def build_lyric_card(
         featured_artists if featured_artists else [],
         rtl=rtl,
     )
+    if original_size != BUILDER_IMAGE_SIZE:
+        im = im.resize(original_size, Image.BOX)
     lyric_card = BytesIO()
     im.save(lyric_card, format=format)
     return lyric_card
