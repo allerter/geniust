@@ -243,6 +243,27 @@ def build_lyric_card(
     rtl: bool = False,
     format: str = "PNG",
 ) -> BytesIO:
+    """Builds lyric card
+
+    Cover arts that aren't 1000x1000 will be upscaled and then downscaled
+    after the build is done.
+
+    Args:
+        cover_art (BytesIO): Cover art of the song (1000x1000 recommended).
+        lyrics (str): Lyrics to be put on the card.
+        song_title (str): Title of the song.
+        primary_artists (List[str]): Primary artists of the song.
+        featured_artists (Optional[List[str]], optional): Featured artists
+            of the song. Defaults to None.
+        rtl (bool, optional): Whether the lyrics are Right-To-Left or not.
+            Also changes the fonts to one with Arabic/Persian glyphs. Basically
+            `True` means that the lyrics are Arabic/Persian. Defaults to False.
+        format (str, optional): Format of the final card passed to
+            `PIL.Image.Image.save`. Defaults to "PNG".
+
+    Returns:
+        BytesIO: The lyric card in an in-memory file.
+    """
     im = Image.open(cover_art)
     im = change_brightness(im, COVER_ART_BRIGHTNESS)
     original_size = im.size
