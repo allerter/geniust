@@ -141,7 +141,7 @@ def add_line(
         box_start = Point(lyrics_box_offset.left, last_box_pos.top + 10)
         box_end = Point(box_start.left + width + 15, box_start.top + box_height - 5)
         if rtl:
-            box_end.top -= 7
+            box_end.top -= 8
             box_start.left += 820 - width
             box_end.left += 820 - width
         draw.rectangle((astuple(box_start), astuple(box_end)), fill=BOX_COLOR)
@@ -150,7 +150,7 @@ def add_line(
         top = last_box_pos.top
         pos = Point(lyrics_offset.left + 2, top + 5)
         if rtl:
-            pos.top -= 5
+            pos.top -= 10
             pos.left += 820 - width
         draw.text(astuple(pos), line, fill=LYRICS_TEXT_COLOR, font=lyrics_font)
         last_box_pos = box_end
