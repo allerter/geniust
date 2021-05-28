@@ -32,8 +32,8 @@ COVER_ART_BRIGHTNESS = 0.8
 
 # Fonts
 FONTS_PATH = data_path
-NotoSans = str(FONTS_PATH / "Dirooz.ttf")
-VazirRegular = str(FONTS_PATH / "Dirooz.ttf")
+NotoSans = str(FONTS_PATH / "NotoSans-SemiBold.ttf")
+PersianFont = str(FONTS_PATH / "Vazir-Medium.ttf")
 # RTL changes the direction as well as the font to be used for Arabic/Persian glyphs.
 FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
     LTR: {
@@ -44,11 +44,11 @@ FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
         "featured_artists_small": ImageFont.truetype(NotoSans, 25),
     },
     RTL: {
-        "lyrics": ImageFont.truetype(VazirRegular, 55),
-        "metadata_big": ImageFont.truetype(VazirRegular, 37),
-        "metadata_small": ImageFont.truetype(VazirRegular, 30),
-        "featured_artists_big": ImageFont.truetype(VazirRegular, 32),
-        "featured_artists_small": ImageFont.truetype(VazirRegular, 25),
+        "lyrics": ImageFont.truetype(PersianFont, 55),
+        "metadata_big": ImageFont.truetype(PersianFont, 37),
+        "metadata_small": ImageFont.truetype(PersianFont, 30),
+        "featured_artists_big": ImageFont.truetype(PersianFont, 32),
+        "featured_artists_small": ImageFont.truetype(PersianFont, 25),
     },
 }
 
