@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from io import BytesIO
 
 import arabic_reshaper
+from fontTools.ttLib import TTFont
 from PIL import Image, ImageEnhance, ImageFont, ImageDraw
 from bidi.algorithm import get_display
 
@@ -51,6 +52,11 @@ FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
         "featured_artists_small": ImageFont.truetype(PersianFont, 25),
     },
 }
+# Add glyphs of each font (needed in has_glyph)
+for direction in FONTS:
+    FONTS[direction]["glyphs"] = []
+    for table in TTFont(FONTS[direction]["lyrics"].path)["cmap"].tables:
+        FONTS[direction]["glyphs"].extend(table.cmap)
 
 # Colors
 LYRICS_TEXT_COLOR = "#000"
@@ -96,6 +102,10 @@ for direction in OFFSETS:
 BUILDER_IMAGE_SIZE = (1000, 1000)
 
 
+def has_glyphs(font_glyphs: List[int], glyph: str) -> bool:
+    return True if ord(glyph) in font_glyphs else False
+
+
 def change_brightness(im: Image.Image, value: float) -> Image.Image:
     enhancer = ImageEnhance.Brightness(im)
     return enhancer.enhance(value)
@@ -127,6 +137,12 @@ def add_line(
     lyrics_offset = OFFSETS[rtl]["lyrics_offset"]
     lyrics_font = FONTS[rtl]["lyrics"]
     for i, line in enumerate(textwrap.wrap(lyric, 30, drop_whitespace=True)):
+        # Remove unsupported glyphs from line
+        line = "".join(
+            char
+            for char in line
+            if char == "\n" or has_glyphs(FONTS[rtl]["glyphs"], char)
+        )
         # Draw box
         line = fix_text_direction(line, rtl)
         width, _ = FONTS[rtl]["lyrics"].getsize(line)
@@ -195,6 +211,10 @@ def add_metadata(
     pos_metadata = Point(lyrics_box_offset.left, last_box_pos.top + 35)
     text = f" {artist_sep} ".join(primary_artists)
     text += f" «{song_title}»" if rtl else f' "{song_title}"'
+    # Remove unsupported glyphs from text
+    text = "".join(
+        char for char in text if char == "\n" or has_glyphs(lang_fonts["glyphs"], char)
+    )
     if len(text) > 42:
         if len(text) > 52:
             text = textwrap.fill(text, 52, drop_whitespace=True)
@@ -226,6 +246,12 @@ def add_metadata(
                 sep=artist_sep,
                 last_artist=featured_artists[-1],
             )
+        # Remove unsupported glyphs from text
+        text = "".join(
+            char
+            for char in text
+            if char == "\n" or has_glyphs(lang_fonts["glyphs"], char)
+        )
         text = textwrap.fill(text, 52)
         text = fix_text_direction(text.upper(), rtl)
         width, _ = featured_font.getsize(text)
