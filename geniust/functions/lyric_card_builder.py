@@ -58,7 +58,7 @@ METADATA_TEXT_COLOR = "#fff"
 BOX_COLOR = "#fff"
 
 # Offsets
-offsets: Dict[bool, Dict[str, Point]] = {
+OFFSETS: Dict[bool, Dict[str, Point]] = {
     LTR: {
         "offset": Point(18, 451),
         "text_height": fonts[LTR]["lyrics"].getsize("LOREM IPSUM")[1],
@@ -70,18 +70,29 @@ offsets: Dict[bool, Dict[str, Point]] = {
         "box_height": Point(0, fonts[RTL]["lyrics"].getsize("لورم ایپسوم")[1] - 15),
     },
 }
-for direction in offsets:
-    offsets[direction]["lyrics_box_offset"] = Point(
-        offsets[direction]["offset"].left + images[LTR]["double_quotes"].width + 15,
-        offsets[direction]["offset"].top,
+for direction in OFFSETS:
+    OFFSETS[direction]["lyrics_box_offset"] = Point(
+        OFFSETS[direction]["offset"].left + images[LTR]["double_quotes"].width + 15,
+        OFFSETS[direction]["offset"].top,
     )
-    offsets[direction]["lyrics_offset"] = Point(
-        offsets[direction]["lyrics_box_offset"].left + 5,
-        offsets[direction]["lyrics_box_offset"].top - 5,
+    OFFSETS[direction]["lyrics_offset"] = Point(
+        OFFSETS[direction]["lyrics_box_offset"].left + 5,
+        OFFSETS[direction]["lyrics_box_offset"].top - 5,
     )
 # All the offsets and font sizes are configured for a 1000x1000 image,
 # so we'll resize the image to the builder image size and then resize it back to
 # its original size
+# The better solution is to use ratios from comparing cover art size to 1000x1000
+# and adjust offsets and font sizes dynamically. For example:
+# offset = Point(18, 451)
+# image_size = im.size
+# ratio = (image_size[0] / 1000, image_size[1] / 1000)
+# adjusted_offset = Point(offset.left * ratio[0], offset.top * ratio[1])
+# As I tested, this works fine for adjusting offsets and resizing the double quotes
+# image, but for two reason I decided to go with resizing the image:
+# 1. There may be some issues adjusting the font size e.g. it seems that
+#    font size doesn't change linearly.
+# 2. From what I've seen, most of Genius cover arts are available in 1000x1000.
 BUILDER_IMAGE_SIZE = (1000, 1000)
 
 
@@ -92,7 +103,7 @@ def change_brightness(im: Image, value: float) -> Image:
 
 def add_double_quotes(im: Image, rtl: bool) -> None:
     double_quotes_image = images[rtl]["double_quotes"]
-    box = offsets[rtl]["offset"]
+    box = OFFSETS[rtl]["offset"]
     if rtl:
         box.left += 912
     im.paste(double_quotes_image, astuple(box), mask=double_quotes_image)
@@ -106,9 +117,9 @@ def fix_text_direction(text: str, rtl: bool) -> str:
 
 
 def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point, rtl: bool) -> Point:
-    lyrics_box_offset = offsets[rtl]["lyrics_box_offset"]
-    box_height = offsets[rtl]["box_height"].top
-    lyrics_offset = offsets[rtl]["lyrics_offset"]
+    lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
+    box_height = OFFSETS[rtl]["box_height"].top
+    lyrics_offset = OFFSETS[rtl]["lyrics_offset"]
     lyrics_font = fonts[rtl]["lyrics"]
     for i, line in enumerate(textwrap.wrap(lyric, 30, drop_whitespace=True)):
         # Draw box
@@ -142,7 +153,7 @@ def add_line(draw: ImageDraw, lyric: str, last_box_pos: Point, rtl: bool) -> Poi
 
 
 def add_lyrics(draw: ImageDraw, lyrics: str, rtl: bool) -> Point:
-    pos_end = lyrics_box_offset = offsets[rtl]["lyrics_box_offset"]
+    pos_end = lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     for line in lyrics.split("\n"):
         # add_line moves every box some pixels down,
         # but we don't want that for the first box
@@ -165,7 +176,7 @@ def add_metadata(
     featured_artists: List[str],
     rtl: bool,
 ):
-    lyrics_box_offset = offsets[rtl]["lyrics_box_offset"]
+    lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     lang_fonts = fonts[rtl]
     if rtl:
         artist_sep = "و"
