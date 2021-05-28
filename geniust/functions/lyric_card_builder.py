@@ -241,7 +241,6 @@ def build_lyric_card(
         featured_artists if featured_artists else [],
         rtl=rtl,
     )
-    im = change_brightness(im, 1)
     lyric_card = BytesIO()
     im.save(lyric_card, format=format)
     return lyric_card
