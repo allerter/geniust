@@ -245,7 +245,8 @@ def build_lyric_card(
     song_title: str,
     primary_artists: List[str],
     featured_artists: Optional[List[str]] = None,
-    rtl: bool = False,
+    rtl_lyrics: bool = False,
+    rtl_metadata: bool = False,
     format: str = "PNG",
 ) -> BytesIO:
     """Builds lyric card
@@ -260,9 +261,13 @@ def build_lyric_card(
         primary_artists (List[str]): Primary artists of the song.
         featured_artists (Optional[List[str]], optional): Featured artists
             of the song. Defaults to None.
-        rtl (bool, optional): Whether the lyrics are Right-To-Left or not.
+        rtl_lyrics (bool, optional): Whether the lyrics are Right-To-Left or not.
             Also changes the fonts to one with Arabic/Persian glyphs. Basically
             `True` means that the lyrics are Arabic/Persian. Defaults to False.
+        rtl_metadata (bool, optional): Whether the metadata are Right-To-Left or not.
+            Also changes the fonts to one with Arabic/Persian glyphs. Basically
+            `True` means that the metadata are Arabic/Persian or have
+            characters of said languages. Defaults to False.
         format (str, optional): Format of the final card passed to
             `PIL.Image.Image.save`. Defaults to "PNG".
 
@@ -274,16 +279,16 @@ def build_lyric_card(
     original_size = im.size
     if original_size != BUILDER_IMAGE_SIZE:
         im = im.resize(BUILDER_IMAGE_SIZE, Image.BOX)
-    add_double_quotes(im, rtl=rtl)
+    add_double_quotes(im, rtl=rtl_lyrics)
     draw = ImageDraw.Draw(im)
-    pos_end = add_lyrics(draw, lyrics, rtl=rtl)
+    pos_end = add_lyrics(draw, lyrics, rtl=rtl_lyrics)
     add_metadata(
         draw,
         pos_end,
         song_title,
         primary_artists,
         featured_artists if featured_artists else [],
-        rtl=rtl,
+        rtl=rtl_metadata,
     )
     if original_size != BUILDER_IMAGE_SIZE:
         im = im.resize(original_size, Image.CUBIC)
