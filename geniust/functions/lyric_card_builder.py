@@ -115,7 +115,7 @@ def add_double_quotes(im: Image.Image, rtl: bool) -> None:
     double_quotes_image = IMAGES[rtl]["double_quotes"]
     box = OFFSETS[rtl]["offset"]
     if rtl:
-        box.left += 912
+        box = Point(box.left + 912, box.top)
     im.paste(double_quotes_image, astuple(box), mask=double_quotes_image)
 
 
