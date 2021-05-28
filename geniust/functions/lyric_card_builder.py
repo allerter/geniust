@@ -35,7 +35,7 @@ FONTS_PATH = data_path
 NotoSans = str(FONTS_PATH / "NotoSans-SemiBold.ttf")
 NotoSansArabic = str(FONTS_PATH / "NotoSansArabic-SemiCondensedMedium.ttf")
 # RTL changes the direction as well as the font to be used for Arabic/Persian glyphs.
-fonts: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
+FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
     LTR: {
         "lyrics": ImageFont.truetype(NotoSans, 55),
         "metadata_big": ImageFont.truetype(NotoSans, 37),
@@ -61,13 +61,13 @@ BOX_COLOR = "#fff"
 OFFSETS: Dict[bool, Dict[str, Point]] = {
     LTR: {
         "offset": Point(18, 451),
-        "text_height": fonts[LTR]["lyrics"].getsize("LOREM IPSUM")[1],
-        "box_height": Point(0, fonts[LTR]["lyrics"].getsize("LOREM IPSUM")[1] + 15),
+        "text_height": FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1],
+        "box_height": Point(0, FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1] + 15),
     },
     RTL: {
         "offset": Point(18, 451),
-        "text_height": Point(0, fonts[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
-        "box_height": Point(0, fonts[RTL]["lyrics"].getsize("لورم ایپسوم")[1] - 15),
+        "text_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
+        "box_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1] - 15),
     },
 }
 for direction in OFFSETS:
@@ -125,11 +125,11 @@ def add_line(
     lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     box_height = OFFSETS[rtl]["box_height"].top
     lyrics_offset = OFFSETS[rtl]["lyrics_offset"]
-    lyrics_font = fonts[rtl]["lyrics"]
+    lyrics_font = FONTS[rtl]["lyrics"]
     for i, line in enumerate(textwrap.wrap(lyric, 30, drop_whitespace=True)):
         # Draw box
         line = fix_text_direction(line, rtl)
-        width, _ = fonts[rtl]["lyrics"].getsize(line)
+        width, _ = FONTS[rtl]["lyrics"].getsize(line)
         if i == 0:
             last_line_width = width
         else:
@@ -182,7 +182,7 @@ def add_metadata(
     rtl: bool,
 ):
     lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
-    lang_fonts = fonts[rtl]
+    lang_fonts = FONTS[rtl]
     if rtl:
         artist_sep = "و"
         comma = "،"
