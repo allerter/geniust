@@ -1,6 +1,6 @@
 import textwrap
 from dataclasses import dataclass, astuple
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from io import BytesIO
 
 import arabic_reshaper
@@ -13,6 +13,12 @@ from geniust import data_path
 
 @dataclass
 class Point:
+    left: int
+    top: int
+
+
+@dataclass(frozen=True)
+class ImmutablePoint:
     left: int
     top: int
 
@@ -64,24 +70,28 @@ METADATA_TEXT_COLOR = "#fff"
 BOX_COLOR = "#fff"
 
 # Offsets
-OFFSETS: Dict[bool, Dict[str, Point]] = {
+OFFSETS: Dict[bool, Dict[str, ImmutablePoint]] = {
     LTR: {
-        "offset": Point(18, 451),
+        "offset": ImmutablePoint(18, 451),
         "text_height": FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1],
-        "box_height": Point(0, FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1] + 15),
+        "box_height": ImmutablePoint(
+            0, FONTS[LTR]["lyrics"].getsize("LOREM IPSUM")[1] + 15
+        ),
     },
     RTL: {
-        "offset": Point(18, 451),
-        "text_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
-        "box_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
+        "offset": ImmutablePoint(18, 451),
+        "text_height": ImmutablePoint(
+            0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]
+        ),
+        "box_height": ImmutablePoint(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
     },
 }
 for direction in OFFSETS:
-    OFFSETS[direction]["lyrics_box_offset"] = Point(
+    OFFSETS[direction]["lyrics_box_offset"] = ImmutablePoint(
         OFFSETS[direction]["offset"].left + IMAGES[LTR]["double_quotes"].width + 15,
         OFFSETS[direction]["offset"].top,
     )
-    OFFSETS[direction]["lyrics_offset"] = Point(
+    OFFSETS[direction]["lyrics_offset"] = ImmutablePoint(
         OFFSETS[direction]["lyrics_box_offset"].left + 5,
         OFFSETS[direction]["lyrics_box_offset"].top - 5,
     )
@@ -115,7 +125,7 @@ def add_double_quotes(im: Image.Image, rtl: bool) -> None:
     double_quotes_image = IMAGES[rtl]["double_quotes"]
     box = OFFSETS[rtl]["offset"]
     if rtl:
-        box = Point(box.left + 912, box.top)
+        box = Point(box.left + 912, box.top)  # type: ignore
     im.paste(double_quotes_image, astuple(box), mask=double_quotes_image)
 
 
@@ -129,9 +139,9 @@ def fix_text_direction(text: str, rtl: bool) -> str:
 def add_line(
     draw: ImageDraw.ImageDraw,
     lyric: str,
-    last_box_pos: Point,
+    last_box_pos: Union[ImmutablePoint, Point],
     rtl: bool,
-) -> Point:
+) -> Union[ImmutablePoint, Point]:
     lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
     box_height = OFFSETS[rtl]["box_height"].top
     lyrics_offset = OFFSETS[rtl]["lyrics_offset"]
@@ -173,25 +183,27 @@ def add_line(
     return last_box_pos
 
 
-def add_lyrics(draw: ImageDraw.ImageDraw, lyrics: str, rtl: bool) -> Point:
-    pos_end = lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]
+def add_lyrics(
+    draw: ImageDraw.ImageDraw, lyrics: str, rtl: bool
+) -> Union[ImmutablePoint, Point]:
+    pos_end = lyrics_box_offset = OFFSETS[rtl]["lyrics_box_offset"]  # type: ignore
     for line in lyrics.split("\n"):
         # add_line moves every box some pixels down,
         # but we don't want that for the first box
         # since it should be aligned with the quotes
         # so we move it the same number of pixels up
-        last_box_pos = (
+        last_box_pos = (  # type: ignore
             Point(lyrics_box_offset.left, lyrics_box_offset.top - 10)
             if pos_end == lyrics_box_offset
             else pos_end
         )
-        pos_end = add_line(draw, line, last_box_pos, rtl=rtl)
+        pos_end = add_line(draw, line, last_box_pos, rtl=rtl)  # type: ignore
     return pos_end
 
 
 def add_metadata(
     draw: ImageDraw.ImageDraw,
-    last_box_pos: Point,
+    last_box_pos: Union[ImmutablePoint, Point],
     song_title: str,
     primary_artists: List[str],
     featured_artists: List[str],
