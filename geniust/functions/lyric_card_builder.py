@@ -32,8 +32,8 @@ COVER_ART_BRIGHTNESS = 0.8
 
 # Fonts
 FONTS_PATH = data_path
-NotoSans = str(FONTS_PATH / "NotoSans-SemiBold.ttf")
-NotoSansArabic = str(FONTS_PATH / "NotoSansArabic-SemiCondensedMedium.ttf")
+NotoSans = str(FONTS_PATH / "Dirooz.ttf")
+VazirRegular = str(FONTS_PATH / "Dirooz.ttf")
 # RTL changes the direction as well as the font to be used for Arabic/Persian glyphs.
 FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
     LTR: {
@@ -44,11 +44,11 @@ FONTS: Dict[bool, Dict[str, ImageFont.FreeTypeFont]] = {
         "featured_artists_small": ImageFont.truetype(NotoSans, 25),
     },
     RTL: {
-        "lyrics": ImageFont.truetype(NotoSansArabic, 55),
-        "metadata_big": ImageFont.truetype(NotoSansArabic, 37),
-        "metadata_small": ImageFont.truetype(NotoSansArabic, 30),
-        "featured_artists_big": ImageFont.truetype(NotoSansArabic, 32),
-        "featured_artists_small": ImageFont.truetype(NotoSansArabic, 25),
+        "lyrics": ImageFont.truetype(VazirRegular, 55),
+        "metadata_big": ImageFont.truetype(VazirRegular, 37),
+        "metadata_small": ImageFont.truetype(VazirRegular, 30),
+        "featured_artists_big": ImageFont.truetype(VazirRegular, 32),
+        "featured_artists_small": ImageFont.truetype(VazirRegular, 25),
     },
 }
 
@@ -67,7 +67,7 @@ OFFSETS: Dict[bool, Dict[str, Point]] = {
     RTL: {
         "offset": Point(18, 451),
         "text_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
-        "box_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1] - 15),
+        "box_height": Point(0, FONTS[RTL]["lyrics"].getsize("لورم ایپسوم")[1]),
     },
 }
 for direction in OFFSETS:
@@ -150,7 +150,7 @@ def add_line(
         top = last_box_pos.top
         pos = Point(lyrics_offset.left + 2, top + 5)
         if rtl:
-            pos.top -= 20
+            pos.top -= 5
             pos.left += 820 - width
         draw.text(astuple(pos), line, fill=LYRICS_TEXT_COLOR, font=lyrics_font)
         last_box_pos = box_end
