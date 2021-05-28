@@ -21,11 +21,11 @@ class Point:
 # for Arabic/Persian characters
 RTL = True
 LTR = False
-images: Dict[bool, Dict[str, Image.Image]] = {
+IMAGES: Dict[bool, Dict[str, Image.Image]] = {
     LTR: {"double_quotes": Image.open(data_path / "double-quotes.png")},
     RTL: {},
 }
-images[RTL]["double_quotes"] = images[LTR]["double_quotes"].transpose(
+IMAGES[RTL]["double_quotes"] = IMAGES[LTR]["double_quotes"].transpose(
     Image.FLIP_LEFT_RIGHT
 )
 COVER_ART_BRIGHTNESS = 0.8
@@ -72,7 +72,7 @@ OFFSETS: Dict[bool, Dict[str, Point]] = {
 }
 for direction in OFFSETS:
     OFFSETS[direction]["lyrics_box_offset"] = Point(
-        OFFSETS[direction]["offset"].left + images[LTR]["double_quotes"].width + 15,
+        OFFSETS[direction]["offset"].left + IMAGES[LTR]["double_quotes"].width + 15,
         OFFSETS[direction]["offset"].top,
     )
     OFFSETS[direction]["lyrics_offset"] = Point(
@@ -102,7 +102,7 @@ def change_brightness(im: Image.Image, value: float) -> Image.Image:
 
 
 def add_double_quotes(im: Image.Image, rtl: bool) -> None:
-    double_quotes_image = images[rtl]["double_quotes"]
+    double_quotes_image = IMAGES[rtl]["double_quotes"]
     box = OFFSETS[rtl]["offset"]
     if rtl:
         box.left += 912
