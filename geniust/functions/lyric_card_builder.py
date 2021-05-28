@@ -286,7 +286,7 @@ def build_lyric_card(
         rtl=rtl,
     )
     if original_size != BUILDER_IMAGE_SIZE:
-        im = im.resize(original_size, Image.BOX)
+        im = im.resize(original_size, Image.CUBIC)
     lyric_card = BytesIO()
     im.save(lyric_card, format=format)
     return lyric_card
