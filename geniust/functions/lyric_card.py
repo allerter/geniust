@@ -2,8 +2,6 @@ import logging
 import re
 from datetime import timedelta
 from io import BytesIO
-from typing import List
-from urllib.parse import quote_plus
 from uuid import uuid4
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
@@ -12,7 +10,7 @@ from telegram.ext import CallbackContext
 from geniust.constants import END, TYPING_LYRIC_CARD_LYRICS, TYPING_LYRIC_CARD_CUSTOM
 from geniust import username
 from geniust import get_user
-from geniust.utils import log
+from geniust.utils import log, has_sentence
 from geniust.functions.lyric_card_builder import build_lyric_card
 
 
@@ -38,13 +36,6 @@ def type_lyrics(update: Update, context: CallbackContext) -> int:
         update.message.reply_text(msg)
 
     return TYPING_LYRIC_CARD_LYRICS
-
-
-def has_sentence(sentences: List[str], sentence: str) -> bool:
-    for x in sentences:
-        if x in sentence:
-            return True
-    return False
 
 
 @log
@@ -108,6 +99,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     # downscales the image. Instead, we can use this hack to have
     # Genius upscale the image for us and then just have a normal
     # 1000x1000 cover art.
+    # from urllib.parse import quote_plus
     # image_size = re.findall(r"[\d]{1,}x[\d]{1,}", cover_art_url)[-1]
     # if image_size != "1000x1000":
     #     encoded_url = quote_plus(cover_art_url)

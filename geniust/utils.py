@@ -296,6 +296,24 @@ def get_description(entity: Dict[str, Any]) -> str:
     return description.strip()
 
 
+def has_sentence(sentences: List[str], sentence: str) -> bool:
+    """Checks for sentence in the list of sentences
+
+    Used to check if a lyric sentence is in the lyric snippet.
+
+    Args:
+        sentences (List[str]): List of sentences of the lyrics snippet.
+        sentence (str): Sentence from user input to check if it is in the lyrics.
+
+    Returns:
+        bool: True means the sentence is in the lyrics and False means it's not.
+    """
+    for x in sentences:
+        if x in sentence:
+            return True
+    return False
+
+
 def human_format(num: int) -> str:
     """Returns num in human-redabale format
 
