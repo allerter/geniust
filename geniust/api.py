@@ -7,6 +7,7 @@ import queue
 from json.decoder import JSONDecodeError
 from typing import Any, Tuple, Optional, Union, List, Dict
 from dataclasses import dataclass
+from io import BytesIO
 
 import requests
 import telethon
@@ -471,6 +472,10 @@ class GeniusT(Genius):
             if annotation_id not in all_annotations.keys():
                 all_annotations[annotation_id] = annotation
         return all_annotations
+
+    def download_cover_art(self, url: str) -> BytesIO:
+        data = self._session.get(url).content
+        return BytesIO(data)
 
     def fetch(self, track: Dict[str, Any], include_annotations: bool) -> None:
         """fetches song from Genius adds it to the artist objecty
