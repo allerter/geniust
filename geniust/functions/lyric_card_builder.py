@@ -109,6 +109,7 @@ BUILDER_IMAGE_SIZE = (1000, 1000)
 
 
 def has_glyphs(font_glyphs: List[int], glyph: str) -> bool:
+    # from https://stackoverflow.com/a/53829424
     return True if ord(glyph) in font_glyphs else False
 
 
