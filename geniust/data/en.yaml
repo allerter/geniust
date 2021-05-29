@@ -199,6 +199,13 @@ inline_menu:
     description: User info.
     initial_caption: Click on the button below to search users.
 
+  lyric_card:
+    body: Lyric Card
+    new: New Lyric Card
+    description: Get a Genius lyric card by providing lyrics from your favorite song
+    initial_caption: Click on the button below to generate a lyric card.
+    not_found: No match found.
+
   full_details: Full Details
   button: Click Here
   translation: Translation

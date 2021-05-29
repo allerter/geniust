@@ -1,11 +1,12 @@
 import logging
 from uuid import uuid4
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import (
     InlineQueryResultArticle,
+    InlineQueryResultCachedPhoto,
     InputTextMessageContent,
     Update,
 )
@@ -13,7 +14,9 @@ from telegram.ext import CallbackContext
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust import username, utils, get_user
-from geniust.utils import log
+from geniust.constants import LYRIC_CARD_CHANNEL
+from geniust.functions.lyric_card_builder import build_lyric_card
+from geniust.utils import log, has_sentence, PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES
 
 
 logger = logging.getLogger("geniust")
@@ -112,6 +115,24 @@ def inline_menu(update: Update, context: CallbackContext) -> None:
                         IButton(
                             text=text["button"],
                             switch_inline_query_current_chat=".user ",
+                        )
+                    ]
+                ]
+            ),
+        ),
+        InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=text["lyric_card"]["body"],
+            description=text["lyric_card"]["description"],
+            input_message_content=InputTextMessageContent(
+                text["lyric_card"]["initial_caption"]
+            ),
+            reply_markup=IBKeyboard(
+                [
+                    [
+                        IButton(
+                            text=text["button"],
+                            switch_inline_query_current_chat=".lyric_card ",
                         )
                     ]
                 ]
@@ -448,6 +469,100 @@ def search_users(update: Update, context: CallbackContext) -> None:
 
 
 @log
+@get_user
+def lyric_card(update: Update, context: CallbackContext) -> None:
+    """Displays a list of lyric cards based on lyrics provided by the user"""
+
+    def add_photo(lyrics):
+        """Builds the lyric card, uploads it and adds it to the inline results"""
+        lyric_card = build_lyric_card(
+            cover_art=cover_art,
+            lyrics=lyrics,
+            song_title=title,
+            primary_artists=primary_artists,
+            featured_artists=featured_artists,
+            rtl_lyrics=is_persian,
+            rtl_metadata=False,
+            format="JPEG",
+        )
+        message = context.bot.send_photo(LYRIC_CARD_CHANNEL, lyric_card)
+        photo = InlineQueryResultCachedPhoto(
+            id=str(uuid4()),
+            photo_file_id=message.photo[-1].file_id,
+            caption=f"@{username}",
+            reply_markup=keyboard,
+        )
+        photos.append(photo)
+
+    genius = context.bot_data["genius"]
+    language = context.user_data["bot_lang"]
+    texts = context.bot_data["texts"][language]
+    text = texts["inline_menu"]["lyric_card"]
+    input_text = update.inline_query.query.split(".lyric_card ")
+    input_text = input_text[1].strip() if len(input_text) > 1 else None
+    if not input_text:
+        return
+
+    search_more = [
+        IButton(
+            text=f"...{text['new']}...",
+            switch_inline_query_current_chat=".lyric_card ",
+        )
+    ]
+    keyboard = IBKeyboard([search_more])
+
+    res = genius.search_lyrics(input_text, per_page=5)
+    photos: List[InlineQueryResultCachedPhoto] = []
+    for hit in res["sections"][0]["hits"]:
+        song = hit["result"]
+        highlight = hit["highlights"][0]
+        if input_text.lower() in highlight["value"].lower():
+            break
+    else:
+        update.inline_query.answer(photos, switch_pm_text=text["not_found"])
+        return
+
+    # Get song metadata
+    song = genius.song(hit["result"]["id"])["song"]
+    title = song["title"]
+    primary_artists = song["primary_artist"]["name"].split(" & ")
+    featured_artists = [x["name"] for x in song["featured_artists"]]
+    if primary_artists[0].startswith("Genius") and featured_artists == []:
+        title = TRANSLATION_PARENTHESES.sub("", title).strip()
+        artists, title = [x.strip() for x in title.split("-")]
+        primary_artists.clear()
+        primary_artists.extend(artists.split(" & "))
+
+    cover_art_url = song["song_art_image_url"]
+    cover_art = genius.download_cover_art(cover_art_url)
+
+    # lyric card with lyric snippet
+    # Remove the first and the last line if the input isn't isn't in them
+    # This helps to keep the lyrics short. Also the first and the last line
+    # may be incomplete since the highlight value is a snippet.
+    lyrics = highlight["value"].split("\n")
+    if input_text.lower() not in lyrics[0].lower():
+        lyrics.pop(0)
+    if input_text.lower() not in lyrics[-1].lower():
+        lyrics.pop()
+    lyrics = "\n".join(lyrics)
+    is_persian = bool(PERSIAN_CHARACTERS.search(lyrics))
+    add_photo(lyrics)
+
+    # lyric card with matched lyrics
+    input_sentences = [x.lower() for x in input_text.split("\n")]
+    lyrics = "\n".join(
+        [
+            x
+            for x in highlight["value"].split("\n")
+            if has_sentence(input_sentences, x.lower())
+        ][: len(input_sentences)]
+    )
+    if lyrics:
+        add_photo(lyrics)
+    update.inline_query.answer(photos)
+
+
 def album_caption(
     update: Update, context: CallbackContext, album: Dict[str, Any], caption: str
 ) -> str:

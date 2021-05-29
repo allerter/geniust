@@ -512,6 +512,7 @@ def main():
         InlineQueryHandler(inline_query.search_albums, pattern=r"^\.album"),
         InlineQueryHandler(inline_query.search_artists, pattern=r"^\.artist"),
         InlineQueryHandler(inline_query.search_lyrics, pattern=r"^\.lyrics"),
+        InlineQueryHandler(inline_query.lyric_card, pattern=r"^\.lyric_card"),
         InlineQueryHandler(inline_query.search_songs, pattern=r"^\.song"),
         InlineQueryHandler(inline_query.search_users, pattern=r"^\.user"),
         InlineQueryHandler(
