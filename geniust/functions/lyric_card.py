@@ -61,7 +61,6 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     for hit in json_search["sections"][0]["hits"][:10]:
         highlight = hit["highlights"][0]
         if input_text.lower() in highlight["value"].lower():
-            print("found match")
             break
     else:
         update.message.reply_text(text["not_found"])
@@ -145,7 +144,6 @@ def remove_lyric_info(context: CallbackContext) -> None:
     # Otherwise it means there is an ongoing conversation.
     if "lyric_card" in ud and ud["lyric_card"]["id"] == id:
         ud.pop("lyric_card")
-        print("removed lyric info")
 
 
 @log
