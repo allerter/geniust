@@ -37,6 +37,11 @@ newline_pattern: Pattern[str] = re.compile(r"(\n|<br\s*[/]*>){2,}(?!\[)")
 # remove links from annotations
 links_pattern: Pattern[str] = re.compile(r"\nhttp[s]*.*")
 
+# Range of Arabic/Persian characters
+PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
+# Translation phrase added to the end of the song title (more info at where it's used)
+TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
+
 
 def deep_link(
     name: str,

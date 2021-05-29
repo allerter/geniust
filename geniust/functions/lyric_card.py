@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import timedelta
 from io import BytesIO
 from uuid import uuid4
@@ -10,15 +9,11 @@ from telegram.ext import CallbackContext
 from geniust.constants import END, TYPING_LYRIC_CARD_LYRICS, TYPING_LYRIC_CARD_CUSTOM
 from geniust import username
 from geniust import get_user
-from geniust.utils import log, has_sentence
+from geniust.utils import log, has_sentence, PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES
 from geniust.functions.lyric_card_builder import build_lyric_card
 
 
 logger = logging.getLogger("geniust")
-# Range of Arabic/Persian characters
-PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
-# Translation phrase added to the end of the song title (more info at where it's used)
-TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
 
 
 @log
