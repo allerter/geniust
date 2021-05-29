@@ -228,6 +228,13 @@ def end_describing(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     chat_id = update.effective_user.id
+    ud = context.user_data
+
+    if "lyric_card" in ud:
+        removal_job = context.job_queue.get_jobs_by_name(f"remove_lyric_info_{chat_id}")
+        if removal_job:
+            removal_job[0].schedule_removal()
+        ud.pop("lyric_card")
 
     if update.callback_query:
         query = update.callback_query.data
