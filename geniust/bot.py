@@ -28,6 +28,7 @@ from geniust.functions import (
     album,
     artist,
     recommender,
+    lyric_card,
     song,
     customize,
     inline_query,
@@ -56,6 +57,8 @@ from geniust.constants import (
     TYPING_FEEDBACK,
     TYPING_ARTIST,
     TYPING_USER,
+    TYPING_LYRIC_CARD_CUSTOM,
+    TYPING_LYRIC_CARD_LYRICS,
     TYPING_LYRICS,
     MAIN_MENU,
     DEVELOPERS,
@@ -440,6 +443,18 @@ def main():
             MessageHandler(Filters.text & (~Filters.command), song.search_lyrics),
             CallbackQueryHandler(song.type_lyrics, pattern="^(?!" + str(END) + ").*$"),
         ],
+        TYPING_LYRIC_CARD_LYRICS: [
+            MessageHandler(Filters.text & (~Filters.command), lyric_card.search_lyrics),
+            CallbackQueryHandler(
+                lyric_card.type_lyrics, pattern="^(?!" + str(END) + ").*$"
+            ),
+        ],
+        TYPING_LYRIC_CARD_CUSTOM: [
+            MessageHandler(
+                Filters.photo | (Filters.text & (~Filters.command)),
+                lyric_card.custom_lyric_card,
+            ),
+        ],
         TYPING_SONG: [
             MessageHandler(Filters.text & (~Filters.command), song.search_songs),
             CallbackQueryHandler(song.type_song, pattern="^(?!" + str(END) + ").*$"),
@@ -456,6 +471,8 @@ def main():
     commands = [
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
+        CommandHandler("lyric_card", lyric_card.type_lyrics),
+        CommandHandler("lyric_card_custom", lyric_card.custom_lyric_card),
         CommandHandler("song", song.type_song),
         CommandHandler("user", user.type_user),
         CommandHandler("contact_us", contact_us),
