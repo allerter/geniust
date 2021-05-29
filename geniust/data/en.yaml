@@ -373,6 +373,24 @@ display_artist_songs:
   next_page: Next Page ⏩ {}
   previous_page: "{} ⏪ Previous Page"
 
+# ----------- Lyric Card -----------
+
+lyric_card_search_lyrics:
+  not_found: "No matching lyrics were found."
+
+custom_lyric_card:
+  send_photo: Frist, send me the cover art as a photo (1000x1000 size recommended).
+  send_lyrics: Now, send me the lyrics to be put on the lyric card.
+  send_title: What is the name of the song?
+  send_primary_artists: |-
+    Send me the primary artists of the song (exclude the featured artists).
+    If there's more than one, put each one on a new line.
+  send_featured_artists: |-
+    Send me the featured artists of the song.
+    If there's more than one, put each one on a new line.
+    If there is none, press the keyboard button.
+  no_featured_artists: No featured artists on this song.
+
 # ----------- Shuffle -----------
 
 welcome_to_shuffle:
