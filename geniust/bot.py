@@ -494,6 +494,7 @@ def main():
         CommandHandler("lyric_card", lyric_card.type_lyrics),
         CommandHandler("lyric_card_custom", lyric_card.custom_lyric_card),
         CommandHandler("song", song.type_song),
+        CommandHandler("song_by_lyrics", song.type_lyrics),
         CommandHandler("user", user.type_user),
         CommandHandler("contact_us", contact_us),
     ]
