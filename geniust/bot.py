@@ -73,6 +73,7 @@ from geniust.constants import (
     ENGLISH_AND_NON_ENGLISH,
     INCLUDE_ANNOTATIONS,
     DONT_INCLUDE_ANNOTATIONS,
+    BTC_ADDRESS,
 )
 
 warnings.filterwarnings(
@@ -279,6 +280,18 @@ def contact_us(update: Update, context: CallbackContext) -> int:
 
     update.message.reply_text(text)
     return TYPING_FEEDBACK
+
+
+@log
+@get_user
+def donate(update: Update, context: CallbackContext) -> int:
+    """Sends the /donate message to the user"""
+    language = context.user_data["bot_lang"]
+    text = context.bot_data["texts"][language]["donate"]
+    text = text.format(BTC_ADDRESS)
+
+    update.message.reply_text(text)
+    return END
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
@@ -500,6 +513,7 @@ def main():
         CommandHandler("lyrics_language", customize.lyrics_language),
         CommandHandler("bot_language", customize.bot_language),
         CommandHandler("include_annotations", customize.include_annotations),
+        CommandHandler("donate", donate),
         CommandHandler("login", account.login_choices),
         CommandHandler("help", help_message),
     ]

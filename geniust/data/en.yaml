@@ -88,6 +88,14 @@ help_message: |-
     ▪️ ZIP: a zip file contatining text files of song lyrics. Includations are seperated using <code>!--!</code> and <code>!__!</code> identifiers specifing beginning and ending of each annotation respectively.
     ▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
 
+donate: |-
+  Help keep our servers running by donating to us. Any amount is appreciated.
+
+  Our BTC wallet address:
+  <code>{}</code>
+
+  If you don't have a BTC wallet, but would like to donate, contact us using /contact_us for alternate methods.
+
 inline_mode: Inline Mode
 
 contact_us: Send us what's on your mind :)

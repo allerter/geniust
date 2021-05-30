@@ -28,6 +28,7 @@ TELETHON_API_ID: str = os.environ["TELETHON_API_ID"]
 TELETHON_API_HASH: str = os.environ["TELETHON_API_HASH"]
 TELETHON_SESSION_STRING: str = os.environ["TELETHON_SESSION_STRING"]
 RECOMMENDER_TOKEN: str = os.environ["RECOMMENDER_TOKEN"]
+BTC_ADDRESS: str = os.environ["BTC_ADDRESS"]
 
 TELEGRAM_HTML_TAGS: List[str] = [
     "b",
