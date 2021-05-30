@@ -26,7 +26,7 @@ commands:
   lyric_card_custom: Custom lyric card
   shuffle: Get song recommednations
   bot_language: Bot language
-  login: Log Into Genius/Spotify
+  login: Log into Genius/Spotify
   help: Help message
   donate: Donate to us
   contact_us: Send us a message
