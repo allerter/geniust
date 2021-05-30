@@ -57,7 +57,7 @@ end_describing: Conversation finished. You can now use all available commands.
 
 help_message: |-
     ◻️ Welcome to the Genius T bot!
-    GeniusT can get you music info, build lyric cards and much more.
+    GeniusT is an <a href="https://github.com/allerter/geniust">open-source</a> bot that can get you music info, build lyric cards and much more.
 
     🔶 You can search for song lyrics using inline search too! Genius T will automatically apply your customizations.
 
