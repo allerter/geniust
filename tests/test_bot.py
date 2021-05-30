@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from telegram.ext import Updater
 
-from geniust import constants, bot
+from geniust import constants, bot, texts
 from geniust.api import Recommender
 from geniust.db import Database
 from geniust.constants import Preferences
@@ -26,6 +26,31 @@ def test_main_menu(update_callback_query, context, token, preferences):
 
     # Check if bot returned the correct state to maintain the conversation
     assert res == constants.END
+
+
+def differences_in_nested(a, b, section=None):
+    """finds differences in nested dicts
+
+    edited from https://stackoverflow.com/a/48652830
+    """
+    for [c, d], [_, g] in zip(a.items(), b.items()):
+        if isinstance(d, dict) or isinstance(g, dict):
+            if diff := set(d.keys()) - set(g.keys()):
+                yield diff
+            for i in differences_in_nested(d, g, c):
+                for b in i:
+                    yield b
+
+
+def test_texts():
+    """Tests to make sure all keys of the
+    English dict exist in other languages as well"""
+    en_dict = texts["en"]
+    other_dicts = [lang_dict for lang, lang_dict in texts.items() if lang != "en"]
+    for lang_dict in other_dicts:
+        assert en_dict.keys() == lang_dict.keys()
+        diff = list(differences_in_nested(en_dict, lang_dict))
+        assert diff == []
 
 
 def test_stop(update_message, context):
