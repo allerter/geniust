@@ -151,7 +151,7 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
     ud = context.user_data
     language = ud["bot_lang"]
     texts = context.bot_data["texts"][language]["custom_lyric_card"]
-    text = update.message.text
+    chat_id = update.effective_user.id
 
     # User started the conversation
     if "lyric_card" not in ud:
@@ -163,9 +163,10 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
             primary_artists=None,
             featured_artists=None,
         )
-        update.message.reply_text(texts["send_photo"])
+        context.bot.send_message(chat_id, texts["send_photo"])
         return TYPING_LYRIC_CARD_CUSTOM
     lyric_card_info = ud["lyric_card"]
+    text = update.message.text
 
     # User hasn't sent the cover art
     if lyric_card_info["photo"] is None:

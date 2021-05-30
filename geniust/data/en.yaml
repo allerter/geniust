@@ -6,12 +6,16 @@ main_menu:
   lyrics: Search Songs by Lyrics
   song: Song
   user: User
+  lyric_card: Get Lyric Card from Lyrics
+  lyric_card_custom: Build Custom Lyric Card
   customize_lyrics: Customize Lyrics
   change_language: Change Language
+  donate: Donate to Us
   # login: Log into Genius
   view_accounts: View Account
   shuffle: Get Song Recommednations
   reset_shuffle: Reset Shuffle Preferences
+  help: View Help Message and Bot Commands
 
 # No need to translate these because Telegram
 # only accepts one set of commands to be set.

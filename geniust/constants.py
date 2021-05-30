@@ -87,7 +87,9 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     INCLUDE,
     LYRICS_LANG,
     SELECT_ACTION,
-) = num.assign(11)
+    DONATE,
+    HELP,
+) = num.assign(13)
 
 # Lyircs Language Options
 ONLY_ENGLIGH, ONLY_NON_ENGLISH, ENGLISH_AND_NON_ENGLISH = num.assign(3)

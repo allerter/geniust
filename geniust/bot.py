@@ -74,6 +74,8 @@ from geniust.constants import (
     INCLUDE_ANNOTATIONS,
     DONT_INCLUDE_ANNOTATIONS,
     BTC_ADDRESS,
+    DONATE,
+    HELP,
 )
 
 warnings.filterwarnings(
@@ -143,9 +145,17 @@ def main_menu(update: Update, context: CallbackContext) -> int:
         ],
         [IButton(text["lyrics"], callback_data=str(TYPING_LYRICS))],
         [
+            IButton(text["lyric_card"], callback_data=str(TYPING_LYRIC_CARD_LYRICS)),
+            IButton(
+                text["lyric_card_custom"], callback_data=str(TYPING_LYRIC_CARD_CUSTOM)
+            ),
+        ],
+        [
             IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
             IButton(text["change_language"], callback_data="bot_lang"),
         ],
+        [IButton(text["help"], callback_data=str(HELP))],
+        [IButton(text["donate"], callback_data=str(DONATE))],
     ]
 
     token = context.user_data.get(
@@ -255,6 +265,7 @@ def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["help_message"].format(username=username)
+    chat_id = update.effective_user.id
 
     keyboard = IBKeyboard(
         [
@@ -267,7 +278,7 @@ def help_message(update: Update, context: CallbackContext) -> int:
         ]
     )
 
-    update.message.reply_text(text, reply_markup=keyboard)
+    context.bot.send_message(chat_id, text, reply_markup=keyboard)
     return END
 
 
@@ -446,6 +457,14 @@ def main():
             user.display_user_description, pattern=r"^user_[0-9]+_description$"
         ),
         CallbackQueryHandler(user.display_user_header, pattern=r"^user_[0-9]+_header$"),
+        CallbackQueryHandler(
+            lyric_card.type_lyrics, pattern=fr"^{TYPING_LYRIC_CARD_LYRICS}$"
+        ),
+        CallbackQueryHandler(
+            lyric_card.custom_lyric_card, pattern=fr"^{TYPING_LYRIC_CARD_CUSTOM}$"
+        ),
+        CallbackQueryHandler(donate, pattern=fr"^{DONATE}$"),
+        CallbackQueryHandler(help_message, pattern=fr"^{HELP}$"),
     ]
 
     user_input = {
