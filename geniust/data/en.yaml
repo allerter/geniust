@@ -17,6 +17,7 @@ main_menu:
   reset_shuffle: Reset Shuffle Preferences
   help: View Help Message and Bot Commands
 
+
 # No need to translate these because Telegram
 # only accepts one set of commands to be set.
 commands:
@@ -40,9 +41,6 @@ commands:
 error: "Sorry. Something went wrong :(\nStart again by clicking /start"
 genius_403_error: "Sorry. Genius said no to this request :(\nMaybe try again later."
 
-spotify: Spotify
-genius: Genius
-
 en: English
 fa: Persian
 both: Both
@@ -53,6 +51,9 @@ back: 🔙 Back
 yes: "Yes"
 no: "No"
 none: "None"
+
+spotify: Spotify
+genius: Genius
 
 send_feedback: Thanks for the feedback!
 
@@ -96,6 +97,7 @@ help_message: |-
     ▪️ ZIP: a zip file contatining text files of song lyrics. Includations are seperated using <code>!--!</code> and <code>!__!</code> identifiers specifing beginning and ending of each annotation respectively.
     ▪️ TELEGRA.PH: A telegra.ph page for each song and a final page contatining links to all the songs of the album.
 
+
 donate: |-
   Help keep our servers running by donating to us. Any amount is appreciated.
 
@@ -103,6 +105,7 @@ donate: |-
   <code>{}</code>
 
   If you don't have a BTC wallet, but would like to donate, contact us using /contact_us for alternate methods.
+
 
 inline_mode: Inline Mode
 
@@ -177,7 +180,6 @@ inline_menu:
       {name}
       <b>Verified on <a href="{url}">Genius</a>:</b>
       {verified}
-
     description: Artist info, songs and albums.
     initial_caption: Click on the button below to search artists.
 
@@ -321,15 +323,18 @@ display_account:
 display_annotation: Found nothing :(
 
 upvote_annotation:
-  login_necessary: You need to log in before voting. Log in using /login
+  login_necessary: >-
+    You need to log in before voting.
+    Log in using /login.
   voted: 👍 Upvoted
   unvoted: Unvoted!
 
 downvote_annotation:
-  login_necessary: You need to log in before voting. Log in using /login
+  login_necessary: >-
+    You need to log in before voting.
+    Log in using /login.
   voted: 👎 Downvoted
   unvoted: Unvoted!
-
 
 # ----------- Album -----------
 type_album: Enter album name.
