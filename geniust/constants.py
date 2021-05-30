@@ -16,6 +16,7 @@ SPOTIFY_CLIENT_ID: str = os.environ["SPOTIFY_CLIENT_ID"]
 SPOTIFY_CLIENT_SECRET: str = os.environ["SPOTIFY_CLIENT_SECRET"]
 SPOTIFY_REDIRECT_URI: str = os.environ["SPOTIFY_REDIRECT_URI"]
 ANNOTATIONS_CHANNEL_HANDLE: str = os.environ["ANNOTATIONS_CHANNEL_HANDLE"]
+IMGBB_TOKEN: str = os.environ["IMGBB_TOKEN"]
 DEVELOPERS: List[int] = (
     [int(x) for x in os.environ["DEVELOPERS"].split(",")]
     if "DEVELOPERS" in os.environ
@@ -76,6 +77,8 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
 (
     TYPING_ALBUM,
     TYPING_ARTIST,
+    TYPING_LYRIC_CARD_CUSTOM,
+    TYPING_LYRIC_CARD_LYRICS,
     TYPING_LYRICS,
     TYPING_SONG,
     TYPING_USER,
@@ -83,7 +86,7 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     INCLUDE,
     LYRICS_LANG,
     SELECT_ACTION,
-) = num.assign(9)
+) = num.assign(11)
 
 # Lyircs Language Options
 ONLY_ENGLIGH, ONLY_NON_ENGLISH, ENGLISH_AND_NON_ENGLISH = num.assign(3)

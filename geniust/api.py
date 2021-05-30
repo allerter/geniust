@@ -7,6 +7,7 @@ import queue
 from json.decoder import JSONDecodeError
 from typing import Any, Tuple, Optional, Union, List, Dict
 from dataclasses import dataclass
+from io import BytesIO
 
 import requests
 import telethon
@@ -26,9 +27,11 @@ from geniust.constants import (
     TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN,
+    IMGBB_TOKEN,
 )
 
 logger = logging.getLogger("geniust")
+IMGBB_API_URL = "https://api.imgbb.com/1/upload"
 
 
 def get_channel() -> types.TypeInputPeer:
@@ -472,6 +475,10 @@ class GeniusT(Genius):
                 all_annotations[annotation_id] = annotation
         return all_annotations
 
+    def download_cover_art(self, url: str) -> BytesIO:
+        data = self._session.get(url).content
+        return BytesIO(data)
+
     def fetch(self, track: Dict[str, Any], include_annotations: bool) -> None:
         """fetches song from Genius adds it to the artist objecty
 
@@ -719,3 +726,13 @@ def get_description(e: HTTPError) -> str:  # pragma: no cover
     description = res["detail"] if res.get("detail") else res.get("error_description")
     error += "\n{}".format(description) if description else ""
     return error
+
+
+def upload_to_imgbb(image: BytesIO, expiration_date: int = 60) -> dict:
+    req = requests.post(
+        IMGBB_API_URL,
+        data=dict(key=IMGBB_TOKEN, expiration_date=expiration_date),
+        files=dict(image=image),
+    )
+    req.raise_for_status()
+    return req.json()

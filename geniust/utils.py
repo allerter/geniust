@@ -37,6 +37,11 @@ newline_pattern: Pattern[str] = re.compile(r"(\n|<br\s*[/]*>){2,}(?!\[)")
 # remove links from annotations
 links_pattern: Pattern[str] = re.compile(r"\nhttp[s]*.*")
 
+# Range of Arabic/Persian characters
+PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
+# Translation phrase added to the end of the song title (more info at where it's used)
+TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
+
 
 def deep_link(
     name: str,
@@ -294,6 +299,24 @@ def get_description(entity: Dict[str, Any]) -> str:
     description = remove_extra_newlines(description)
 
     return description.strip()
+
+
+def has_sentence(sentences: List[str], sentence: str) -> bool:
+    """Checks for sentence in the list of sentences
+
+    Used to check if a lyric sentence is in the lyric snippet.
+
+    Args:
+        sentences (List[str]): List of sentences of the lyrics snippet.
+        sentence (str): Sentence from user input to check if it is in the lyrics.
+
+    Returns:
+        bool: True means the sentence is in the lyrics and False means it's not.
+    """
+    for x in sentences:
+        if x in sentence:
+            return True
+    return False
 
 
 def human_format(num: int) -> str:

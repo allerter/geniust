@@ -28,6 +28,7 @@ from geniust.functions import (
     album,
     artist,
     recommender,
+    lyric_card,
     song,
     customize,
     inline_query,
@@ -56,6 +57,8 @@ from geniust.constants import (
     TYPING_FEEDBACK,
     TYPING_ARTIST,
     TYPING_USER,
+    TYPING_LYRIC_CARD_CUSTOM,
+    TYPING_LYRIC_CARD_LYRICS,
     TYPING_LYRICS,
     MAIN_MENU,
     DEVELOPERS,
@@ -225,6 +228,13 @@ def end_describing(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]
     chat_id = update.effective_user.id
+    ud = context.user_data
+
+    if "lyric_card" in ud:
+        removal_job = context.job_queue.get_jobs_by_name(f"remove_lyric_info_{chat_id}")
+        if removal_job:
+            removal_job[0].schedule_removal()
+        ud.pop("lyric_card")
 
     if update.callback_query:
         query = update.callback_query.data
@@ -440,6 +450,18 @@ def main():
             MessageHandler(Filters.text & (~Filters.command), song.search_lyrics),
             CallbackQueryHandler(song.type_lyrics, pattern="^(?!" + str(END) + ").*$"),
         ],
+        TYPING_LYRIC_CARD_LYRICS: [
+            MessageHandler(Filters.text & (~Filters.command), lyric_card.search_lyrics),
+            CallbackQueryHandler(
+                lyric_card.type_lyrics, pattern="^(?!" + str(END) + ").*$"
+            ),
+        ],
+        TYPING_LYRIC_CARD_CUSTOM: [
+            MessageHandler(
+                Filters.photo | (Filters.text & (~Filters.command)),
+                lyric_card.custom_lyric_card,
+            ),
+        ],
         TYPING_SONG: [
             MessageHandler(Filters.text & (~Filters.command), song.search_songs),
             CallbackQueryHandler(song.type_song, pattern="^(?!" + str(END) + ").*$"),
@@ -456,6 +478,8 @@ def main():
     commands = [
         CommandHandler("album", album.type_album),
         CommandHandler("artist", artist.type_artist),
+        CommandHandler("lyric_card", lyric_card.type_lyrics),
+        CommandHandler("lyric_card_custom", lyric_card.custom_lyric_card),
         CommandHandler("song", song.type_song),
         CommandHandler("user", user.type_user),
         CommandHandler("contact_us", contact_us),
@@ -488,6 +512,7 @@ def main():
         InlineQueryHandler(inline_query.search_albums, pattern=r"^\.album"),
         InlineQueryHandler(inline_query.search_artists, pattern=r"^\.artist"),
         InlineQueryHandler(inline_query.search_lyrics, pattern=r"^\.lyrics"),
+        InlineQueryHandler(inline_query.lyric_card, pattern=r"^\.lyric_card"),
         InlineQueryHandler(inline_query.search_songs, pattern=r"^\.song"),
         InlineQueryHandler(inline_query.search_users, pattern=r"^\.user"),
         InlineQueryHandler(

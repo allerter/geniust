@@ -5,8 +5,8 @@ name: build
 
 on:
   push:
-    branches: [ master, develop ]
-    tags:        
+    branches: "**"
+    tags:
       - '**'
   pull_request:
     branches: [ master ]
@@ -68,6 +68,7 @@ jobs:
         SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
         RECOMMENDER_TOKEN: TEST_TOKEN
+        IMGBB_TOKEN: TEST_TOKEN
       run: tox
 
     - name: Archive code coverage results

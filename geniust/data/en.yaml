@@ -199,6 +199,13 @@ inline_menu:
     description: User info.
     initial_caption: Click on the button below to search users.
 
+  lyric_card:
+    body: Lyric Card
+    new: New Lyric Card
+    description: Get a Genius lyric card by providing lyrics from your favorite song
+    initial_caption: Click on the button below to generate a lyric card.
+    not_found: No match found.
+
   full_details: Full Details
   button: Click Here
   translation: Translation
@@ -372,6 +379,24 @@ display_artist_songs:
   no_songs: "{} has no songs."
   next_page: Next Page ⏩ {}
   previous_page: "{} ⏪ Previous Page"
+
+# ----------- Lyric Card -----------
+
+lyric_card_search_lyrics:
+  not_found: "No matching lyrics were found."
+
+custom_lyric_card:
+  send_photo: Frist, send me the cover art as a photo (1000x1000 size recommended).
+  send_lyrics: Now, send me the lyrics to be put on the lyric card.
+  send_title: What is the name of the song?
+  send_primary_artists: |-
+    Send me the primary artists of the song (exclude the featured artists).
+    If there's more than one, put each one on a new line.
+  send_featured_artists: |-
+    Send me the featured artists of the song.
+    If there's more than one, put each one on a new line.
+    If there is none, press the keyboard button.
+  no_featured_artists: No featured artists on this song.
 
 # ----------- Shuffle -----------
 
