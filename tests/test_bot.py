@@ -104,6 +104,15 @@ def test_contact_us(update_message, context):
     assert res == constants.TYPING_FEEDBACK
 
 
+def test_donate(update_message, context):
+    update = update_message
+
+    res = bot.donate(update, context)
+
+    update.message.reply_text.assert_called_once()
+    assert res == constants.END
+
+
 def test_main():
     webhoook = MagicMock()
     updater = MagicMock(spec=Updater)
@@ -126,5 +135,6 @@ def test_main():
     updater = updater()
     webhoook = webhoook()
     webhoook.start.assert_called_once()
+    updater.dispatcher.bot.set_my_commands.assert_called_once()
     updater.start_polling.assert_called_once()
     updater.idle.assert_called_once()
