@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from io import BytesIO
+from typing import cast
 from uuid import uuid4
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
@@ -126,7 +127,9 @@ def remove_lyric_info(context: CallbackContext) -> None:
     in the lyric_card dictionary, this callback is used to delete
     the dictionary if the user has abandoned the conversation.
     """
-    ud, id = context.job.context
+    job_context = cast(tuple, context.job.context)
+    ud: dict = job_context[0]
+    id: str = job_context[1]
     # Equal ID means that the user had abandoned the conversation.
     # Otherwise it means there is an ongoing conversation.
     if "lyric_card" in ud and ud["lyric_card"]["id"] == id:
@@ -149,7 +152,7 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
     # User started the conversation
     if "lyric_card" not in ud:
         ud["lyric_card"] = dict(
-            id=uuid4(),
+            id=str(uuid4()),
             photo=None,
             lyrics=None,
             title=None,
