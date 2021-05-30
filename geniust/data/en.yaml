@@ -13,6 +13,26 @@ main_menu:
   shuffle: Get Song Recommednations
   reset_shuffle: Reset Shuffle Preferences
 
+# No need to translate these because Telegram
+# only accepts one set of commands to be set.
+commands:
+  start: Start the bot
+  album: Search albums
+  artist: Search artists
+  song: Search songs
+  song_by_lyrics: Search songs by lyrics
+  user: Search users
+  lyric_card: Get a lyric card
+  lyric_card_custom: Custom lyric card
+  shuffle: Get song recommednations
+  bot_language: Bot language
+  login: Log Into Genius/Spotify
+  help: Help message
+  donate: Donate to us
+  contact_us: Send us a message
+  cancel: Cancel the current task/conv
+
+
 error: "Sorry. Something went wrong :(\nStart again by clicking /start"
 genius_403_error: "Sorry. Genius said no to this request :(\nMaybe try again later."
 
