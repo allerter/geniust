@@ -64,21 +64,22 @@ help_message: |-
     The bot has a menu with a menu that can be accessed using /start. You can also use the commands below for convenience.
     ➖➖ Available commands ➖➖
     /start - Start the bot (displays the main menu)
-    /album - search albums
-    /artist - search artists
-    /song - search songs
-    /song_by_lyrics
-    /user - search Genius users
-    /lyric_card - Get a lyric card by providing lyrics from a song
+    /album* - search albums
+    /artist* - search artists
+    /song* - search songs
+    /song_by_lyrics*
+    /user* - search Genius users
+    /lyric_card* - Get a lyric card by providing lyrics from a song
     /lyric_card_custom - Build custom lyric card
     /shuffle - Get song recommendations
     /bot_language - Language of the bot
     /login - Log into Genius/Spotify
-
     /donate - donate to us
     /cancel - cancel the current task/conv (use this if the bot is unresponsive)
     /help - gets you this message
     /contact_us - send us a message
+
+    * You can add your query to the command when sending it. For example, when using /song, instead of sending /song and then sending the query, you can add your query to the command i.e. /song song title
 
     ➖➖ Inline Mode ➖➖
     To use inline mode just type the bot's username ({username}) and some results show up that will help you search different things.
