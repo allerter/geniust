@@ -16,7 +16,7 @@ SPOTIFY_CLIENT_ID: str = os.environ["SPOTIFY_CLIENT_ID"]
 SPOTIFY_CLIENT_SECRET: str = os.environ["SPOTIFY_CLIENT_SECRET"]
 SPOTIFY_REDIRECT_URI: str = os.environ["SPOTIFY_REDIRECT_URI"]
 ANNOTATIONS_CHANNEL_HANDLE: str = os.environ["ANNOTATIONS_CHANNEL_HANDLE"]
-LYRIC_CARD_CHANNEL: str = os.environ["LYRIC_CARD_CHANNEL"]
+IMGBB_TOKEN: str = os.environ["IMGBB_TOKEN"]
 DEVELOPERS: List[int] = (
     [int(x) for x in os.environ["DEVELOPERS"].split(",")]
     if "DEVELOPERS" in os.environ

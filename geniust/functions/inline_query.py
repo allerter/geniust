@@ -6,7 +6,7 @@ from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import (
     InlineQueryResultArticle,
-    InlineQueryResultCachedPhoto,
+    InlineQueryResultPhoto,
     InputTextMessageContent,
     Update,
 )
@@ -14,7 +14,7 @@ from telegram.ext import CallbackContext
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust import username, utils, get_user
-from geniust.constants import LYRIC_CARD_CHANNEL
+from geniust.api import upload_to_imgbb
 from geniust.functions.lyric_card_builder import build_lyric_card
 from geniust.utils import log, has_sentence, PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES
 
@@ -485,10 +485,13 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
             rtl_metadata=False,
             format="JPEG",
         )
-        message = context.bot.send_photo(LYRIC_CARD_CHANNEL, lyric_card)
-        photo = InlineQueryResultCachedPhoto(
+        uploaded_photo = upload_to_imgbb(lyric_card)["data"]
+        photo = InlineQueryResultPhoto(
             id=str(uuid4()),
-            photo_file_id=message.photo[-1].file_id,
+            photo_url=uploaded_photo["url"],
+            thumb_url=uploaded_photo["thumb"]["url"],
+            photo_width=lyric_card.size[0],
+            photo_height=lyric_card.size[1],
             caption=f"@{username}",
             reply_markup=keyboard,
         )
@@ -512,7 +515,7 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
     keyboard = IBKeyboard([search_more])
 
     res = genius.search_lyrics(input_text, per_page=5)
-    photos: List[InlineQueryResultCachedPhoto] = []
+    photos: List[InlineQueryResultPhoto] = []
     for hit in res["sections"][0]["hits"]:
         song = hit["result"]
         highlight = hit["highlights"][0]
