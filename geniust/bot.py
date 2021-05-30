@@ -521,6 +521,10 @@ def main():
     for command in non_input_commands:
         dp.add_handler(command)
 
+    # Tuple of (command, description) tuples
+    commands = tuple(texts["en"]["commands"].items())
+    dp.bot.set_my_commands(commands)
+
     # ----------------- INLINE QUERIES -----------------
 
     inline_query_handlers = [
