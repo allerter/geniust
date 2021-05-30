@@ -13,9 +13,15 @@ from geniust.functions import artist
     [
         pytest.lazy_fixture("update_callback_query"),
         pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_parametrized_command"),
     ],
 )
 def test_type_artist(update, context):
+    if update.message and update.message.text == "/":
+        context.args = ["some", "query"]
+        parametrized_command = True
+    else:
+        parametrized_command = False
 
     res = artist.type_artist(update, context)
 
@@ -24,7 +30,10 @@ def test_type_artist(update, context):
     else:
         update.message.reply_text.assert_called_once()
 
-    assert res == constants.TYPING_ARTIST
+    if parametrized_command:
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_ARTIST
 
 
 @pytest.mark.parametrize(
@@ -77,7 +86,7 @@ def test_display_artist(update, context, artist_data, platform):
     if update.callback_query:
         update.callback_query.data = f"artist_1_{platform}"
     else:
-        context.args[0] = f"artist_1_{platform}"
+        context.args = [f"artist_1_{platform}"]
 
     genius = context.bot_data["genius"]
     genius.artist.return_value = artist_data
@@ -124,7 +133,7 @@ def test_display_artist_albums(update, context, artist_dict, artist_albums_dict)
     if update.callback_query:
         update.callback_query.data = "artist_1_albums"
     else:
-        context.args[0] = "artist_1_albums"
+        context.args = ["artist_1_albums"]
 
     genius = context.bot_data["genius"]
     genius.artist.return_value = artist_dict
@@ -181,7 +190,7 @@ def test_display_artist_songs(
     if update.callback_query:
         update.callback_query.data = f"artist_1_songs_{sort}_{page}"
     else:
-        context.args[0] = f"artist_1_songs_{sort}_{page}"
+        context.args = [f"artist_1_songs_{sort}_{page}"]
     if page == 10:
         next_page = None
     else:

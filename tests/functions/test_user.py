@@ -11,9 +11,15 @@ from geniust.functions import user
     [
         pytest.lazy_fixture("update_callback_query"),
         pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_parametrized_command"),
     ],
 )
 def test_type_user(update, context):
+    if update.message and update.message.text == "/":
+        context.args = ["some", "query"]
+        parametrized_command = True
+    else:
+        parametrized_command = False
 
     res = user.type_user(update, context)
 
@@ -22,7 +28,10 @@ def test_type_user(update, context):
     else:
         update.message.reply_text.assert_called_once()
 
-    assert res == constants.TYPING_USER
+    if parametrized_command:
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_USER
 
 
 @pytest.mark.parametrize(
@@ -80,7 +89,7 @@ def test_display_user(update, context, user_data):
     if update.callback_query:
         update.callback_query.data = "user_1"
     else:
-        context.args[0] = "user_1"
+        context.args = ["user_1"]
     genius = context.bot_data["genius"]
     genius.user.return_value = user_data
 
@@ -103,7 +112,7 @@ def test_display_user_description(update, context, user_dict):
     if update.callback_query:
         update.callback_query.data = "user_1_description"
     else:
-        context.args[0] = "user_1_description"
+        context.args = ["user_1_description"]
     genius = context.bot_data["genius"]
     genius.user.return_value = user_dict
 
@@ -126,7 +135,7 @@ def test_display_user_header(update, context, user_dict):
     if update.callback_query:
         update.callback_query.data = "user_1_header"
     else:
-        context.args[0] = "user_1_header"
+        context.args = ["user_1_header"]
     genius = context.bot_data["genius"]
     genius.user.return_value = user_dict
 

@@ -116,7 +116,7 @@ def test_help_message(update_message, context):
 
     res = bot.help_message(update, context)
 
-    update.message.reply_text.assert_called_once()
+    context.bot.send_message.assert_called_once()
     assert res == constants.END
 
 

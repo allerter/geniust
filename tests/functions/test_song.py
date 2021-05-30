@@ -12,9 +12,15 @@ from geniust.functions import song
     [
         pytest.lazy_fixture("update_callback_query"),
         pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_parametrized_command"),
     ],
 )
 def test_type_song(update, context):
+    if update.message and update.message.text == "/":
+        context.args = ["some", "query"]
+        parametrized_command = True
+    else:
+        parametrized_command = False
 
     res = song.type_song(update, context)
 
@@ -23,7 +29,10 @@ def test_type_song(update, context):
     else:
         update.message.reply_text.assert_called_once()
 
-    assert res == constants.TYPING_SONG
+    if parametrized_command:
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_SONG
 
 
 @pytest.mark.parametrize(
@@ -31,9 +40,15 @@ def test_type_song(update, context):
     [
         pytest.lazy_fixture("update_callback_query"),
         pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_parametrized_command"),
     ],
 )
 def test_type_lyrics(update, context):
+    if update.message and update.message.text == "/":
+        context.args = ["some", "query"]
+        parametrized_command = True
+    else:
+        parametrized_command = False
 
     res = song.type_lyrics(update, context)
 
@@ -42,7 +57,10 @@ def test_type_lyrics(update, context):
     else:
         update.message.reply_text.assert_called_once()
 
-    assert res == constants.TYPING_LYRICS
+    if parametrized_command:
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_LYRICS
 
 
 @pytest.mark.parametrize(
@@ -114,7 +132,7 @@ def test_display_song(update, context, song_data, platform, search_result):
     if update.callback_query:
         update.callback_query.data = f"song_1_{platform}"
     else:
-        context.args[0] = f"song_1_{platform}"
+        context.args = [f"song_1_{platform}"]
 
     genius = context.bot_data["genius"]
     genius.song.return_value = song_data
@@ -143,7 +161,7 @@ def test_download_song(update, context, platform):
     if update.callback_query:
         update.callback_query.data = f"song_1_{platform}_preview"
     else:
-        context.args[0] = f"song_1_{platform}_preview"
+        context.args = [f"song_1_{platform}_preview"]
 
     res = song.download_song(update, context)
 
@@ -189,7 +207,7 @@ def test_thread_display_lyrics(update, context):
     if update.callback_query:
         update.callback_query.data = "song_1_lyrics"
     else:
-        context.args[0] = "song_1_lyrics"
+        context.args = ["song_1_lyrics"]
 
     thread = MagicMock()
     with patch("threading.Thread", thread):

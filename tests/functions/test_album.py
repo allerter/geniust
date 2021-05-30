@@ -13,18 +13,27 @@ from geniust.functions import album
     [
         pytest.lazy_fixture("update_callback_query"),
         pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_parametrized_command"),
     ],
 )
 def test_type_album(update, context):
+    if update.message and update.message.text == "/":
+        context.args = ["some", "query"]
+        parametrized_command = True
+    else:
+        parametrized_command = False
 
     res = album.type_album(update, context)
 
     if getattr(update, "callback_query", None):
         update.callback_query.answer.assert_called_once()
-    else:
+    elif not parametrized_command:
         update.message.reply_text.assert_called_once()
 
-    assert res == constants.TYPING_ALBUM
+    if parametrized_command:
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_ALBUM
 
 
 @pytest.mark.parametrize(
@@ -77,7 +86,7 @@ def test_display_album(update, context, album_data, platform):
     if update.callback_query:
         update.callback_query.data = f"album_1_{platform}"
     else:
-        context.args[0] = f"album_1_{platform}"
+        context.args = [f"album_1_{platform}"]
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_data
@@ -117,7 +126,7 @@ def test_display_album_covers(update, context, album_dict, album_covers_dict):
     if update.callback_query:
         update.callback_query.data = "album_1_covers"
     else:
-        context.args[0] = "album_1_covers"
+        context.args = ["album_1_covers"]
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_dict
@@ -162,7 +171,7 @@ def test_display_album_tracks(update, context, album_dict, album_tracks_dict):
     if update.callback_query:
         update.callback_query.data = "album_1_tracks"
     else:
-        context.args[0] = "album_1_tracks"
+        context.args = ["album_1_tracks"]
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_dict
@@ -195,7 +204,7 @@ def test_display_album_formats(update, context):
     if update.callback_query:
         update.callback_query.data = "album_1_lyrics"
     else:
-        context.args[0] = "album_1_lyrics"
+        context.args = ["album_1_lyrics"]
 
     res = album.display_album_formats(update, context)
 
