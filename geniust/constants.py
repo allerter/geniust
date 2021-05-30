@@ -28,6 +28,7 @@ TELETHON_API_ID: str = os.environ["TELETHON_API_ID"]
 TELETHON_API_HASH: str = os.environ["TELETHON_API_HASH"]
 TELETHON_SESSION_STRING: str = os.environ["TELETHON_SESSION_STRING"]
 RECOMMENDER_TOKEN: str = os.environ["RECOMMENDER_TOKEN"]
+BTC_ADDRESS: str = os.environ["BTC_ADDRESS"]
 
 TELEGRAM_HTML_TAGS: List[str] = [
     "b",
@@ -86,7 +87,9 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     INCLUDE,
     LYRICS_LANG,
     SELECT_ACTION,
-) = num.assign(11)
+    DONATE,
+    HELP,
+) = num.assign(13)
 
 # Lyircs Language Options
 ONLY_ENGLIGH, ONLY_NON_ENGLISH, ENGLISH_AND_NON_ENGLISH = num.assign(3)

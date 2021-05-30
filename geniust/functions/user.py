@@ -28,6 +28,10 @@ def type_user(update: Update, context: CallbackContext) -> int:
         update.callback_query.answer()
         update.callback_query.edit_message_text(msg)
     else:
+        if context.args:
+            update.message.text = " ".join(context.args)
+            search_users(update, context)
+            return END
         update.message.reply_text(msg)
 
     return TYPING_USER

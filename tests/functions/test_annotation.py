@@ -42,7 +42,7 @@ def test_display_annotation(update, context, annotation_dict, voters):
     if update.callback_query:
         update.callback_query.data = "annotation_1"
     else:
-        context.args[0] = "annotation_1"
+        context.args = ["annotation_1"]
 
     genius = context.bot_data["genius"]
     genius.annotation.return_value = annotation_dict

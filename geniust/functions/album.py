@@ -31,6 +31,12 @@ def type_album(update: Update, context: CallbackContext) -> int:
         update.callback_query.answer()
         update.callback_query.edit_message_text(text)
     else:
+        # If there is context.args, it means that the user
+        # typed "/album query". So we don't need to ask for a query anymore.
+        if context.args:
+            update.message.text = " ".join(context.args)
+            search_albums(update, context)
+            return END
         update.message.reply_text(text)
 
     return TYPING_ALBUM

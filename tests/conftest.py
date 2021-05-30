@@ -219,6 +219,14 @@ def update_message(update_message_class):
     return update
 
 
+@pytest.fixture(scope="function")
+def update_parametrized_command(update_message_class):
+    update = update_message_class
+    update.message.reset_mock()
+    update.message.text = "/"
+    return update
+
+
 @pytest.fixture(scope="session")
 def auths_class():
     auths = dict(genius=create_autospec(OAuth2), spotify=create_autospec(tk.UserAuth))
@@ -270,7 +278,7 @@ def recommender(recommender_genres, recommender_num_songs):
 @pytest.fixture(scope="session")
 def context_class(recommender):
     context = create_autospec(CallbackContext)
-    context.args = [[]]
+    context.args = []
     context.bot = create_autospec(Bot, spec_set=True)
     context.bot_data = {}
     context.bot_data["auths"] = dict(
@@ -289,6 +297,7 @@ def context_class(recommender):
 @pytest.fixture(scope="function", params=users)
 def context(context_class, request):
     context_class.bot.reset_mock()
+    context_class.args = []
     for spec in ("db", "genius", "spotify", "auths"):
         spec_class = context_class.bot_data[spec]
         if spec == "auths":
