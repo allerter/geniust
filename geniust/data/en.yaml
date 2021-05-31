@@ -137,7 +137,10 @@ bot_language:
     <b>{language}</b>.
 
 include_annotations:
-  body: Would you like to include the annotations in the lyrics?
+  body: |-
+    Would you like to include the annotations in the lyrics?
+
+    <b>Note:</b> currently this feature is only open to developers.
   updated: |-
     Updated your preferences.
     Include annotations:
