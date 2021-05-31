@@ -5,9 +5,9 @@ from typing import Any, Dict
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto
-from telegram import Update, Message
+from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.error import TimedOut, NetworkError, BadRequest
+from telegram.error import TimedOut, NetworkError
 
 from geniust.constants import DEVELOPERS, TYPING_ALBUM, END
 from geniust import api, utils, get_user
