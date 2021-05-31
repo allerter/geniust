@@ -183,7 +183,7 @@ def format_language(
         s = remove_extra_newlines(s)
         return s
 
-    if isinstance(lyrics, Tag):
+    if isinstance(lyrics, (Tag, BeautifulSoup)):
         strings = [
             x
             for x in lyrics.descendants
