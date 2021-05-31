@@ -1,18 +1,19 @@
 import logging
 import threading
 import re
+from functools import partial
 from typing import Dict, Any
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.constants import MAX_MESSAGE_LENGTH
+from telethon.utils import split_text
+from telethon.extensions import html
 from bs4 import BeautifulSoup
-from lyricsgenius import Genius
 
-from geniust.constants import DEVELOPERS, END, TYPING_SONG, TYPING_LYRICS, GENIUS_TOKEN
-from geniust import utils, username
+from geniust.constants import DEVELOPERS, END, TYPING_SONG, TYPING_LYRICS
+from geniust import username, utils
 from geniust import get_user
 from geniust.utils import log
 
@@ -272,7 +273,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
 @log
 def display_lyrics(
     update: Update, context: CallbackContext, song_id: int, text: Dict[str, str]
-) -> None:
+) -> int:
     """Retrieves and sends song lyrics to user
 
     Args:
@@ -321,26 +322,22 @@ def display_lyrics(
 
     bot.delete_message(chat_id=chat_id, message_id=message_id)
 
-    len_lyrics = len(lyrics)
-    sent = 0
-    i = 0
-    # missing_a = False
-    # link = ''
-    # get_link = re.compile(r'<a[^>]+href=\"(.*?)\"[^>]*>')
-    # this sends the lyrics in messages if it exceeds message length limit
-    # it's possible that the final <a> won't be closed because of slicing the message so
-    # that's dealt with too
-    max_length = MAX_MESSAGE_LENGTH
-    while sent < len_lyrics:
-        string = lyrics[i * max_length : (i * max_length) + max_length]
-        a_start = string.count("<a")
-        a_end = string.count("</a>")
-        if a_start != a_end:
-            a_pos = string.rfind("<a")
-            string = string[:a_pos]
-        bot.send_message(chat_id, string)
-        sent += len(string)
-        i += 1
+    def to_dict(entity):
+        """Converts entity to a dict that is compatible with PTB"""
+        dic = entity.dict
+        dic["type"] = entity.type
+        dic.pop("_")
+        return dic
+
+    for text, entities in split_text(
+        *html.parse(lyrics), limit=4096, split_at=(r"\n\n",)
+    ):
+        for entity in entities:
+            entity.dict = entity.to_dict()
+            entity.type = utils.MESSAGE_ENTITY_TYPES[entity.dict["_"]]
+            entity.to_dict = partial(to_dict, entity=entity)
+        bot.send_message(chat_id, text, entities=entities)
+    return END
 
 
 @log

@@ -42,6 +42,25 @@ PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
 # Translation phrase added to the end of the song title (more info at where it's used)
 TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
 
+# The keys are Telethon message entity types and the values PTB ones.
+MESSAGE_ENTITY_TYPES = {
+    "MessageEntityBold": "bold",
+    "MessageEntityBotCommand": "bot_command",
+    "MessageEntityCashtag": "cashtag",
+    "MessageEntityCode": "code",
+    "MessageEntityEmail": "email",
+    "MessageEntityHashtag": "hashtag",
+    "MessageEntityItalic": "italic",
+    "MessageEntityMention": "mention",
+    "MessageEntityMentionName": "text_mention",
+    "MessageEntityPhone": "phone_number",
+    "MessageEntityPre": "pre",
+    "MessageEntityStrike": "strikethrough",
+    "MessageEntityTextUrl": "text_link",
+    "MessageEntityUnderline": "underline",
+    "MessageEntityUrl": "url",
+}
+
 
 def deep_link(
     name: str,
