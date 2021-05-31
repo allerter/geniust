@@ -414,15 +414,19 @@ class GeniusT(Genius):
 
             client.disconnect()
 
-        if telegram_song:
-            replace_hrefs(lyrics, posted_annotations, telegram_song)
-        else:
-            replace_hrefs(lyrics)
+        if include_annotations:
+            if telegram_song:
+                replace_hrefs(lyrics, posted_annotations, telegram_song)
+            else:
+                replace_hrefs(lyrics)
 
         # remove redundant tags that neither Telegram
         # nor the other formats (PDF and Telegra.ph) support
+        useful_tags = ["br", "strong", "b", "em", "i"]
+        if include_annotations:
+            useful_tags.append("a")
         for tag in lyrics.find_all():
-            if tag.name not in ("br", "strong​", "​b​", "em​", "​i​", "a"):
+            if tag.name not in useful_tags:
                 tag.unwrap()
 
         if remove_section_headers:
