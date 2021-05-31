@@ -290,29 +290,21 @@ def display_lyrics(
 
     lyrics_language = user_data["lyrics_lang"]
     include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
-
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
 
     message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
 
-    if include_annotations:
-        try:
-            song_url = genius_t.song(song_id)["song"]["url"]
-            lyrics = genius_t.lyrics(
-                song_id=song_id,
-                song_url=song_url,
-                include_annotations=include_annotations,
-                telegram_song=True,
-            )
-        except Exception as e:
-            logger.error(
-                "error when displaying lyrics of %s: %s", song_id, e.__traceback__
-            )
-            lyrics = genius.lyrics(song_url=song_url)
-    else:
-        lyrics = genius.lyrics(song_id)
-
-    logger.debug("%s lyrics: %s", song_id, repr(lyrics))
+    song_url = genius_t.song(song_id)["song"]["url"]
+    try:
+        lyrics = genius_t.lyrics(
+            song_id=song_id,
+            song_url=song_url,
+            include_annotations=include_annotations,
+            telegram_song=True,
+        )
+    except Exception as e:
+        logger.error("error when displaying lyrics of %s: %s", song_id, e.__traceback__)
+        lyrics = genius.lyrics(song_url=song_url)
 
     # formatting lyrics language
     # lyrics = BeautifulSoup(lyrics, "html.parser")
@@ -336,7 +328,14 @@ def display_lyrics(
             entity.dict = entity.to_dict()
             entity.type = utils.MESSAGE_ENTITY_TYPES[entity.dict["_"]]
             entity.to_dict = partial(to_dict, entity=entity)
-        bot.send_message(chat_id, text, entities=entities)
+        bot.send_message(
+            chat_id,
+            text,
+            entities=entities,
+            parse_mode=None,  # If it's set, Telegram will ignore the entities.
+            # And since we've set a default for it in bot.py,
+            # here we have to override and set to None.
+        )
     return END
 
 
