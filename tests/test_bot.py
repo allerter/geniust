@@ -1,13 +1,13 @@
 import warnings
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from telegram.ext import Updater
 
-from geniust import constants, bot, texts
+from geniust import bot, constants, texts
 from geniust.api import Recommender
-from geniust.db import Database
 from geniust.constants import Preferences
+from geniust.db import Database
 
 
 @pytest.mark.parametrize("token", ["test_token", None])

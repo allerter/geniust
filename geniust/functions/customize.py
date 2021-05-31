@@ -5,21 +5,20 @@ from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from geniust import get_user
 from geniust.constants import (
-    INCLUDE,
     CUSTOMIZE_MENU,
+    DONT_INCLUDE_ANNOTATIONS,
     END,
+    ENGLISH_AND_NON_ENGLISH,
+    INCLUDE,
+    INCLUDE_ANNOTATIONS,
     LYRICS_LANG,
     MAIN_MENU,
-    ENGLISH_AND_NON_ENGLISH,
     ONLY_ENGLIGH,
     ONLY_NON_ENGLISH,
-    INCLUDE_ANNOTATIONS,
-    DONT_INCLUDE_ANNOTATIONS,
 )
-from geniust import get_user
 from geniust.utils import log
-
 
 logger = logging.getLogger("geniust")
 

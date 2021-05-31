@@ -1,14 +1,14 @@
-import re
 import logging
+import re
 from functools import wraps
-from typing import Any, TypeVar, Callable, Pattern, List, Union, Tuple, Dict
+from typing import Any, Callable, Dict, List, Pattern, Tuple, TypeVar, Union
 
-from bs4 import BeautifulSoup, NavigableString, Comment
+from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import Tag
 from telegram.utils.helpers import create_deep_linked_url
 
-from geniust.constants import TELEGRAM_HTML_TAGS
 import geniust
+from geniust.constants import TELEGRAM_HTML_TAGS
 
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
 regex = (

@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy
 
 from geniust import db, get_user
-from geniust.db import Users, Preferences
+from geniust.db import Preferences, Users
 
 
 @pytest.fixture(scope="function")

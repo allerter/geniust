@@ -1,23 +1,23 @@
 import json
+import pathlib
 import re
 from io import BytesIO
-import pathlib
 from typing import Any, Dict, Tuple
 
-import requests
 import reportlab
-from reportlab.platypus.paraparser import _paraAttrMap as valid_attributes
-from reportlab.platypus import Paragraph, Spacer, Image, PageBreak
-from reportlab.platypus.tableofcontents import TableOfContents
-from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
-from reportlab.platypus.frames import Frame
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from rtl import reshaper
+import requests
 from bidi.algorithm import get_display
 from bs4 import BeautifulSoup
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Image, PageBreak, Paragraph, Spacer
+from reportlab.platypus.doctemplate import BaseDocTemplate, PageTemplate
+from reportlab.platypus.frames import Frame
+from reportlab.platypus.paraparser import _paraAttrMap as valid_attributes
+from reportlab.platypus.tableofcontents import TableOfContents
+from rtl import reshaper
 
 from geniust import utils
 

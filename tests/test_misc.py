@@ -1,7 +1,6 @@
 import os
-from pathlib import Path
 import subprocess
-
+from pathlib import Path
 
 # def test_run_mypy_module():
 #    """Runs mypy on all module sources

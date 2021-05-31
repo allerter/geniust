@@ -4,11 +4,8 @@ import pytest
 import tekore as tk
 from requests import HTTPError
 
-from geniust.server import (
-    CronHandler,
-    TokenHandler,
-)
 from geniust.db import Database
+from geniust.server import CronHandler, TokenHandler
 
 
 class TestCronHandler:

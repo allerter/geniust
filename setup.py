@@ -1,6 +1,6 @@
 import pathlib
-from setuptools import setup, find_packages
 
+from setuptools import find_packages, setup
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -18,6 +18,7 @@ extras_require = {
         "tox==3.23.1",
         "mypy==0.812",
         "black==21.5b2",
+        "isort==5.8.0",
         "flake8==3.9.2",
         "flake8-bugbear==21.4.3",
         "sqlalchemy-stubs==0.4",

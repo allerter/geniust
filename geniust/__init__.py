@@ -2,17 +2,17 @@ import functools
 import pathlib
 from os import listdir
 from os.path import isfile, join
-from typing import TypeVar, Callable
+from typing import Callable, TypeVar
 
 # from telegram import Bot
 import tekore as tk
-from lyricsgenius import OAuth2
 import yaml
+from lyricsgenius import OAuth2
 
 from geniust.constants import (
     GENIUS_CLIENT_ID,
-    GENIUS_REDIRECT_URI,
     GENIUS_CLIENT_SECRET,
+    GENIUS_REDIRECT_URI,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
     SPOTIFY_REDIRECT_URI,

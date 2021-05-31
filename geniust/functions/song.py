@@ -1,22 +1,20 @@
 import logging
-import threading
 import re
+import threading
 from functools import partial
-from typing import Dict, Any
+from typing import Any, Dict
 
+from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from telethon.utils import split_text
 from telethon.extensions import html
-from bs4 import BeautifulSoup
+from telethon.utils import split_text
 
-from geniust.constants import DEVELOPERS, END, TYPING_SONG, TYPING_LYRICS
-from geniust import username, utils
-from geniust import get_user
+from geniust import get_user, username, utils
+from geniust.constants import DEVELOPERS, END, TYPING_LYRICS, TYPING_SONG
 from geniust.utils import log
-
 
 logger = logging.getLogger("geniust")
 

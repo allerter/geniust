@@ -1,13 +1,13 @@
-import re
-import logging
 import asyncio
 import json
+import logging
+import re
+from concurrent.futures import ThreadPoolExecutor
 from socket import timeout
 from time import sleep
-from urllib.request import Request, urlopen
+from typing import Any, Dict, List, Tuple, Union
 from urllib.error import HTTPError, URLError
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, Tuple, Union, List
+from urllib.request import Request, urlopen
 
 import telegraph
 from bs4 import BeautifulSoup

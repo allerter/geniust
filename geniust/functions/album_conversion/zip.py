@@ -2,7 +2,7 @@ import json
 import re
 from io import BytesIO
 from typing import Any, Dict
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from geniust import utils
 

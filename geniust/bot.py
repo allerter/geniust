@@ -1,84 +1,84 @@
 import logging
-import warnings
 import traceback
-from typing import Dict, Any
+import warnings
+from typing import Any, Dict
 
-import tekore as tk
 import lyricsgenius as lg
+import tekore as tk
 from notifiers.logging import NotificationHandler
-from telegram import Update, Message, error
-from telegram.ext import CallbackContext
+from requests.exceptions import HTTPError
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
+from telegram import Message, Update, error
 from telegram.ext import (
-    Defaults,
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
+    CallbackContext,
     CallbackQueryHandler,
+    CommandHandler,
+    ConversationHandler,
+    Defaults,
+    Filters,
     InlineQueryHandler,
     MessageFilter,
+    MessageHandler,
     TypeHandler,
+    Updater,
 )
-from requests.exceptions import HTTPError
 
-from geniust.functions import (
-    account,
-    album,
-    artist,
-    recommender,
-    lyric_card,
-    song,
-    customize,
-    inline_query,
-    annotation,
-    user,
-)
-from geniust import get_user, texts, auths, username
-from geniust.utils import log
-from geniust.db import Database
+from geniust import auths, get_user, texts, username
 from geniust.api import GeniusT, Recommender
-from geniust.server import WebhookThread
 
 # from geniust.constants import SERVER_ADDRESS
 from geniust.constants import (
-    LOG_LEVEL,
-    DATABASE_URL,
-    TYPING_ALBUM,
-    TYPING_SONG,
-    SERVER_PORT,
     BOT_TOKEN,
+    BTC_ADDRESS,
+    CUSTOMIZE_MENU,
+    DATABASE_URL,
+    DEVELOPERS,
+    DONATE,
+    DONT_INCLUDE_ANNOTATIONS,
+    END,
+    ENGLISH_AND_NON_ENGLISH,
     GENIUS_TOKEN,
+    HELP,
+    INCLUDE,
+    INCLUDE_ANNOTATIONS,
+    LOG_LEVEL,
+    LOGGED_IN,
+    LOGOUT,
+    LYRICS_LANG,
+    MAIN_MENU,
+    ONLY_ENGLIGH,
+    ONLY_NON_ENGLISH,
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
-    LYRICS_LANG,
-    INCLUDE,
-    TYPING_FEEDBACK,
+    SERVER_PORT,
+    SPOTIFY_CLIENT_ID,
+    SPOTIFY_CLIENT_SECRET,
+    TYPING_ALBUM,
     TYPING_ARTIST,
-    TYPING_USER,
+    TYPING_FEEDBACK,
     TYPING_LYRIC_CARD_CUSTOM,
     TYPING_LYRIC_CARD_LYRICS,
     TYPING_LYRICS,
-    MAIN_MENU,
-    DEVELOPERS,
-    CUSTOMIZE_MENU,
-    LOGGED_IN,
-    LOGOUT,
-    END,
-    SPOTIFY_CLIENT_ID,
-    SPOTIFY_CLIENT_SECRET,
-    ONLY_ENGLIGH,
-    ONLY_NON_ENGLISH,
-    ENGLISH_AND_NON_ENGLISH,
-    INCLUDE_ANNOTATIONS,
-    DONT_INCLUDE_ANNOTATIONS,
-    BTC_ADDRESS,
-    DONATE,
-    HELP,
+    TYPING_SONG,
+    TYPING_USER,
 )
+from geniust.db import Database
+from geniust.functions import (
+    account,
+    album,
+    annotation,
+    artist,
+    customize,
+    inline_query,
+    lyric_card,
+    recommender,
+    song,
+    user,
+)
+from geniust.server import WebhookThread
+from geniust.utils import log
 
 warnings.filterwarnings(
     "ignore", message="If 'per_", module="telegram.ext.conversationhandler"

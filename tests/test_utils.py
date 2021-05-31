@@ -1,12 +1,12 @@
-import re
 import os
-from unittest.mock import patch, MagicMock
+import re
+from unittest.mock import MagicMock, patch
 
 import pytest
-from telegram.utils.helpers import create_deep_linked_url
 from bs4 import BeautifulSoup
+from telegram.utils.helpers import create_deep_linked_url
 
-from geniust import utils, api
+from geniust import api, utils
 
 
 @pytest.fixture(scope="function")

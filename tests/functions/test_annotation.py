@@ -1,7 +1,7 @@
 import json
 import re
 from os.path import join
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from telegram import InlineKeyboardButton as IButton

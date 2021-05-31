@@ -1,10 +1,9 @@
-from zipfile import ZipFile
 from io import BytesIO
+from zipfile import ZipFile
 
 import pytest
 
 from geniust.functions import album_conversion
-
 
 users = [
     {"lyrics_lang": "English", "include_annotations": True},

@@ -1,21 +1,18 @@
-import pathlib
 import json
 import os
+import pathlib
 from os import listdir
 from os.path import isfile, join
-from unittest.mock import create_autospec, MagicMock
+from unittest.mock import MagicMock, create_autospec
 
 import pytest
-import yaml
 import tekore as tk
-from lyricsgenius import OAuth2, Genius
-from telegram import Update, CallbackQuery, Bot, Message
+import yaml
+from lyricsgenius import Genius, OAuth2
+from telegram import Bot, CallbackQuery, Message, Update
 from telegram.ext import CallbackContext
 
-from geniust import api
-from geniust import db
-from geniust import data
-from geniust import constants
+from geniust import api, constants, data, db
 from geniust.constants import Preferences
 
 

@@ -1,33 +1,33 @@
 """gets album or song lyrics from Genius"""
-import logging
-import re
-import os
 import asyncio
+import logging
+import os
 import queue
-from json.decoder import JSONDecodeError
-from typing import Any, Tuple, Optional, Union, List, Dict
+import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from io import BytesIO
+from json.decoder import JSONDecodeError
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 import telethon
-from requests.exceptions import HTTPError, Timeout
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius, PublicAPI
 from lyricsgenius.utils import clean_str
-from concurrent.futures import ThreadPoolExecutor
-from telethon.sessions import StringSession
+from requests.exceptions import HTTPError, Timeout
 from telethon import types
+from telethon.sessions import StringSession
 
 from geniust.constants import (
-    RECOMMENDER_TOKEN,
-    TELETHON_API_ID,
-    Preferences,
-    TELETHON_API_HASH,
-    TELETHON_SESSION_STRING,
     ANNOTATIONS_CHANNEL_HANDLE,
     GENIUS_TOKEN,
     IMGBB_TOKEN,
+    RECOMMENDER_TOKEN,
+    TELETHON_API_HASH,
+    TELETHON_API_ID,
+    TELETHON_SESSION_STRING,
+    Preferences,
 )
 
 logger = logging.getLogger("geniust")

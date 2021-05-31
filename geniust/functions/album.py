@@ -4,17 +4,15 @@ from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
-from telegram import InputMediaPhoto
-from telegram import Update
+from telegram import InputMediaPhoto, Update
+from telegram.error import NetworkError, TimedOut
 from telegram.ext import CallbackContext
-from telegram.error import TimedOut, NetworkError
 
-from geniust.constants import DEVELOPERS, TYPING_ALBUM, END
-from geniust import api, utils, get_user
+from geniust import api, get_user, utils
+from geniust.constants import DEVELOPERS, END, TYPING_ALBUM
 from geniust.utils import log
 
-from .album_conversion import create_pdf, create_zip, create_pages
-
+from .album_conversion import create_pages, create_pdf, create_zip
 
 logger = logging.getLogger("geniust")
 
