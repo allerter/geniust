@@ -2,6 +2,7 @@ import logging
 from os.path import join
 from itertools import zip_longest
 from typing import List, Optional, Iterable, Iterator
+
 import tekore as tk
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
