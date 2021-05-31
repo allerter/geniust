@@ -23,7 +23,7 @@ class CronHandler(RequestHandler):
         self.write("OK")
 
     def head(self):
-        """ Satisfy UptimeRobot that this url exists"""
+        """Satisfy UptimeRobot that this url exists"""
         self.finish()
 
 
