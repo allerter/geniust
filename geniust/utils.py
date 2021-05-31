@@ -155,7 +155,10 @@ def remove_links(s: str) -> str:
     return links_pattern.sub("", s)
 
 
-def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> Any:
+def format_language(
+    lyrics: Union[BeautifulSoup, str],
+    lyrics_language: str,
+) -> BeautifulSoup:
     """Removes (non-)ASCII characters
 
     Removes ASCII or non-ASCII or keeps both based
@@ -163,10 +166,13 @@ def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> 
 
     Args:
         lyrics (Union[BeautifulSoup, str]): lyrics.
-        lyrics_language (str): User perferred language.
+        lyrics_language (str): User preferred language.
+
+    Raises:
+        TypeError: If the type of lyrics isn't recognized.
 
     Returns:
-        Union[BeautifulSoup, str]: formatted lyrics.
+        BeautifulSoup: formatted lyrics.
     """
 
     def string_formatter(s: str) -> str:
@@ -191,8 +197,10 @@ def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> 
         for string in strings:
             formatted = string_formatter(str(string))
             string.replace_with(formatted)
+    elif isinstance(lyrics, str):
+        lyrics = BeautifulSoup(string_formatter(lyrics), "html.parser")
     else:
-        lyrics = string_formatter(lyrics)
+        raise TypeError(f"Unknown lyrics type: {type(lyrics)}")
 
     return lyrics
 
