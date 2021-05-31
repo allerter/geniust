@@ -12,21 +12,22 @@ date)](https://img.shields.io/github/v/release/allerter/geniust)
 Coverage](https://api.codeclimate.com/v1/badges/74d5611d77cb26f4ed16/test_coverage)](https://codeclimate.com/github/Allerter/geniust/test_coverage)
 [![Code style:
 black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![Telegram
 Link](https://img.shields.io/static/v1?label=Telegram&message=Click%20Here&color=blue&logo=telegram)](https://t.me/genius_the_bot)
 
-A Telegram bot that provides music data and lyrics from Genius.
+A Telegram bot that provides music info and lyrics from Genius.
 
 ## Features
 
-> -   [Genius/Music Data](#geniusmusic-data)
+> -   [Genius/Music Info](#geniusmusic-info)
 > -   [Genius Account](#genius-account)
 > -   [GeniusT Shuffle](#geniust-shuffle)
-> -   [Song Lyircs](#song-lyircs)
+> -   [Song Lyrics](#song-lyrics)
 > -   [Album Lyrics](#album-lyrics)
 > -   [Telegram features](#telegram-features)
 
-### Genius/Music Data
+### Genius/Music Info
 
 GeniusT allows searching for songs, albums, artists, users, and song
 lyrics. Furthermore, users can access tracks in albums, information
@@ -57,39 +58,6 @@ favorite artists from the available ones or finish without any favorite
 artists (each user must have at least one favorite genre). Available
 genres:
 
--   Classical
--   Country
--   Instrumental
--   Persian
--   Pop
--   Rap
--   R&B
--   Rock
--   Traditional
-
-The *Persian* genre acts as a language parameter and a user with that
-genre only gets songs that have the Persian genre; otherwise would get
-non-Persian (mostly English) songs. The English songs were taken
-randomly from the [LastFM 2020
-dataset](https://github.com/renesemela/lastfm-dataset-2020). The Persian
-songs are also retrieved from LastFM, but I neglected to save the
-scripts I used to get the songs. Further information for songs was
-retrieved from Spotify, Deezer, and Genius.
-
-When a user\'s preferences are sent to the recommender, it will get all
-songs that have one of the user\'s genres. Then the recommender chooses
-a random subset of those songs to avoid sending the same songs each
-time. Afterward, if the user had any favorite artists, the user
-artists\' descriptions are compared with the subset songs artists\'
-descriptions using TF-IDS to sort the songs based on the most
-similarity. Then the 5 most similar songs will be returned.
-
-All of the English songs have a preview URL, but because of copyright
-laws have no download URL (full song URL). Although the users can
-download the song from a link to another Telegram bot. Some Persian
-songs have a preview URL and some a direct download URL for a 128-bit
-MP3 file.
-
 Fore more information about the recommender itself refer to the
 [GeniusT Recommender](https://github.com/allerter/geniust-recommender)
 repository.
@@ -113,6 +81,8 @@ the bot in a separate channel meant for annotations. Meaning when users
 view lyrics for a song, they can click on highlighted lyrics that will
 lead them to the annotations right there in Telegram.
 
+Currently **annotated** lyrics are only open to the developers.
+
 ### Album Lyrics
 
 As for the albums, users can either view the tracks and their lyrics
@@ -126,7 +96,9 @@ the tracks all in one place in three formats:
 -   TELEGRA.PH: Returns a link to a *telegra.ph* page which in turn has
     the album\'s description and links to other *telegra.ph* pages that
     each has the description and the lyrics of a song. This feature
-    isn\'t maintained, so some things might look off.
+    isn't maintained, so some things might look off.
+
+Currently this feature is only open to the developers.
 
 ### Lyrics Customizations
 
@@ -138,20 +110,23 @@ or Persian so that only the translated lines remain.
 
 ### Telegram Features
 
-Users can search Genius navigating the iline menu which can be accessed
+Users can search Genius navigating the inline menu which can be accessed
 using the `/start` command. Alternatively, you could directly reach to
 the desired feature using commands:
 
 -   **/start** start the bot
--   **/song**: search for a song
 -   **/album**: search for an album
 -   **/artist**: search for an artist
+-   **/song**: search for a song
+-   **/song_by_lyrics**: search for a song by lyrics
 -   **/user**: search for a user
+-   **/lyric_card**: get a lyric card by providing lyrics
+-   **/lyric_card_custom**: build a custom lyric card
 -   **/shuffle**: Get music recommendation
--   **/lyrics_language**: set lyrics language
--   **/include_annotations**: include annotations
 -   **/bot_language**: set bot language
+-   **/login**: log into Genius/Spotify
 -   **/cancel**: cancel the current task
+-   **/donate**: donate to the developers
 -   **/help**: more info about the bot
 -   **/contact_us**: send us a message
 
@@ -162,3 +137,4 @@ example:
 -   searching albums: `@genius_the_bot .album hotel diablo`
 -   searching artists: `@genius_the_bot .artist Queen`
 -   searching users: `@genius_the_bot .user lemonade`
+-   getting lyric cards: `genius_the_bot .lyric_card we will rock you`
