@@ -151,7 +151,7 @@ include_annotations:
   updated: |-
     تغییرات اعمال شد.
     انوتیشن‌ها در متن قرار می‌گیرن:
-    <b>{language}</b>.
+    <b>{include}</b>.
 
 # ----------- Inline Queries -----------
 inline_menu:
