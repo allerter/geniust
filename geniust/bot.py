@@ -92,10 +92,13 @@ logging.getLogger("telegram").setLevel(
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
 logger.setLevel(LOG_LEVEL)
-defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
-notification_handler = NotificationHandler("telegram", defaults=defaults)
-notification_handler.setLevel(logging.ERROR)
-logging.getLogger().addHandler(notification_handler)
+# If we're debugging, we already have access to the logs and don't need
+# the notification handler to send us the errors
+if log_level_num > logging.DEBUG:
+    defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
+    notification_handler = NotificationHandler("telegram", defaults=defaults)
+    notification_handler.setLevel(logging.ERROR)
+    logging.getLogger().addHandler(notification_handler)
 
 
 class NewShuffleUser(MessageFilter):
