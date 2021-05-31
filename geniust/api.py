@@ -625,12 +625,32 @@ class Recommender:
         self, genres: Optional[List[str]] = None, num_songs: Optional[int] = None
     ):
         self._sender = Sender(self.API_ROOT, access_token=RECOMMENDER_TOKEN, retries=3)
-        self.num_songs: int = (
-            self._sender.request("songs/len")["len"] if num_songs is None else num_songs
-        )
-        self.genres: List[str] = (
-            self._sender.request("genres")["genres"] if genres is None else genres
-        )
+        if num_songs is None:
+            try:
+                num_songs = self._sender.request("songs/len")["len"]
+            except Exception as e:
+                logger.warn(e)
+                num_songs = 20000
+
+        if genres is None:
+            try:
+                genres = self._sender.request("genres")["genres"]
+            except Exception as e:
+                logger.warn(e)
+                genres = [
+                    "classical",
+                    "country",
+                    "instrumental",
+                    "persian",
+                    "pop",
+                    "rap",
+                    "rnb",
+                    "rock",
+                    "traditional",
+                ]
+
+        self.num_songs: int = num_songs
+        self.genres: List[str] = genres
         self.genres_by_number = {}
         for i, genre in enumerate(self.genres):
             self.genres_by_number[i] = genre
