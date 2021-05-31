@@ -311,6 +311,9 @@ def display_lyrics(
     lyrics = utils.format_language(lyrics, lyrics_language)
     lyrics = utils.remove_unsupported_tags(lyrics)
     lyrics = re.sub(r"<[/]*(br|div|p).*[/]*?>", "", str(lyrics))
+    # This adds a newline wherever the next section is separated from
+    # the previous section with only one newline.
+    lyrics = re.sub(r"(?<!\n)\n\[", "\n\n[", lyrics)
 
     bot.delete_message(chat_id=chat_id, message_id=message_id)
 
