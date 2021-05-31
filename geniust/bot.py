@@ -4,6 +4,7 @@ import traceback
 from typing import Dict, Any
 
 import tekore as tk
+import lyricsgenius as lg
 from notifiers.logging import NotificationHandler
 from telegram import Update, Message, error
 from telegram.ext import CallbackContext
@@ -49,6 +50,7 @@ from geniust.constants import (
     TYPING_SONG,
     SERVER_PORT,
     BOT_TOKEN,
+    GENIUS_TOKEN,
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
@@ -361,6 +363,12 @@ def main():
     database = Database(DATABASE_URL.replace("postgres", "postgresql+psycopg2"))
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
+    dp.bot_data["lyricsgenius"]: lg.Genius = lg.Genius(
+        GENIUS_TOKEN,
+        retries=2,
+        sleep_time=0,
+        verbose=False,
+    )
     dp.bot_data["spotify"]: tk.Spotify = tk.Spotify(
         tk.RefreshingCredentials(
             SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
