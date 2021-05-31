@@ -318,7 +318,7 @@ def display_lyrics(
         """Converts entity to a dict that is compatible with PTB"""
         dic = entity.dict
         dic["type"] = entity.type
-        dic.pop("_")
+        dic.pop("_", None)
         return dic
 
     for text, entities in split_text(
