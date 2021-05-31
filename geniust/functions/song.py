@@ -284,7 +284,7 @@ def display_lyrics(
     """
     user_data = context.user_data
     bot = context.bot
-    chat_id = update.effective_chat.id
+    chat_id = update.effective_user.id
     genius_t = context.bot_data["genius"]
     genius = context.bot_data["lyricsgenius"]
 
