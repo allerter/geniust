@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bs4 import BeautifulSoup
@@ -171,28 +171,46 @@ def test_download_song(update, context, platform):
     assert res == constants.END
 
 
-def test_display_lyrics(update_callback_query, context, song_id, full_album):
+@pytest.mark.parametrize("developer", [True, False])
+@pytest.mark.parametrize("error", [True, False])
+def test_display_lyrics(
+    update_callback_query, context, song_id, full_album, developer, error
+):
     update = update_callback_query
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["display_lyrics"]
     context.user_data["include_annotations"] = True
 
-    client = MagicMock()
-    client().lyrics.return_value = BeautifulSoup(
-        full_album["tracks"][3]["song"]["lyrics"],
-        "html.parser",
-    )
-    client().song.return_value = full_album["tracks"][3]
+    if developer:
+        update.effective_user.id = constants.DEVELOPERS[0]
+    else:
+        update.effective_user.id = 1
 
-    with patch("geniust.api.GeniusT", client):
-        song.display_lyrics(update, context, song_id, text)
+    genius_t = context.bot_data["genius"]
+    genius = context.bot_data["lyricsgenius"]
+    genius_t.song.return_value = full_album["tracks"][3]
+    if error:
+        genius_t.lyrics.side_effect = Exception("some error")
+        genius.lyrics.return_value = BeautifulSoup(
+            full_album["tracks"][3]["song"]["lyrics"],
+            "html.parser",
+        ).get_text()
+    else:
+        genius_t.lyrics.return_value = BeautifulSoup(
+            full_album["tracks"][3]["song"]["lyrics"],
+            "html.parser",
+        )
 
-    client = client()
-    client.lyrics.assert_called_once()
-    args = client.lyrics.call_args[1]
+    song.display_lyrics(update, context, song_id, text)
+
+    genius_t.lyrics.assert_called_once()
+    args = genius_t.lyrics.call_args[1]
     assert args["song_id"] == song_id
     assert args["song_url"] == full_album["tracks"][3]["song"]["url"]
-    assert args["include_annotations"] is True
+    if developer:
+        assert args["include_annotations"] is True
+    else:
+        assert args["include_annotations"] is False
     assert args["telegram_song"] is True
 
 

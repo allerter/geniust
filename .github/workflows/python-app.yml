@@ -49,27 +49,6 @@ jobs:
         pip install -r requirements.txt
         pip install -e .[dev]
     - name: Run tox
-      env:
-        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        TELEGRAPH_TOKEN: ${{ secrets.TELEGRAPH_TOKEN }}
-        GENIUS_TOKEN: ${{ secrets.GENIUS_TOKEN }}
-        ANNOTATIONS_CHANNEL_HANDLE: ${{ secrets.ANNOTATIONS_CHANNEL_HANDLE }}
-        DEVELOPERS: ${{ secrets.DEVELOPERS }}
-        SERVER_ADDRESS: ${{ secrets.SERVER_ADDRESS }}
-        TELETHON_API_ID: ${{ secrets.TELETHON_API_ID }}
-        TELETHON_API_HASH: ${{ secrets.TELETHON_API_HASH }}
-        TELETHON_SESSION_STRING: ${{ secrets.TELETHON_SESSION_STRING }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        GENIUS_CLIENT_ID: ${{ secrets.GENIUS_CLIENT_ID }}
-        GENIUS_REDIRECT_URI: ${{ secrets.GENIUS_REDIRECT_URI }}
-        GENIUS_CLIENT_SECRET: ${{ secrets.GENIUS_CLIENT_SECRET }}
-        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-        SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
-        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-        LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
-        RECOMMENDER_TOKEN: TEST_TOKEN
-        IMGBB_TOKEN: TEST_TOKEN
-        BTC_ADDRESS: TEST_ADDRESS
       run: tox
 
     - name: Archive code coverage results

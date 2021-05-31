@@ -1,6 +1,6 @@
 import logging
-from uuid import uuid4
 from typing import Any, Dict, List
+from uuid import uuid4
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
@@ -13,11 +13,10 @@ from telegram import (
 from telegram.ext import CallbackContext
 from telegram.utils.helpers import create_deep_linked_url
 
-from geniust import username, utils, get_user
+from geniust import get_user, username, utils
 from geniust.api import upload_to_imgbb
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import log, has_sentence, PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES
-
+from geniust.utils import PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES, has_sentence, log
 
 logger = logging.getLogger("geniust")
 

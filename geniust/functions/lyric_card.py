@@ -4,15 +4,13 @@ from io import BytesIO
 from typing import cast
 from uuid import uuid4
 
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
-from geniust.constants import END, TYPING_LYRIC_CARD_LYRICS, TYPING_LYRIC_CARD_CUSTOM
-from geniust import username
-from geniust import get_user
-from geniust.utils import log, has_sentence, PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES
+from geniust import get_user, username
+from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
-
+from geniust.utils import PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES, has_sentence, log
 
 logger = logging.getLogger("geniust")
 

@@ -4,17 +4,15 @@ from typing import Any, Dict
 
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
-from telegram import InputMediaPhoto
-from telegram import Update, Message
+from telegram import InputMediaPhoto, Update
+from telegram.error import NetworkError, TimedOut
 from telegram.ext import CallbackContext
-from telegram.error import TimedOut, NetworkError, BadRequest
 
-from geniust.constants import TYPING_ALBUM, END
-from geniust import api, utils, get_user
+from geniust import api, get_user, utils
+from geniust.constants import DEVELOPERS, END, TYPING_ALBUM
 from geniust.utils import log
 
-from .album_conversion import create_pdf, create_zip, create_pages
-
+from .album_conversion import create_pages, create_pdf, create_zip
 
 logger = logging.getLogger("geniust")
 
@@ -113,8 +111,11 @@ def display_album(update: Update, context: CallbackContext) -> int:
     buttons = [
         [IButton(text["cover_arts"], callback_data=f"album_{album['id']}_covers")],
         [IButton(text["tracks"], callback_data=f"album_{album['id']}_tracks")],
-        [IButton(text["lyrics"], callback_data=f"album_{album['id']}_lyrics")],
     ]
+    if chat_id in DEVELOPERS:
+        buttons.append(
+            [IButton(text["lyrics"], callback_data=f"album_{album['id']}_lyrics")]
+        )
 
     if album["description_annotation"]["annotations"][0]["body"]["plain"]:
         annotation_id = album["description_annotation"]["id"]
@@ -227,23 +228,25 @@ def thread_get_album(update: Update, context: CallbackContext) -> int:
     """Creates a thread to get the album"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["get_album"]
+    chat_id = update.effective_user.id
 
     update.callback_query.answer()
     _, album_id, _, album_format = update.callback_query.data.split("_")
     album_id = int(album_id)  # type: ignore[assignment]
 
-    p = threading.Thread(
-        target=get_album,
-        args=(
-            update,
-            context,
-            album_id,
-            album_format,
-            text,
-        ),
-    )
-    p.start()
-    p.join()
+    if chat_id in DEVELOPERS:
+        p = threading.Thread(
+            target=get_album,
+            args=(
+                update,
+                context,
+                album_id,
+                album_format,
+                text,
+            ),
+        )
+        p.start()
+        p.join()
     return END
 
 

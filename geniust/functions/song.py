@@ -1,21 +1,20 @@
 import logging
-import threading
 import re
-from typing import Dict, Any
+import threading
+from functools import partial
+from typing import Any, Dict
 
+from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.constants import MAX_MESSAGE_LENGTH
-from bs4 import BeautifulSoup
-from lyricsgenius import Genius
+from telethon.extensions import html
+from telethon.utils import split_text
 
-from geniust.constants import END, TYPING_SONG, TYPING_LYRICS, GENIUS_TOKEN
-from geniust import utils, api, username
-from geniust import get_user
+from geniust import get_user, username, utils
+from geniust.constants import DEVELOPERS, END, TYPING_LYRICS, TYPING_SONG
 from geniust.utils import log
-
 
 logger = logging.getLogger("geniust")
 
@@ -272,7 +271,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
 @log
 def display_lyrics(
     update: Update, context: CallbackContext, song_id: int, text: Dict[str, str]
-) -> None:
+) -> int:
     """Retrieves and sends song lyrics to user
 
     Args:
@@ -283,57 +282,62 @@ def display_lyrics(
     """
     user_data = context.user_data
     bot = context.bot
-    chat_id = update.effective_chat.id
-
-    genius_t = api.GeniusT()
+    chat_id = update.effective_user.id
+    genius_t = context.bot_data["genius"]
+    genius = context.bot_data["lyricsgenius"]
 
     lyrics_language = user_data["lyrics_lang"]
-    include_annotations = user_data["include_annotations"]
-
+    include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
 
     message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
 
+    song_url = genius_t.song(song_id)["song"]["url"]
     try:
         lyrics = genius_t.lyrics(
             song_id=song_id,
-            song_url=genius_t.song(song_id)["song"]["url"],
+            song_url=song_url,
             include_annotations=include_annotations,
             telegram_song=True,
         )
     except Exception as e:
-        logger.error("error when displaying lyrics of %s: %s", song_id, e)
-        lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
+        logger.error("error when displaying lyrics of %s: %s", song_id, e.__traceback__)
+        lyrics = genius.lyrics(song_url=song_url)
 
-    logger.debug("%s lyrics: %s", song_id, repr(lyrics))
     # formatting lyrics language
     # lyrics = BeautifulSoup(lyrics, "html.parser")
     lyrics = utils.format_language(lyrics, lyrics_language)
     lyrics = utils.remove_unsupported_tags(lyrics)
     lyrics = re.sub(r"<[/]*(br|div|p).*[/]*?>", "", str(lyrics))
+    # This adds a newline wherever the next section is separated from
+    # the previous section with only one newline.
+    lyrics = re.sub(r"(?<!\n)\n\[", "\n\n[", lyrics)
 
     bot.delete_message(chat_id=chat_id, message_id=message_id)
 
-    len_lyrics = len(lyrics)
-    sent = 0
-    i = 0
-    # missing_a = False
-    # link = ''
-    # get_link = re.compile(r'<a[^>]+href=\"(.*?)\"[^>]*>')
-    # this sends the lyrics in messages if it exceeds message length limit
-    # it's possible that the final <a> won't be closed because of slicing the message so
-    # that's dealt with too
-    max_length = MAX_MESSAGE_LENGTH
-    while sent < len_lyrics:
-        string = lyrics[i * max_length : (i * max_length) + max_length]
-        a_start = string.count("<a")
-        a_end = string.count("</a>")
-        if a_start != a_end:
-            a_pos = string.rfind("<a")
-            string = string[:a_pos]
-        bot.send_message(chat_id, string)
-        sent += len(string)
-        i += 1
+    def to_dict(entity):
+        """Converts entity to a dict that is compatible with PTB"""
+        dic = entity.dict
+        dic["type"] = entity.type
+        dic.pop("_", None)
+        return dic
+
+    for text, entities in split_text(
+        *html.parse(lyrics), limit=4096, split_at=(r"\n\n",)
+    ):
+        for entity in entities:
+            entity.dict = entity.to_dict()
+            entity.type = utils.MESSAGE_ENTITY_TYPES[entity.dict["_"]]
+            entity.to_dict = partial(to_dict, entity=entity)
+        bot.send_message(
+            chat_id,
+            text,
+            entities=entities,
+            parse_mode=None,  # If it's set, Telegram will ignore the entities.
+            # And since we've set a default for it in bot.py,
+            # here we have to override and set to None.
+        )
+    return END
 
 
 @log

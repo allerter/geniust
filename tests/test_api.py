@@ -1,9 +1,9 @@
-import pytest
-import re
 import json
-from unittest.mock import AsyncMock, MagicMock, patch, create_autospec
+import re
 from os.path import join
+from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
+import pytest
 from bs4 import BeautifulSoup
 from telethon import TelegramClient
 

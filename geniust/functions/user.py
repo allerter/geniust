@@ -1,17 +1,15 @@
 import logging
-from typing import Dict, Any, List, Union
+from typing import Any, Dict, List, Union
 
+from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from bs4 import BeautifulSoup
 
+from geniust import get_user, utils
 from geniust.constants import END, TYPING_USER
-from geniust import utils
-from geniust import get_user
 from geniust.utils import log
-
 
 logger = logging.getLogger("geniust")
 

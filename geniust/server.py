@@ -1,15 +1,15 @@
-import threading
-import logging
 import json
+import logging
+import threading
 
 import tekore as tk
-import tornado.web
 import tornado.ioloop
+import tornado.web
 from lyricsgenius.utils import parse_redirected_url
 from requests import HTTPError
 from telegram import Bot
 from telegram.utils.webhookhandler import WebhookServer
-from tornado.web import url, RequestHandler
+from tornado.web import RequestHandler, url
 
 from geniust.db import Database
 from geniust.utils import log
@@ -23,7 +23,7 @@ class CronHandler(RequestHandler):
         self.write("OK")
 
     def head(self):
-        """ Satisfy UptimeRobot that this url exists"""
+        """Satisfy UptimeRobot that this url exists"""
         self.finish()
 
 

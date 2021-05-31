@@ -1,6 +1,6 @@
 import os
-from typing import List, Optional
 from collections import namedtuple
+from typing import List, Optional
 
 from telegram.ext import ConversationHandler
 

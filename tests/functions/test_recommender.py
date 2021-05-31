@@ -1,9 +1,9 @@
-from unittest.mock import patch, MagicMock
 from collections import namedtuple
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from geniust import constants, api
+from geniust import api, constants
 from geniust.constants import Preferences
 from geniust.functions import recommender as rcr
 

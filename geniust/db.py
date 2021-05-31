@@ -1,18 +1,13 @@
 import logging
 from functools import wraps
-from typing import TypeVar, Dict, Callable, Optional, Tuple, Union, List, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+
+from sqlalchemy import BigInteger, Boolean, Column, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.types import TypeDecorator
 
 from geniust.utils import log
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Boolean,
-    BigInteger,
-    String,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.types import TypeDecorator
 
 logger = logging.getLogger("geniust")
 Base = declarative_base()

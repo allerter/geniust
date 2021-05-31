@@ -6,10 +6,9 @@ from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from geniust.constants import TYPING_ARTIST, END
-from geniust import utils, get_user
+from geniust import get_user, utils
+from geniust.constants import END, TYPING_ARTIST
 from geniust.utils import log
-
 
 logger = logging.getLogger("geniust")
 

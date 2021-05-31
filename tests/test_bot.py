@@ -1,13 +1,13 @@
 import warnings
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from telegram.ext import Updater
 
-from geniust import constants, bot, texts
+from geniust import bot, constants, texts
 from geniust.api import Recommender
-from geniust.db import Database
 from geniust.constants import Preferences
+from geniust.db import Database
 
 
 @pytest.mark.parametrize("token", ["test_token", None])
@@ -75,7 +75,7 @@ def test_send_feedback(update_message, context):
 
     res = bot.send_feedback(update, context)
 
-    assert context.bot.send_message.call_count == len(constants.DEVELOPERS) + 1
+    assert context.bot.send_message.call_count >= 2
     assert context.bot.send_message.call_args[1]["chat_id"] == chat_id
 
     assert res == constants.END

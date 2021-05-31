@@ -1,26 +1,27 @@
 import logging
-from os.path import join
 from itertools import zip_longest
-from typing import List, Optional, Iterable, Iterator
+from os.path import join
+from typing import Iterable, Iterator, List, Optional
+
 import tekore as tk
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from geniust import data_path, get_user, utils
 from geniust.constants import (
+    END,
+    MAIN_MENU,
     SELECT_ACTION,
     SELECT_ARTISTS,
     SELECT_GENRES,
-    MAIN_MENU,
-    END,
     SPOTIFY_CLIENT_ID,
-    Preferences,
     SPOTIFY_CLIENT_SECRET,
+    Preferences,
 )
-from geniust.utils import log
-from geniust import get_user, data_path, utils
 from geniust.functions import account
+from geniust.utils import log
 
 logger = logging.getLogger("geniust")
 

@@ -1,12 +1,12 @@
 import textwrap
-from dataclasses import dataclass, astuple
-from typing import Dict, List, Optional, Union
+from dataclasses import astuple, dataclass
 from io import BytesIO
+from typing import Dict, List, Optional, Union
 
 import arabic_reshaper
-from fontTools.ttLib import TTFont
-from PIL import Image, ImageEnhance, ImageFont, ImageDraw
 from bidi.algorithm import get_display
+from fontTools.ttLib import TTFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from geniust import data_path
 

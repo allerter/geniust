@@ -1,17 +1,15 @@
 import logging
 import re
 
+from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-from bs4 import BeautifulSoup
 
+from geniust import api, get_user
 from geniust.constants import END
-from geniust import get_user
 from geniust.utils import log, remove_unsupported_tags
-from geniust import api
-
 
 logger = logging.getLogger("geniust")
 

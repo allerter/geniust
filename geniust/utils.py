@@ -1,14 +1,14 @@
-import re
 import logging
+import re
 from functools import wraps
-from typing import Any, TypeVar, Callable, Pattern, List, Union, Tuple, Dict
+from typing import Any, Callable, Dict, List, Pattern, Tuple, TypeVar, Union
 
-from bs4 import BeautifulSoup, NavigableString, Comment
+from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import Tag
 from telegram.utils.helpers import create_deep_linked_url
 
-from geniust.constants import TELEGRAM_HTML_TAGS
 import geniust
+from geniust.constants import TELEGRAM_HTML_TAGS
 
 # (\[[^\]\n]+\]|\\n|!--![\S\s]*?!__!)|.*[^\x00-\x7F].*
 regex = (
@@ -41,6 +41,25 @@ links_pattern: Pattern[str] = re.compile(r"\nhttp[s]*.*")
 PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
 # Translation phrase added to the end of the song title (more info at where it's used)
 TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
+
+# The keys are Telethon message entity types and the values PTB ones.
+MESSAGE_ENTITY_TYPES = {
+    "MessageEntityBold": "bold",
+    "MessageEntityBotCommand": "bot_command",
+    "MessageEntityCashtag": "cashtag",
+    "MessageEntityCode": "code",
+    "MessageEntityEmail": "email",
+    "MessageEntityHashtag": "hashtag",
+    "MessageEntityItalic": "italic",
+    "MessageEntityMention": "mention",
+    "MessageEntityMentionName": "text_mention",
+    "MessageEntityPhone": "phone_number",
+    "MessageEntityPre": "pre",
+    "MessageEntityStrike": "strikethrough",
+    "MessageEntityTextUrl": "text_link",
+    "MessageEntityUnderline": "underline",
+    "MessageEntityUrl": "url",
+}
 
 
 def deep_link(
@@ -136,7 +155,10 @@ def remove_links(s: str) -> str:
     return links_pattern.sub("", s)
 
 
-def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> Any:
+def format_language(
+    lyrics: Union[BeautifulSoup, str],
+    lyrics_language: str,
+) -> BeautifulSoup:
     """Removes (non-)ASCII characters
 
     Removes ASCII or non-ASCII or keeps both based
@@ -144,10 +166,13 @@ def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> 
 
     Args:
         lyrics (Union[BeautifulSoup, str]): lyrics.
-        lyrics_language (str): User perferred language.
+        lyrics_language (str): User preferred language.
+
+    Raises:
+        TypeError: If the type of lyrics isn't recognized.
 
     Returns:
-        Union[BeautifulSoup, str]: formatted lyrics.
+        BeautifulSoup: formatted lyrics.
     """
 
     def string_formatter(s: str) -> str:
@@ -158,7 +183,7 @@ def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> 
         s = remove_extra_newlines(s)
         return s
 
-    if isinstance(lyrics, Tag):
+    if isinstance(lyrics, (Tag, BeautifulSoup)):
         strings = [
             x
             for x in lyrics.descendants
@@ -172,8 +197,10 @@ def format_language(lyrics: Union[BeautifulSoup, str], lyrics_language: str) -> 
         for string in strings:
             formatted = string_formatter(str(string))
             string.replace_with(formatted)
+    elif isinstance(lyrics, str):
+        lyrics = BeautifulSoup(string_formatter(lyrics), "html.parser")
     else:
-        lyrics = string_formatter(lyrics)
+        raise TypeError(f"Unknown lyrics type: {type(lyrics)}")
 
     return lyrics
 

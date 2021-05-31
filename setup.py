@@ -1,6 +1,6 @@
 import pathlib
-from setuptools import setup, find_packages
 
+from setuptools import find_packages, setup
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -15,18 +15,20 @@ readme_file = here / "README.md"
 
 extras_require = {
     "checks": [
-        "tox==3.20.1",
-        "mypy==0.790",
-        "black==20.8b1",
-        "flake8==3.8.4",
-        "flake8-bugbear==20.11.1",
+        "tox==3.23.1",
+        "mypy==0.812",
+        "black==21.5b2",
+        "isort==5.8.0",
+        "flake8==3.9.2",
+        "flake8-bugbear==21.4.3",
+        "sqlalchemy-stubs==0.4",
     ],
     "tests": [
-        "pytest==6.1.2",
-        "pytest-asyncio==0.14.0",
+        "pytest==6.2.4",
+        "pytest-asyncio==0.15.1",
         "pytest-lazy-fixture==0.6.3",
-        "coverage==5.3",
-        "requests-mock==1.8.0",
+        "coverage==5.5",
+        "requests-mock==1.9.3",
     ],
 }
 

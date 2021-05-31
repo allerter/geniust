@@ -2,16 +2,15 @@ import logging
 import secrets
 from typing import Any, Dict
 
+import tekore as tk
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
 from telegram.ext import CallbackContext
-import tekore as tk
 
-from geniust.constants import LOGOUT, MAIN_MENU, END
-from geniust import utils, auths, get_user
+from geniust import api, auths, get_user, utils
+from geniust.constants import END, LOGOUT, MAIN_MENU
 from geniust.utils import log
-from geniust import api
 
 logger = logging.getLogger("geniust")
 
