@@ -11,8 +11,8 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from bs4 import BeautifulSoup
 from lyricsgenius import Genius
 
-from geniust.constants import END, TYPING_SONG, TYPING_LYRICS, GENIUS_TOKEN
-from geniust import utils, api, username
+from geniust.constants import DEVELOPERS, END, TYPING_SONG, TYPING_LYRICS, GENIUS_TOKEN
+from geniust import utils, username
 from geniust import get_user
 from geniust.utils import log
 
@@ -284,28 +284,35 @@ def display_lyrics(
     user_data = context.user_data
     bot = context.bot
     chat_id = update.effective_chat.id
-
-    genius_t = api.GeniusT()
+    genius_t = context.bot_data["genius"]
+    genius = context.bot_data["lyricsgenius"]
 
     lyrics_language = user_data["lyrics_lang"]
-    include_annotations = user_data["include_annotations"]
+    include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
 
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
 
     message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
 
-    try:
-        lyrics = genius_t.lyrics(
-            song_id=song_id,
-            song_url=genius_t.song(song_id)["song"]["url"],
-            include_annotations=include_annotations,
-            telegram_song=True,
-        )
-    except Exception as e:
-        logger.error("error when displaying lyrics of %s: %s", song_id, e)
-        lyrics = Genius(GENIUS_TOKEN).lyrics(song_id)
+    if include_annotations:
+        try:
+            song_url = genius_t.song(song_id)["song"]["url"]
+            lyrics = genius_t.lyrics(
+                song_id=song_id,
+                song_url=song_url,
+                include_annotations=include_annotations,
+                telegram_song=True,
+            )
+        except Exception as e:
+            logger.error(
+                "error when displaying lyrics of %s: %s", song_id, e.__traceback__
+            )
+            lyrics = genius.lyrics(song_url=song_url)
+    else:
+        lyrics = genius.lyrics(song_id)
 
     logger.debug("%s lyrics: %s", song_id, repr(lyrics))
+
     # formatting lyrics language
     # lyrics = BeautifulSoup(lyrics, "html.parser")
     lyrics = utils.format_language(lyrics, lyrics_language)
