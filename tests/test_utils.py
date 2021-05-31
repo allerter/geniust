@@ -104,11 +104,11 @@ def test_format_language_str(language):
     res = utils.format_language(string, language)
 
     if language == "English":
-        assert res == "\nline with only ascii chars\n"
+        assert str(res) == "\nline with only ascii chars\n"
     elif language == "Non-English":
-        assert res == "\nخط فقط با غیر اسمی۲"
+        assert str(res) == "\nخط فقط با غیر اسمی۲"
     else:
-        assert res == string
+        assert str(res) == string
 
 
 @pytest.mark.parametrize(

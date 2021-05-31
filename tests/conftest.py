@@ -8,13 +8,14 @@ from unittest.mock import create_autospec, MagicMock
 import pytest
 import yaml
 import tekore as tk
-from lyricsgenius import OAuth2
+from lyricsgenius import OAuth2, Genius
 from telegram import Update, CallbackQuery, Bot, Message
 from telegram.ext import CallbackContext
 
 from geniust import api
 from geniust import db
 from geniust import data
+from geniust import constants
 from geniust.constants import Preferences
 
 
@@ -287,6 +288,7 @@ def context_class(recommender):
     context.bot_data["auths"]["spotify"]._cred = MagicMock()
     context.bot_data["db"] = create_autospec(db.Database, spec_set=True)
     context.bot_data["genius"] = create_autospec(api.GeniusT, spec_set=True)
+    context.bot_data["lyricsgenius"] = create_autospec(Genius, spec_set=True)
     context.bot_data["spotify"] = create_autospec(tk.Spotify, spec_set=True)
     context.bot_data["texts"] = texts
     context.bot_data["recommender"] = recommender
@@ -298,7 +300,7 @@ def context_class(recommender):
 def context(context_class, request):
     context_class.bot.reset_mock()
     context_class.args = []
-    for spec in ("db", "genius", "spotify", "auths"):
+    for spec in ("db", "genius", "lyricsgenius", "spotify", "auths"):
         spec_class = context_class.bot_data[spec]
         if spec == "auths":
             spec_class["genius"].reset_mock()

@@ -224,24 +224,33 @@ def test_display_album_formats(update, context):
 
 
 @pytest.mark.parametrize("album_format", ["pdf", "tgf", "zip"])
-def test_thread_get_album(update_callback_query, context, album_format):
+@pytest.mark.parametrize("developer", [True, False])
+def test_thread_get_album(update_callback_query, context, album_format, developer):
     update = update_callback_query
     update.callback_query.data = "album_1_lyrics_" + album_format
+
+    if developer:
+        update.effective_user.id = constants.DEVELOPERS[0]
+    else:
+        update.effective_user.id = 1
 
     thread = MagicMock()
     with patch("threading.Thread", thread):
         res = album.thread_get_album(update, context)
 
-    target_function = thread.call_args[1]["target"]
-    args = thread.call_args[1]["args"]
+    if developer:
+        target_function = thread.call_args[1]["target"]
+        args = thread.call_args[1]["args"]
 
-    assert target_function == album.get_album
+        assert target_function == album.get_album
 
-    album_id = 1
-    assert args[:4] == (update, context, album_id, album_format)
+        album_id = 1
+        assert args[:4] == (update, context, album_id, album_format)
 
-    thread().start.assert_called_once()
-    thread().join.assert_called_once()
+        thread().start.assert_called_once()
+        thread().join.assert_called_once()
+    else:
+        thread.assert_not_called()
 
     assert res == constants.END
 
