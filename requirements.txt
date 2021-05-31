@@ -11,7 +11,7 @@ decorator==4.4.2
 future==0.18.2
 fonttools==4.24.4
 idna==2.9
-git+https://github.com/allerter/LyricsGenius.git@fix-auth-init-and-inheritance
+ext/lyricsgenius-3.0.0-py3-none-any.whl
 joblib==1.0.0
 jsonschema==3.2.0
 numpy==1.19.4
