@@ -311,7 +311,7 @@ def display_lyrics(
     lyrics = re.sub(r"<[/]*(br|div|p).*[/]*?>", "", str(lyrics))
     # This adds a newline wherever the next section is separated from
     # the previous section with only one newline.
-    lyrics = re.sub(r"(?<!\n)\n\[", "\n\n[", lyrics)
+    lyrics = utils.fix_section_headers(lyrics)
 
     bot.delete_message(chat_id=chat_id, message_id=message_id)
 
