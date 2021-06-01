@@ -521,7 +521,7 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
         if input_text.lower() in highlight["value"].lower():
             break
     else:
-        update.inline_query.answer(photos, switch_pm_text=text["not_found"])
+        update.inline_query.answer(photos)
         return
 
     # Get song metadata
