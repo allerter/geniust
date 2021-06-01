@@ -544,11 +544,11 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
         .strip()
     )
     song_lyrics = fix_section_headers(song_lyrics)
-    song_lyrics = SECTION_HEADERS.sub("\n[section]\n", song_lyrics)
+    song_lyrics = SECTION_HEADERS.sub("", song_lyrics)
     song_lyrics = song_lyrics.split("\n")
 
     lyrics = []
-    for line in [x for x in song_lyrics if x != "[section]"]:
+    for line in song_lyrics:
         for found_line in found_lyrics:
             if Levenshtein.ratio(found_line, line) > 0.8:
                 lyrics.append(line)
@@ -556,34 +556,6 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
         if len(lyrics) == len(found_lyrics):
             break
     lyrics = "\n".join(lyrics)
-
-    # Add another photo with extra lines (at most 3 lines).
-    # It can't include section headers or lines from other sections.
-    extra_lyrics = []
-    # Find the line with the match
-    found_match = False
-    for _i, line in enumerate(song_lyrics):
-        for found_line in found_lyrics:
-            if Levenshtein.ratio(found_line, line) > 0.8:
-                found_match = True
-                break
-        if found_match:
-            break
-    # Add the line before the match if it's not a section header
-    if _i != 0 and (before_line := song_lyrics[_i - 0]) != "[section]":
-        extra_lyrics.append(before_line)
-    # Add the matched line
-    extra_lyrics.append(song_lyrics[_i])
-    if _i + 1 <= len(song_lyrics):
-        # Add the next line if it's not a section header.
-        # Also add another line if extra lyrics still isn't 3 line
-        # and that other line is not a section header.
-        for line in song_lyrics[_i + 1 :]:
-            if line == "[section]" or len(extra_lyrics) == 3:
-                break
-            else:
-                extra_lyrics.append(line)
-    extra_lyrics = "\n".join(extra_lyrics).strip()
 
     # Get song metadata
     title = song["title"]
@@ -597,11 +569,8 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
 
     cover_art_url = song["song_art_image_url"]
     cover_art = genius.download_cover_art(cover_art_url)
-
     is_persian = bool(PERSIAN_CHARACTERS.search(lyrics))
 
-    if extra_lyrics != lyrics:
-        add_photo(extra_lyrics)
     add_photo(lyrics)
 
     update.inline_query.answer(photos, cache_time=3600)
