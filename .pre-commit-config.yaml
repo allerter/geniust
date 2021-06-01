@@ -12,6 +12,11 @@ repos:
         args:
         - --diff
         - --check
+-   repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+    -   id: isort
+        args: ["--profile", "black"]
 -   repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
