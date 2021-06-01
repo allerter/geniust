@@ -304,6 +304,39 @@ class GeniusT(Genius):
                     return {"match": song}
             return {"match": None}
 
+    def page_data(self, album: str = None, song_id: int = None) -> dict:
+        """Gets page data of an item.
+
+        Page data will return all possible values for the album/song and
+        the lyrics in HTML format if the item is a song!
+        Album page data will contian album info and tracks info as well.
+
+        Args:
+            album (:obj:`str`, optional): Album path
+                (e.g. '/albums/Eminem/Music-to-be-murdered-by')
+            song_id (:obj:`int`, optional): Song ID.
+                (e.g. '/Sia-chandelier-lyrics')
+
+        Returns:
+            :obj:`dict`
+        """
+        assert any([album, song_id]), "You must pass either `song_id` or `album`."
+
+        if album:
+            endpoint = "page_data/album"
+            page_type = "albums"
+            item_path = album.replace("/albums/", "")
+        else:
+            endpoint = "page_data/song"
+            page_type = "songs"
+            item_path = str(song_id)
+        page_path = "/{page_type}/{item_path}".format(
+            page_type=page_type, item_path=item_path
+        )
+        params = {"page_path": page_path}
+
+        return self._make_request(endpoint, params_=params, public_api=True)
+
     def lyrics(
         self,
         song_id: int,
