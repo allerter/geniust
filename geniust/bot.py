@@ -348,7 +348,10 @@ def error_handler(update: Update, context: CallbackContext) -> None:
             logger.error("texts global was unaccessable in error handler")
             msg = "Something went wrong. Start again using /start"
 
-        context.bot.send_message(chat_id=chat_id, text=msg)
+        if update.inline_query:
+            update.inline_query.answer([])
+        else:
+            context.bot.send_message(chat_id=chat_id, text=msg)
 
 
 def main():
