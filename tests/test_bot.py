@@ -111,12 +111,21 @@ def test_end_describing(update, context, query):
             customize_menu.assert_called_once()
 
 
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
 def test_help_message(update_message, context):
     update = update_message
 
     res = bot.help_message(update, context)
 
-    context.bot.send_message.assert_called_once()
+    if update.callback_query:
+        update.callback_query.assert_called_once()
+
     assert res == constants.END
 
 

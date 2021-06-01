@@ -269,7 +269,6 @@ def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["help_message"].format(username=username)
-    chat_id = update.effective_user.id
 
     keyboard = IBKeyboard(
         [
@@ -282,7 +281,12 @@ def help_message(update: Update, context: CallbackContext) -> int:
         ]
     )
 
-    context.bot.send_message(chat_id, text, reply_markup=keyboard)
+    if update.callback_query:
+        update.callback_query.answer()
+        update.callback_query.edit_message_text(text, reply_markup=keyboard)
+    else:
+        update.message.reply_text(text, reply_markup=keyboard)
+
     return END
 
 
