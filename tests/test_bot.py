@@ -129,12 +129,20 @@ def test_contact_us(update_message, context):
     assert res == constants.TYPING_FEEDBACK
 
 
-def test_donate(update_message, context):
-    update = update_message
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_message"),
+        pytest.lazy_fixture("update_callback_query"),
+    ],
+)
+def test_donate(update, context):
 
     res = bot.donate(update, context)
 
-    update.message.reply_text.assert_called_once()
+    if update.callback_query:
+        update.callback_query.answer.assert_called_once()
+
     assert res == constants.END
 
 

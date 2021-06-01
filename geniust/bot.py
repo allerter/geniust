@@ -305,7 +305,12 @@ def donate(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["donate"]
     text = text.format(BTC_ADDRESS)
 
-    update.message.reply_text(text)
+    if update.callback_query:
+        update.callback_query.answer()
+        update.callback_query.edit_message_text(text)
+    else:
+        update.message.reply_text(text)
+
     return END
 
 
