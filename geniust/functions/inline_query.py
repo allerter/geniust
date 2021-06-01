@@ -20,8 +20,8 @@ from geniust.api import upload_to_imgbb
 from geniust.functions.lyric_card_builder import build_lyric_card
 from geniust.utils import (
     PERSIAN_CHARACTERS,
-    TRANSLATION_PARENTHESES,
     SECTION_HEADERS,
+    TRANSLATION_PARENTHESES,
     fix_section_headers,
     has_sentence,
     log,

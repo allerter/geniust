@@ -13,11 +13,11 @@ from geniust import get_user, username
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
 from geniust.utils import (
-    log,
-    fix_section_headers,
-    SECTION_HEADERS,
     PERSIAN_CHARACTERS,
+    SECTION_HEADERS,
     TRANSLATION_PARENTHESES,
+    fix_section_headers,
+    log,
 )
 
 logger = logging.getLogger("geniust")
