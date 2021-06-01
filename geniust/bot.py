@@ -85,16 +85,16 @@ warnings.filterwarnings(
 )
 
 # Enable logging
-log_level_num: int = getattr(logging, LOG_LEVEL)
+LOG_LEVEL_NUM: int = getattr(logging, LOG_LEVEL)
 logging.getLogger("telegram").setLevel(
-    logging.INFO if log_level_num <= logging.INFO else LOG_LEVEL
+    logging.INFO if LOG_LEVEL_NUM <= logging.INFO else LOG_LEVEL
 )
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
 logger.setLevel(LOG_LEVEL)
 # If we're debugging, we already have access to the logs and don't need
 # the notification handler to send us the errors
-if log_level_num > logging.DEBUG:
+if LOG_LEVEL_NUM > logging.DEBUG:
     defaults = {"token": BOT_TOKEN, "chat_id": DEVELOPERS[0]}
     notification_handler = NotificationHandler("telegram", defaults=defaults)
     notification_handler.setLevel(logging.ERROR)
@@ -348,6 +348,8 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     if update and update.effective_user:
         language = user_data.get("bot_lang", "en")
         chat_id = update.effective_user.id
+        if chat_id in DEVELOPERS and LOG_LEVEL_NUM == logging.DEBUG:
+            return
         try:
             if isinstance(exception, HTTPError) and exception.args[0] == 403:
                 msg = texts[language]["genius_403_error"]
