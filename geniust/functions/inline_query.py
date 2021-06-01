@@ -562,7 +562,7 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
     )
     if lyrics:
         add_photo(lyrics)
-    update.inline_query.answer(photos)
+    update.inline_query.answer(photos, cache_time=3600)
 
 
 def album_caption(
