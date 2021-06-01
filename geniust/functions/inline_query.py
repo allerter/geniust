@@ -2,6 +2,8 @@ import logging
 from typing import Any, Dict, List
 from uuid import uuid4
 
+import Levenshtein
+from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import (
@@ -16,7 +18,14 @@ from telegram.utils.helpers import create_deep_linked_url
 from geniust import get_user, username, utils
 from geniust.api import upload_to_imgbb
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES, has_sentence, log
+from geniust.utils import (
+    PERSIAN_CHARACTERS,
+    TRANSLATION_PARENTHESES,
+    SECTION_HEADERS,
+    fix_section_headers,
+    has_sentence,
+    log,
+)
 
 logger = logging.getLogger("geniust")
 
@@ -515,17 +524,68 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
 
     res = genius.search_lyrics(input_text, per_page=5)
     photos: List[InlineQueryResultPhoto] = []
+    found_lyrics = []
     for hit in res["sections"][0]["hits"]:
-        song = hit["result"]
         highlight = hit["highlights"][0]
-        if input_text.lower() in highlight["value"].lower():
+        for line in highlight["value"].split("\n"):
+            if Levenshtein.ratio(input_text, line) > 0.5:
+                found_lyrics.append(line)
+        if found_lyrics:
             break
     else:
         update.inline_query.answer(photos)
         return
 
+    song_page_data = genius.page_data(song_id=hit["result"]["id"])["page_data"]
+    song = song_page_data["song"]
+    song_lyrics = (
+        BeautifulSoup(song_page_data["lyrics_data"]["body"]["html"], "html.parser")
+        .get_text()
+        .strip()
+    )
+    song_lyrics = fix_section_headers(song_lyrics)
+    song_lyrics = SECTION_HEADERS.sub("\n[section]\n", song_lyrics)
+    song_lyrics = song_lyrics.split("\n")
+
+    lyrics = []
+    for line in [x for x in song_lyrics if x != "[section]"]:
+        for found_line in found_lyrics:
+            if Levenshtein.ratio(found_line, line) > 0.8:
+                lyrics.append(line)
+                break
+        if len(lyrics) == len(found_lyrics):
+            break
+    lyrics = "\n".join(lyrics)
+
+    # Add another photo with extra lines (at most 3 lines).
+    # It can't include section headers or lines from other sections.
+    extra_lyrics = []
+    # Find the line with the match
+    found_match = False
+    for _i, line in enumerate(song_lyrics):
+        for found_line in found_lyrics:
+            if Levenshtein.ratio(found_line, line) > 0.8:
+                found_match = True
+                break
+        if found_match:
+            break
+    # Add the line before the match if it's not a section header
+    if _i != 0 and (before_line := song_lyrics[_i - 0]) != "[section]":
+        extra_lyrics.append(before_line)
+    # Add the matched line
+    extra_lyrics.append(song_lyrics[_i])
+    if _i + 1 <= len(song_lyrics):
+        # Add the next line if it's not a section header.
+        # Also add another line if extra lyrics still isn't 3 line
+        # and that other line is not a section header.
+        for line in song_lyrics[_i + 1 :]:
+            if line == "[section]" or len(extra_lyrics) == 3:
+                break
+            else:
+                extra_lyrics.append(line)
+    extra_lyrics = "\n".join(extra_lyrics).strip()
+
     # Get song metadata
-    song = genius.song(hit["result"]["id"])["song"]
     title = song["title"]
     primary_artists = song["primary_artist"]["name"].split(" & ")
     featured_artists = [x["name"] for x in song["featured_artists"]]
@@ -538,30 +598,12 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
     cover_art_url = song["song_art_image_url"]
     cover_art = genius.download_cover_art(cover_art_url)
 
-    # lyric card with lyric snippet
-    # Remove the first and the last line if the input isn't isn't in them
-    # This helps to keep the lyrics short. Also the first and the last line
-    # may be incomplete since the highlight value is a snippet.
-    lyrics = highlight["value"].split("\n")
-    if input_text.lower() not in lyrics[0].lower():
-        lyrics.pop(0)
-    if input_text.lower() not in lyrics[-1].lower():
-        lyrics.pop()
-    lyrics = "\n".join(lyrics)
     is_persian = bool(PERSIAN_CHARACTERS.search(lyrics))
+
+    if extra_lyrics != lyrics:
+        add_photo(extra_lyrics)
     add_photo(lyrics)
 
-    # lyric card with matched lyrics
-    input_sentences = [x.lower() for x in input_text.split("\n")]
-    lyrics = "\n".join(
-        [
-            x
-            for x in highlight["value"].split("\n")
-            if has_sentence(input_sentences, x.lower())
-        ][: len(input_sentences)]
-    )
-    if lyrics:
-        add_photo(lyrics)
     update.inline_query.answer(photos, cache_time=3600)
 
 
