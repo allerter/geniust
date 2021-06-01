@@ -42,6 +42,10 @@ PERSIAN_CHARACTERS = re.compile(r"[\u0600-\u06FF]")
 # Translation phrase added to the end of the song title (more info at where it's used)
 TRANSLATION_PARENTHESES = re.compile(r"\([\u0600-\u06FF]\)")
 
+# Lyrics section headers e.e. \n[Chorus]\n
+SECTION_HEADERS = re.compile(r"\n{0,1}\[.*?\]\n{0,1}")
+FIX_SECTION_HEADERS = re.compile(r"(?<!\n)\n\[")
+
 # The keys are Telethon message entity types and the values PTB ones.
 MESSAGE_ENTITY_TYPES = {
     "MessageEntityBold": "bold",
@@ -153,6 +157,18 @@ def remove_links(s: str) -> str:
         str: formatted string.
     """
     return links_pattern.sub("", s)
+
+
+def fix_section_headers(string: str) -> str:
+    """Makes sure section headers have two newline characters before them
+
+    Args:
+        string (str): string.
+
+    Returns:
+        str: formatted string.
+    """
+    return FIX_SECTION_HEADERS.sub("\n\n[", string)
 
 
 def format_language(
