@@ -25,6 +25,7 @@ pyasn1==0.4.8
 pycparser==2.20
 pyrsistent==0.17.3
 python-bidi==0.4.2
+python-Levenshtein==0.12.2
 python-telegram-bot==13.5
 pytz==2020.5
 PyYAML==5.4.1
