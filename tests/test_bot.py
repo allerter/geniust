@@ -118,13 +118,12 @@ def test_end_describing(update, context, query):
         pytest.lazy_fixture("update_callback_query"),
     ],
 )
-def test_help_message(update_message, context):
-    update = update_message
+def test_help_message(update, context):
 
     res = bot.help_message(update, context)
 
     if update.callback_query:
-        update.callback_query.assert_called_once()
+        update.callback_query.answer.assert_called_once()
 
     assert res == constants.END
 
