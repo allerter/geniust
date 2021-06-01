@@ -4,13 +4,21 @@ from io import BytesIO
 from typing import cast
 from uuid import uuid4
 
+import Levenshtein
+from bs4 import BeautifulSoup
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
 from geniust import get_user, username
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import PERSIAN_CHARACTERS, TRANSLATION_PARENTHESES, has_sentence, log
+from geniust.utils import (
+    log,
+    fix_section_headers,
+    SECTION_HEADERS,
+    PERSIAN_CHARACTERS,
+    TRANSLATION_PARENTHESES,
+)
 
 logger = logging.getLogger("geniust")
 
@@ -43,37 +51,48 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     genius = context.bot_data["genius"]
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["lyric_card_search_lyrics"]
-    input_text = update.message.text
+    input_text = update.message.text.replace("\n", " ")
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_lyrics(input_text)
+    found_lyrics = []
     for hit in json_search["sections"][0]["hits"][:10]:
         highlight = hit["highlights"][0]
-        if input_text.lower() in highlight["value"].lower():
+        for line in highlight["value"].split("\n"):
+            if Levenshtein.ratio(input_text, line) > 0.5:
+                found_lyrics.append(line)
+        if found_lyrics:
             break
     else:
         update.message.reply_text(text["not_found"])
         return END
 
     # Get lyrics for lyric card
-    input_sentences = [x.lower() for x in input_text.split("\n")]
-    lyrics = "\n".join(
-        [
-            x
-            for x in highlight["value"].split("\n")
-            if has_sentence(input_sentences, x.lower())
-        ][: len(input_sentences)]
+    song_page_data = genius.page_data(song_id=hit["result"]["id"])["page_data"]
+    song = song_page_data["song"]
+    song_lyrics = (
+        BeautifulSoup(song_page_data["lyrics_data"]["body"]["html"], "html.parser")
+        .get_text()
+        .strip()
     )
+    song_lyrics = fix_section_headers(song_lyrics)
+    song_lyrics = SECTION_HEADERS.sub("", song_lyrics)
 
-    if not lyrics:
-        logger.warn(
-            "Couldn't extract lyrics despite initial match. Query: %s", repr(input_text)
-        )
-        update.message.reply_text(text["not_found"])
-        return END
+    lyrics = []
+    for line in song_lyrics.split("\n"):
+        for found_line in found_lyrics:
+            # We'd expect the match between the lines in the snippet (found_lyrics)
+            # and the corresponding lines in the full lyrics to be 100%, but since
+            # Genius implements some methods to detect plagiarism and
+            # these methods modify the lyrics, a 100% similarity ratio might not happen.
+            if Levenshtein.ratio(found_line, line) > 0.8:
+                lyrics.append(line)
+                break
+        if len(lyrics) == len(found_lyrics):
+            break
+    lyrics = "\n".join(lyrics)
 
     # Get song metadata
-    song = genius.song(hit["result"]["id"])["song"]
     title = song["title"]
     primary_artists = song["primary_artist"]["name"].split(" & ")
     featured_artists = [x["name"] for x in song["featured_artists"]]
