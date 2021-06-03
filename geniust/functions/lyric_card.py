@@ -187,7 +187,7 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
 
     # User hasn't sent the cover art
     if lyric_card_info["photo"] is None:
-        if update.message.photo is None:
+        if not update.message.photo:
             update.message.reply_text(texts["send_photo"])
             return TYPING_LYRIC_CARD_CUSTOM
         lyric_card_info["photo"] = (
