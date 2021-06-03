@@ -92,7 +92,7 @@ donate: |-
   Help keep our servers running by donating to us. Any amount is appreciated.
 
   Our BTC wallet address:
-  <code>{}</code>
+  <pre>{}</pre>
 
   If you don't have a BTC wallet, but would like to donate, contact us using /contact_us for alternate methods.
 
@@ -575,8 +575,6 @@ display_song:
   preview: Preview
   download: Download
   not_found: Song not found.
-
-display_lyrics: getting lyrics...
 
 # ----------- User -----------
 

@@ -1,8 +1,7 @@
 import logging
 import re
-import threading
 from functools import partial
-from typing import Any, Dict
+from typing import Any
 
 from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
@@ -269,17 +268,15 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 
 @log
-def display_lyrics(
-    update: Update, context: CallbackContext, song_id: int, text: Dict[str, str]
-) -> int:
-    """Retrieves and sends song lyrics to user
+def display_lyrics(update: Update, context: CallbackContext) -> int:
+    """Retrieves and sends song lyrics to user"""
 
-    Args:
-        update (Update): Update object.
-        context (CallbackContext): User data, texts and etc.
-        song_id (int): Genius song ID.
-        text (Dict[str, str]): Texts to inform user of the progress.
-    """
+    if update.callback_query:
+        update.callback_query.answer()
+        song_id = int(update.callback_query.data.split("_")[1])
+    else:
+        song_id = int(context.args[0].split("_")[1])
+
     user_data = context.user_data
     bot = context.bot
     chat_id = update.effective_user.id
@@ -290,8 +287,6 @@ def display_lyrics(
     include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
 
-    message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
-
     song_url = genius_t.song(song_id)["song"]["url"]
     try:
         lyrics = genius_t.lyrics(
@@ -300,8 +295,8 @@ def display_lyrics(
             include_annotations=include_annotations,
             telegram_song=True,
         )
-    except Exception as e:
-        logger.error("error when displaying lyrics of %s: %s", song_id, e.__traceback__)
+    except Exception:
+        logger.exception("Error when retrieving lyrics for %d", song_id)
         lyrics = genius.lyrics(song_url=song_url)
 
     # formatting lyrics language
@@ -312,8 +307,6 @@ def display_lyrics(
     # This adds a newline wherever the next section is separated from
     # the previous section with only one newline.
     lyrics = utils.fix_section_headers(lyrics)
-
-    bot.delete_message(chat_id=chat_id, message_id=message_id)
 
     def to_dict(entity):
         """Converts entity to a dict that is compatible with PTB"""
@@ -337,34 +330,6 @@ def display_lyrics(
             # And since we've set a default for it in bot.py,
             # here we have to override and set to None.
         )
-    return END
-
-
-@log
-@get_user
-def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
-    """Creates a thread to get the song"""
-    language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["display_lyrics"]
-
-    if update.callback_query:
-        update.callback_query.answer()
-        song_id = int(update.callback_query.data.split("_")[1])
-    else:
-        song_id = int(context.args[0].split("_")[1])
-
-    # get and send song to user
-    p = threading.Thread(
-        target=display_lyrics,
-        args=(
-            update,
-            context,
-            song_id,
-            text,
-        ),
-    )
-    p.start()
-    p.join()
     return END
 
 
