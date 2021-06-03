@@ -1,8 +1,7 @@
 import logging
 import re
-import threading
 from functools import partial
-from typing import Any, Dict
+from typing import Any
 
 from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
@@ -269,14 +268,15 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 
 @log
-def display_lyrics(update: Update, context: CallbackContext, song_id: int) -> int:
-    """Retrieves and sends song lyrics to user
+def display_lyrics(update: Update, context: CallbackContext) -> int:
+    """Retrieves and sends song lyrics to user"""
 
-    Args:
-        update (Update): Update object.
-        context (CallbackContext): User data, texts and etc.
-        song_id (int): Genius song ID.
-    """
+    if update.callback_query:
+        update.callback_query.answer()
+        song_id = int(update.callback_query.data.split("_")[1])
+    else:
+        song_id = int(context.args[0].split("_")[1])
+
     user_data = context.user_data
     bot = context.bot
     chat_id = update.effective_user.id
@@ -295,8 +295,8 @@ def display_lyrics(update: Update, context: CallbackContext, song_id: int) -> in
             include_annotations=include_annotations,
             telegram_song=True,
         )
-    except Exception as e:
-        logger.error("error when displaying lyrics of %s: %s", song_id, e.__traceback__)
+    except Exception:
+        logger.exception("Error when retrieving lyrics for %d", song_id)
         lyrics = genius.lyrics(song_url=song_url)
 
     # formatting lyrics language
@@ -330,30 +330,6 @@ def display_lyrics(update: Update, context: CallbackContext, song_id: int) -> in
             # And since we've set a default for it in bot.py,
             # here we have to override and set to None.
         )
-    return END
-
-
-@log
-@get_user
-def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
-    """Creates a thread to get the song"""
-    if update.callback_query:
-        update.callback_query.answer()
-        song_id = int(update.callback_query.data.split("_")[1])
-    else:
-        song_id = int(context.args[0].split("_")[1])
-
-    # get and send song to user
-    p = threading.Thread(
-        target=display_lyrics,
-        args=(
-            update,
-            context,
-            song_id,
-        ),
-    )
-    p.start()
-    p.join()
     return END
 
 

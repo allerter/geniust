@@ -433,9 +433,7 @@ def main():
         CallbackQueryHandler(
             song.display_song, pattern=r"^song_[\d\S]+_(genius|spotify)$"
         ),
-        CallbackQueryHandler(
-            song.thread_display_lyrics, pattern=r"^song_[0-9]+_lyrics$"
-        ),
+        CallbackQueryHandler(song.display_lyrics, pattern=r"^song_[0-9]+_lyrics$"),
         CallbackQueryHandler(
             song.download_song,
             pattern=r"^song_[\d\S]+_(recommender|spotify)_(preview|download)$",
@@ -646,7 +644,7 @@ def main():
         ),
         CommandHandler(
             "start",
-            song.thread_display_lyrics,
+            song.display_lyrics,
             Filters.regex(r"^/start song_[0-9]+_lyrics$"),
             pass_args=True,
         ),

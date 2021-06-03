@@ -173,11 +173,20 @@ def test_download_song(update, context, platform):
 
 @pytest.mark.parametrize("developer", [True, False])
 @pytest.mark.parametrize("error", [True, False])
-def test_display_lyrics(
-    update_callback_query, context, song_id, full_album, developer, error
-):
-    update = update_callback_query
+@pytest.mark.parametrize(
+    "update",
+    [
+        pytest.lazy_fixture("update_callback_query"),
+        pytest.lazy_fixture("update_message"),
+    ],
+)
+def test_display_lyrics(update, context, song_id, full_album, developer, error):
     context.user_data["include_annotations"] = True
+    song_id = 1
+    if update.callback_query:
+        update.callback_query.data = "song_1_lyrics"
+    else:
+        context.args = ["song_1_lyrics"]
 
     if developer:
         update.effective_user.id = constants.DEVELOPERS[0]
@@ -199,7 +208,7 @@ def test_display_lyrics(
             "html.parser",
         )
 
-    song.display_lyrics(update, context, song_id)
+    res = song.display_lyrics(update, context)
 
     genius_t.lyrics.assert_called_once()
     args = genius_t.lyrics.call_args[1]
@@ -210,34 +219,4 @@ def test_display_lyrics(
     else:
         assert args["include_annotations"] is False
     assert args["telegram_song"] is True
-
-
-@pytest.mark.parametrize(
-    "update",
-    [
-        pytest.lazy_fixture("update_callback_query"),
-        pytest.lazy_fixture("update_message"),
-    ],
-)
-def test_thread_display_lyrics(update, context):
-    if update.callback_query:
-        update.callback_query.data = "song_1_lyrics"
-    else:
-        context.args = ["song_1_lyrics"]
-
-    thread = MagicMock()
-    with patch("threading.Thread", thread):
-        res = song.thread_display_lyrics(update, context)
-
-    target_function = thread.call_args[1]["target"]
-    args = thread.call_args[1]["args"]
-
-    assert target_function == song.display_lyrics
-
-    song_id = 1
-    assert args[:3] == (update, context, song_id)
-
-    thread().start.assert_called_once()
-    thread().join.assert_called_once()
-
     assert res == constants.END
