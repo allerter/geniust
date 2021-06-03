@@ -269,16 +269,13 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 
 @log
-def display_lyrics(
-    update: Update, context: CallbackContext, song_id: int, text: Dict[str, str]
-) -> int:
+def display_lyrics(update: Update, context: CallbackContext, song_id: int) -> int:
     """Retrieves and sends song lyrics to user
 
     Args:
         update (Update): Update object.
         context (CallbackContext): User data, texts and etc.
         song_id (int): Genius song ID.
-        text (Dict[str, str]): Texts to inform user of the progress.
     """
     user_data = context.user_data
     bot = context.bot
@@ -289,8 +286,6 @@ def display_lyrics(
     lyrics_language = user_data["lyrics_lang"]
     include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
-
-    message_id = bot.send_message(chat_id=chat_id, text=text)["message_id"]
 
     song_url = genius_t.song(song_id)["song"]["url"]
     try:
@@ -312,8 +307,6 @@ def display_lyrics(
     # This adds a newline wherever the next section is separated from
     # the previous section with only one newline.
     lyrics = utils.fix_section_headers(lyrics)
-
-    bot.delete_message(chat_id=chat_id, message_id=message_id)
 
     def to_dict(entity):
         """Converts entity to a dict that is compatible with PTB"""
@@ -344,9 +337,6 @@ def display_lyrics(
 @get_user
 def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
     """Creates a thread to get the song"""
-    language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["display_lyrics"]
-
     if update.callback_query:
         update.callback_query.answer()
         song_id = int(update.callback_query.data.split("_")[1])
@@ -360,7 +350,6 @@ def thread_display_lyrics(update: Update, context: CallbackContext) -> int:
             update,
             context,
             song_id,
-            text,
         ),
     )
     p.start()

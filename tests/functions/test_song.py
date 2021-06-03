@@ -177,8 +177,6 @@ def test_display_lyrics(
     update_callback_query, context, song_id, full_album, developer, error
 ):
     update = update_callback_query
-    language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["display_lyrics"]
     context.user_data["include_annotations"] = True
 
     if developer:
@@ -201,7 +199,7 @@ def test_display_lyrics(
             "html.parser",
         )
 
-    song.display_lyrics(update, context, song_id, text)
+    song.display_lyrics(update, context, song_id)
 
     genius_t.lyrics.assert_called_once()
     args = genius_t.lyrics.call_args[1]

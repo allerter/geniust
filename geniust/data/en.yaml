@@ -576,8 +576,6 @@ display_song:
   download: Download
   not_found: Song not found.
 
-display_lyrics: getting lyrics...
-
 # ----------- User -----------
 
 display_user:
