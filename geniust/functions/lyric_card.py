@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import Levenshtein
 from bs4 import BeautifulSoup
+from lyricsgenius.utils import clean_str
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
@@ -52,6 +53,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["lyric_card_search_lyrics"]
     input_text = update.message.text.replace("\n", " ")
+    cleaned_input = clean_str(input_text)
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_lyrics(input_text)
@@ -59,7 +61,10 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     for hit in json_search["sections"][0]["hits"][:10]:
         highlight = hit["highlights"][0]
         for line in highlight["value"].split("\n"):
-            if Levenshtein.ratio(input_text, line) > 0.5:
+            if (
+                cleaned_input in clean_str(line)
+                or Levenshtein.ratio(input_text, line) > 0.5
+            ):
                 found_lyrics.append(line)
         if found_lyrics:
             break
@@ -90,6 +95,13 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
                 break
         if len(lyrics) == len(found_lyrics):
             break
+    if not lyrics:
+        logger.error(
+            "No lyrics matched despite initial highlight match. Query: %s",
+            repr(input_text),
+        )
+        update.message.reply_text(text["not_found"])
+        return END
     lyrics = "\n".join(lyrics)
 
     # Get song metadata
