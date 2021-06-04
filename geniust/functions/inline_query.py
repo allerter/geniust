@@ -23,7 +23,6 @@ from geniust.utils import (
     SECTION_HEADERS,
     TRANSLATION_PARENTHESES,
     fix_section_headers,
-    has_sentence,
     log,
 )
 
@@ -500,7 +499,6 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
             thumb_url=uploaded_photo["thumb"]["url"],
             photo_width=lyric_card.size[0],
             photo_height=lyric_card.size[1],
-            caption=f"@{username}",
             reply_markup=keyboard,
         )
         photos.append(photo)

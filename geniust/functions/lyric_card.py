@@ -10,7 +10,7 @@ from lyricsgenius.utils import clean_str
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
-from geniust import get_user, username
+from geniust import get_user
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
 from geniust.utils import (
@@ -148,7 +148,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         format="JPEG",
     )
 
-    update.message.reply_photo(lyric_card, caption=f"@{username}")
+    update.message.reply_photo(lyric_card)
     return END
 
 
@@ -267,8 +267,6 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
         rtl_metadata=bool(PERSIAN_CHARACTERS.search(metadata)),
         format="JPEG",
     )
-    update.message.reply_photo(
-        lyric_card, caption=f"@{username}", reply_markup=ReplyKeyboardRemove()
-    )
+    update.message.reply_photo(lyric_card, reply_markup=ReplyKeyboardRemove())
     ud.pop("lyric_card")
     return END
