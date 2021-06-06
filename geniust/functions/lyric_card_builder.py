@@ -127,9 +127,10 @@ def add_double_quotes(im: Image.Image, rtl: bool) -> None:
 
 
 def fix_text_direction(text: str, rtl: bool) -> str:
-    if rtl:
-        reshaped_text = arabic_reshaper.reshape(text)
-        text = get_display(reshaped_text)
+    # For some reason the Heroku app doesn't need the text to be reshaped
+    # if rtl:
+    #     reshaped_text = arabic_reshaper.reshape(text)
+    #     text = get_display(reshaped_text)
     return text
 
 
