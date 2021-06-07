@@ -575,9 +575,7 @@ def main():
         InlineQueryHandler(inline_query.lyric_card, pattern=r"^\.lyric_card"),
         InlineQueryHandler(inline_query.search_songs, pattern=r"^\.song"),
         InlineQueryHandler(inline_query.search_users, pattern=r"^\.user"),
-        InlineQueryHandler(
-            inline_query.inline_menu,
-        ),
+        InlineQueryHandler(inline_query.inline_menu),
     ]
 
     for handler in inline_query_handlers:
