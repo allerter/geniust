@@ -268,6 +268,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 
 @log
+@get_user
 def display_lyrics(update: Update, context: CallbackContext) -> int:
     """Retrieves and sends song lyrics to user"""
 
@@ -282,12 +283,30 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_user.id
     genius_t = context.bot_data["genius"]
     genius = context.bot_data["lyricsgenius"]
+    language = context.user_data["bot_lang"]
+    texts = context.bot_data["texts"][language]["display_lyrics"]
 
     lyrics_language = user_data["lyrics_lang"]
     include_annotations = user_data["include_annotations"] and chat_id in DEVELOPERS
     logger.debug(f"{lyrics_language} | {include_annotations} | {song_id}")
 
-    song_url = genius_t.song(song_id)["song"]["url"]
+    song = genius_t.song(song_id)["song"]
+    song_url = song["url"]
+
+    if song["lyrics_state"] != "complete":
+        reason = song["lyrics_placeholder_reason"]
+        text = texts.get(reason)
+        if text is None:
+            logger.error(
+                "Couldn't find placeholder text for incomplete lyrics. "
+                "Song ID: %d - Reason: %s",
+                song["id"],
+                reason,
+            )
+            text = reason
+        bot.send_message(chat_id, text)
+        return END
+
     try:
         lyrics = genius_t.lyrics(
             song_id=song_id,

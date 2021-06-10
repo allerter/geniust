@@ -576,6 +576,9 @@ display_song:
   download: دانلود
   not_found: آهنگ پیدا نشد.
 
+display_lyrics:
+  unreleased: متن این آهنگ هنوز منتشر نشده است. لطفاً وقتی که آهنگ منتشر شد، دوباره تلاش کنید.
+
 # ----------- User -----------
 
 display_user:
