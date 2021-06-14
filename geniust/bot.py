@@ -359,8 +359,12 @@ def error_handler(update: Update, context: CallbackContext) -> None:
             logger.error("texts global was unaccessable in error handler")
             msg = "Something went wrong. Start again using /start"
 
+        invalid_query = (
+            "query is too old and response timeout expired or query id is invalid"
+        )
         if update.inline_query:
-            update.inline_query.answer([])
+            if invalid_query not in str(context.error).lower():
+                update.inline_query.answer([])
         else:
             context.bot.send_message(chat_id=chat_id, text=msg)
 
