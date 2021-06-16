@@ -1,10 +1,12 @@
 import logging
 import re
 from functools import wraps
-from typing import Any, Callable, Dict, List, Pattern, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, TypeVar, Union
 
+import Levenshtein
 from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import Tag
+from lyricsgenius.utils import clean_str
 from telegram.utils.helpers import create_deep_linked_url
 
 import geniust
@@ -157,6 +159,49 @@ def remove_links(s: str) -> str:
         str: formatted string.
     """
     return links_pattern.sub("", s)
+
+
+def extract_lyrics_for_card(html_lyrics: str) -> str:
+    """Extracts lyrics from HTML and cleans them
+
+    Cleans the extracted lyrics to be searched later.
+
+    Args:
+        lyrics (str): Song lyrics in HTML format.
+
+    Returns:
+        str: Lyrics with removed section headers.
+    """
+    lyrics = BeautifulSoup(html_lyrics, "html.parser").get_text().strip()
+    lyrics = fix_section_headers(lyrics)
+    return SECTION_HEADERS.sub("", lyrics)
+
+
+def find_matching_lyrics(lines: List[str], lyrics: str) -> Optional[str]:
+    """Finds matching lines in lyrics
+
+    Args:
+        lines (List[str]): List of lines to search for.
+        lyrics (str): Song lyrics.
+
+    Returns:
+        Optional[str]: Matching lyrics if there are any. Otherwise None.
+    """
+    matching_lyrics = []
+    for line in lyrics.split("\n"):
+        for found_line in lines:
+            # We'd expect the match between the lines in the snippet (found_lyrics)
+            # and the corresponding lines in the full lyrics to be 100%, but since
+            # Genius implements some methods to detect plagiarism and
+            # these methods modify the lyrics, a 100% similarity ratio might not happen.
+            if Levenshtein.ratio(found_line, line) > 0.75 or clean_str(
+                found_line
+            ) in clean_str(line):
+                matching_lyrics.append(line)
+                break
+        if len(matching_lyrics) == len(lines):
+            break
+    return "\n".join(matching_lyrics) if matching_lyrics else None
 
 
 def fix_section_headers(string: str) -> str:
@@ -342,6 +387,38 @@ def get_description(entity: Dict[str, Any]) -> str:
     description = remove_extra_newlines(description)
 
     return description.strip()
+
+
+def get_song_metadata(song: dict) -> Tuple[str, List[str], List[str]]:
+    """Gets song metadata from song data
+
+    Takes Genius translation artists into account.
+
+    Args:
+        song (dict): Song data.
+
+    Returns:
+        Tuple[str, List[str], List[str]]: Song's title,
+            primary artists and featured artists.
+    """
+    title = song["title"]
+    primary_artists = song["primary_artist"]["name"].split(" & ")
+    featured_artists = [x["name"] for x in song["featured_artists"]]
+    # If True, it means that this song is actually a translation.
+    # So we should edit the song title and primary artist.
+    # This is meant for translated songs.
+    if primary_artists[0].startswith("Genius") and featured_artists == []:
+        # This regex expression removes parentheses at the end of title
+        # that indicates the song is a translation
+        # e.g. song - title (English Translation)
+        # but it only does so for Persian. It's tricky to do this for all
+        # languages since the actual title itself may have parentheses and
+        # it may get removed.
+        title = TRANSLATION_PARENTHESES.sub("", title).strip()
+        artists, title = [x.strip() for x in title.split("-")]
+        primary_artists.clear()
+        primary_artists.extend(artists.split(" & "))
+    return title, primary_artists, featured_artists
 
 
 def has_sentence(sentences: List[str], sentence: str) -> bool:

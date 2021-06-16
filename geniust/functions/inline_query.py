@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 import Levenshtein
-from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import (
@@ -18,13 +17,7 @@ from telegram.utils.helpers import create_deep_linked_url
 from geniust import get_user, username, utils
 from geniust.api import upload_to_imgbb
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import (
-    PERSIAN_CHARACTERS,
-    SECTION_HEADERS,
-    TRANSLATION_PARENTHESES,
-    fix_section_headers,
-    log,
-)
+from geniust.utils import log
 
 logger = logging.getLogger("geniust")
 
@@ -536,38 +529,22 @@ def lyric_card(update: Update, context: CallbackContext) -> None:
 
     song_page_data = genius.page_data(song_id=hit["result"]["id"])["page_data"]
     song = song_page_data["song"]
-    song_lyrics = (
-        BeautifulSoup(song_page_data["lyrics_data"]["body"]["html"], "html.parser")
-        .get_text()
-        .strip()
+    song_lyrics = utils.extract_lyrics_for_card(
+        song_page_data["lyrics_data"]["body"]["html"]
     )
-    song_lyrics = fix_section_headers(song_lyrics)
-    song_lyrics = SECTION_HEADERS.sub("", song_lyrics)
-    song_lyrics = song_lyrics.split("\n")
 
-    lyrics = []
-    for line in song_lyrics:
-        for found_line in found_lyrics:
-            if Levenshtein.ratio(found_line, line) > 0.8:
-                lyrics.append(line)
-                break
-        if len(lyrics) == len(found_lyrics):
-            break
-    lyrics = "\n".join(lyrics)
+    lyrics = utils.find_matching_lyrics(found_lyrics, song_lyrics)
+    if lyrics is None:
+        logger.error(
+            "failed to find lyrics despite initial match. Query: ", repr(input_text)
+        )
+        update.inline_query.answer(photos)
+        return
 
-    # Get song metadata
-    title = song["title"]
-    primary_artists = song["primary_artist"]["name"].split(" & ")
-    featured_artists = [x["name"] for x in song["featured_artists"]]
-    if primary_artists[0].startswith("Genius") and featured_artists == []:
-        title = TRANSLATION_PARENTHESES.sub("", title).strip()
-        artists, title = [x.strip() for x in title.split("-")]
-        primary_artists.clear()
-        primary_artists.extend(artists.split(" & "))
-
+    title, primary_artists, featured_artists = utils.get_song_metadata(song)
     cover_art_url = song["song_art_image_url"]
     cover_art = genius.download_cover_art(cover_art_url)
-    is_persian = bool(PERSIAN_CHARACTERS.search(lyrics))
+    is_persian = bool(utils.PERSIAN_CHARACTERS.search(lyrics))
 
     add_photo(lyrics)
 

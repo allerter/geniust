@@ -5,21 +5,14 @@ from typing import cast
 from uuid import uuid4
 
 import Levenshtein
-from bs4 import BeautifulSoup
 from lyricsgenius.utils import clean_str
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
-from geniust import get_user
+from geniust import get_user, utils
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import (
-    PERSIAN_CHARACTERS,
-    SECTION_HEADERS,
-    TRANSLATION_PARENTHESES,
-    fix_section_headers,
-    log,
-)
+from geniust.utils import log
 
 logger = logging.getLogger("geniust")
 
@@ -75,56 +68,20 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     # Get lyrics for lyric card
     song_page_data = genius.page_data(song_id=hit["result"]["id"])["page_data"]
     song = song_page_data["song"]
-    song_lyrics = (
-        BeautifulSoup(song_page_data["lyrics_data"]["body"]["html"], "html.parser")
-        .get_text()
-        .strip()
+    song_lyrics = utils.extract_lyrics_for_card(
+        song_page_data["lyrics_data"]["body"]["html"]
     )
-    song_lyrics = fix_section_headers(song_lyrics)
-    song_lyrics = SECTION_HEADERS.sub("", song_lyrics)
 
-    lyrics = []
-    for line in song_lyrics.split("\n"):
-        for found_line in found_lyrics:
-            # We'd expect the match between the lines in the snippet (found_lyrics)
-            # and the corresponding lines in the full lyrics to be 100%, but since
-            # Genius implements some methods to detect plagiarism and
-            # these methods modify the lyrics, a 100% similarity ratio might not happen.
-            if Levenshtein.ratio(found_line, line) > 0.75 or clean_str(
-                found_line
-            ) in clean_str(line):
-                lyrics.append(line)
-                break
-        if len(lyrics) == len(found_lyrics):
-            break
-    if not lyrics:
+    lyrics = utils.find_matching_lyrics(found_lyrics, song_lyrics)
+    if lyrics is None:
         logger.error(
             "No lyrics matched despite initial highlight match. Query: %s",
             repr(input_text),
         )
         update.message.reply_text(text["not_found"])
         return END
-    lyrics = "\n".join(lyrics)
 
-    # Get song metadata
-    title = song["title"]
-    primary_artists = song["primary_artist"]["name"].split(" & ")
-    featured_artists = [x["name"] for x in song["featured_artists"]]
-    # If True, it means that this song is actually a translation.
-    # So we should edit the song title and primary artist.
-    # This is meant for translated songs.
-    if primary_artists[0].startswith("Genius") and featured_artists == []:
-        # This regex expression removes parentheses at the end of title
-        # that indicates the song is a translation
-        # e.g. song - title (English Translation)
-        # but it only does so for Persian. It's tricky to do this for all
-        # languages since the actual title itself may have parentheses and
-        # it may get removed.
-        title = TRANSLATION_PARENTHESES.sub("", title).strip()
-        artists, title = [x.strip() for x in title.split("-")]
-        primary_artists.clear()
-        primary_artists.extend(artists.split(" & "))
-
+    title, primary_artists, featured_artists = utils.get_song_metadata(song)
     cover_art_url = song["song_art_image_url"]
     # When cover arts aren't 1000x1000, the builder upscales and then
     # downscales the image. Instead, we can use this hack to have
@@ -135,10 +92,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     # if image_size != "1000x1000":
     #     encoded_url = quote_plus(cover_art_url)
     #     cover_art_url = "https://t2.genius.com/unsafe/1000x0/" + encoded_url
-
     cover_art = genius.download_cover_art(cover_art_url)
 
-    is_persian = bool(PERSIAN_CHARACTERS.search(lyrics))
+    is_persian = bool(utils.PERSIAN_CHARACTERS.search(lyrics))
     lyric_card = build_lyric_card(
         cover_art=cover_art,
         lyrics=lyrics,
@@ -265,8 +221,8 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
         song_title=lyric_card_info["title"],
         primary_artists=lyric_card_info["primary_artists"],
         featured_artists=lyric_card_info["featured_artists"],
-        rtl_lyrics=bool(PERSIAN_CHARACTERS.search(lyric_card_info["lyrics"])),
-        rtl_metadata=bool(PERSIAN_CHARACTERS.search(metadata)),
+        rtl_lyrics=bool(utils.PERSIAN_CHARACTERS.search(lyric_card_info["lyrics"])),
+        rtl_metadata=bool(utils.PERSIAN_CHARACTERS.search(metadata)),
         format="JPEG",
     )
     update.message.reply_photo(lyric_card, reply_markup=ReplyKeyboardRemove())
