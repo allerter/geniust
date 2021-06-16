@@ -90,7 +90,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
             # and the corresponding lines in the full lyrics to be 100%, but since
             # Genius implements some methods to detect plagiarism and
             # these methods modify the lyrics, a 100% similarity ratio might not happen.
-            if Levenshtein.ratio(found_line, line) > 0.8:
+            if Levenshtein.ratio(found_line, line) > 0.75 or clean_str(
+                found_line
+            ) in clean_str(line):
                 lyrics.append(line)
                 break
         if len(lyrics) == len(found_lyrics):
