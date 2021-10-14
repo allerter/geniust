@@ -335,7 +335,7 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
         return dic
 
     for text, entities in split_text(
-        *html.parse(lyrics), limit=4096, split_at=(r"\n\n",)
+        *html.parse(lyrics), limit=4096, split_at=(r"\n\n", r"\n")
     ):
         for entity in entities:
             entity.dict = entity.to_dict()
