@@ -578,6 +578,7 @@ display_song:
 
 display_lyrics:
   unreleased: Lyrics for this song have yet to be released. Please check back once the song has been released.
+  instrumental: This song is instrumental and doesn't have any lyrics.
 
 # ----------- User -----------
 
