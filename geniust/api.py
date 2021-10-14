@@ -211,8 +211,9 @@ class GeniusT(Genius):
             artist_id (int): Genius artist ID
             text_format (str, optional): Text format of the results
                 ('dom', 'html', 'markdown' or 'plain').
-            public_api (bool, optional): If `True`, performs the search
-                using the public API endpoint.
+            public_api (None, optional): If `True`, calls the API
+                using the public API endpoint. If not is supplied,
+                the value of Genius.public_api will be used.
         Returns:
             dict
         Note:
@@ -220,7 +221,7 @@ class GeniusT(Genius):
             - API: Result will have 19 fields.
             - Public API: Result will have 24 fields.
         """
-        if public_api or self.public_api:
+        if public_api or (public_api is None and self.public_api):
             return super(PublicAPI, self).artist(artist_id, text_format)
         else:
             if self.access_token is None:
@@ -228,7 +229,7 @@ class GeniusT(Genius):
             return super().artist(artist_id, text_format)
 
     def song(
-        self, song_id: int, text_format: Optional[str] = None, public_api: bool = False
+        self, song_id: int, text_format: Optional[str] = None, public_api: bool = None
     ) -> Dict[str, dict]:
         """Gets data for a specific song.
 
@@ -236,8 +237,9 @@ class GeniusT(Genius):
             song_id (int): Genius song ID
             text_format (str, optional): Text format of the results
                 ('dom', 'html', 'markdown' or 'plain').
-            public_api (bool, optional): If `True`, performs the search
-                using the public API endpoint.
+            public_api (None, optional): If `True`, calls the API
+                using the public API endpoint. If not is supplied,
+                the value of Genius.public_api will be used.
         Returns:
             dict
         Note:
@@ -245,7 +247,7 @@ class GeniusT(Genius):
             - API: Song will have 39 fields.
             - Public API: Song will have 68 fields.
         """
-        if public_api or self.public_api:
+        if public_api or (public_api is None and self.public_api):
             return super(PublicAPI, self).song(song_id, text_format)
         else:
             if self.access_token is None:
@@ -257,7 +259,7 @@ class GeniusT(Genius):
         search_term: str,
         per_page: Optional[int] = None,
         page: Optional[int] = None,
-        public_api: bool = False,
+        public_api: bool = None,
         match: Optional[Tuple[str, str]] = None,
     ) -> Dict[str, Any]:
         """Searches songs hosted on Genius.
