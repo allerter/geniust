@@ -1,4 +1,5 @@
 import logging
+import re
 import traceback
 import warnings
 from typing import Any, Dict
@@ -7,6 +8,7 @@ import lyricsgenius as lg
 import tekore as tk
 from notifiers.logging import NotificationHandler
 from requests.exceptions import HTTPError
+from telegram import ForceReply
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Message, Update, error
@@ -61,6 +63,7 @@ from geniust.constants import (
     TYPING_LYRIC_CARD_CUSTOM,
     TYPING_LYRIC_CARD_LYRICS,
     TYPING_LYRICS,
+    TYPING_REPLY,
     TYPING_SONG,
     TYPING_USER,
 )
@@ -213,11 +216,12 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
     """Sends user feedback to developers"""
     language = context.user_data["bot_lang"]
     reply_text = context.bot_data["texts"][language]["send_feedback"]
+    chat_id = update.message.chat_id
 
     if update.effective_chat.username:
         text = (
             f"User: @{update.effective_chat.username}\n"
-            f"Chat ID: {update.message.chat.id}\n"
+            f"Chat ID: {chat_id}\n"
             f"Bot Lang: {language}\n\n"
         )
     else:
@@ -225,14 +229,52 @@ def send_feedback(update: Update, context: CallbackContext) -> int:
             "User: "
             f"<a href={update.effective_user.id}>"
             f"{update.effective_user.first_name}</a>\n"
-            f"Chat ID: {update.message.chat.id}\n"
+            f"Chat ID: {chat_id}\n"
             f"Bot Lang: {language}\n\n"
         )
     text += update.message.text
 
+    buttons = [[IButton("Reply", callback_data=f"reply_to_{chat_id}")]]
+    keyboard = IBKeyboard(buttons)
+
+    context.user_data["feedback_message_id"] = update.message.message_id
+
     for developer in DEVELOPERS:
-        context.bot.send_message(chat_id=developer, text=text)
+        context.bot.send_message(chat_id=developer, text=text, reply_markup=keyboard)
     context.bot.send_message(chat_id=update.message.chat.id, text=reply_text)
+    return END
+
+
+@log
+def reply_to_user(update: Update, context: CallbackContext) -> int:
+    """Reply to messages from users"""
+    bot = context.bot
+
+    if update.callback_query:
+        update.callback_query.answer()
+        chat_id = int(update.callback_query.data.replace("reply_to_", ""))
+        if context.dispatcher.user_data[chat_id].get("feedback_message_id") is None:
+            update.callback_query.message.reply_text(
+                "A reply has already been sent to the user."
+            )
+        else:
+            update.callback_query.message.reply_text(
+                f"Replying to {chat_id}.\nSend your reply in Markdown.",
+                reply_markup=ForceReply(),
+            )
+            return TYPING_REPLY
+    else:
+        chat_id = int(
+            re.search(r"[0-9]+", update.message.reply_to_message.text).group()
+        )
+        message_id = context.dispatcher.user_data[chat_id].pop("feedback_message_id")
+        bot.send_message(
+            chat_id,
+            update.message.text,
+            reply_to_message_id=message_id,
+            parse_mode="Markdown",
+        )
+        update.message.reply_text("Your reply has been sent.")
     return END
 
 
@@ -491,6 +533,7 @@ def main():
         ),
         CallbackQueryHandler(donate, pattern=fr"^{DONATE}$"),
         CallbackQueryHandler(help_message, pattern=fr"^{HELP}$"),
+        CallbackQueryHandler(reply_to_user, pattern=r"^reply_to_[0-9]+$"),
     ]
 
     user_input = {
@@ -530,6 +573,9 @@ def main():
         ],
         TYPING_FEEDBACK: [
             MessageHandler(Filters.text & (~Filters.command), send_feedback)
+        ],
+        TYPING_REPLY: [
+            MessageHandler(Filters.text & (~Filters.command), reply_to_user)
         ],
     }
 

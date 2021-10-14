@@ -83,13 +83,14 @@ MAIN_MENU, CUSTOMIZE_MENU, ACCOUNT_MENU = num.assign(3)
     TYPING_LYRICS,
     TYPING_SONG,
     TYPING_USER,
+    TYPING_REPLY,
     TYPING_FEEDBACK,
     INCLUDE,
     LYRICS_LANG,
     SELECT_ACTION,
     DONATE,
     HELP,
-) = num.assign(13)
+) = num.assign(14)
 
 # Lyircs Language Options
 ONLY_ENGLIGH, ONLY_NON_ENGLISH, ENGLISH_AND_NON_ENGLISH = num.assign(3)
