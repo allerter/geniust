@@ -3,8 +3,6 @@ from dataclasses import astuple, dataclass
 from io import BytesIO
 from typing import Dict, List, Optional, Union
 
-import arabic_reshaper
-from bidi.algorithm import get_display
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
