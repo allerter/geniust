@@ -46,8 +46,7 @@ def display_annotation(update: Update, context: CallbackContext) -> int:
     for tag in annotation.find_all(("div", "span")):
         tag.unwrap()
         tag.decompose()
-    annotation = str(annotation)
-
+    annotation = re.sub(r"<br[/]>", "\n", str(annotation))
     voters = genius.voters(annotation_id=annotation_id)["voters"]
 
     upvotes = len(voters["up"])
