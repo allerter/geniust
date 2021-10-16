@@ -1,12 +1,14 @@
 import logging
 import re
 from functools import wraps
+from io import BytesIO
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, TypeVar, Union
 
 import Levenshtein
 from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import Tag
 from lyricsgenius.utils import clean_str
+from PIL import Image
 from telegram.utils.helpers import create_deep_linked_url
 
 import geniust
@@ -161,6 +163,23 @@ def remove_links(s: str) -> str:
     return links_pattern.sub("", s)
 
 
+def convert_image_format(image: str, format: str) -> BytesIO:
+    """Converts the format of the supplied image
+
+    Args:
+        image (BytesIO): An image stream.
+        format (str): The desired format.
+
+    Returns:
+        BytesIO: An image stream with the specified format.
+    """
+    converted_image = BytesIO()
+    im = Image.open(image).convert("RGB")
+    im.save(converted_image, format)
+    converted_image.seek(0)
+    return converted_image
+
+
 def extract_lyrics_for_card(html_lyrics: str) -> str:
     """Extracts lyrics from HTML and cleans them
 
@@ -202,6 +221,25 @@ def find_matching_lyrics(lines: List[str], lyrics: str) -> Optional[str]:
         if len(matching_lyrics) == len(lines):
             break
     return "\n".join(matching_lyrics) if matching_lyrics else None
+
+
+def fix_image_format(genius, cover_art_url: str) -> Union[str, BytesIO]:
+    """Makes sure section headers have two newline characters before them
+
+    Args:
+        genius: (api.GeniusT): a GeniusT client to download the cover art
+            if the format of the cover art needs to be converted.
+        cover_art_url (str): URL of the cover art.
+
+    Returns:
+        Union[str, BytesIO]: The URL itself if it has a proper format,
+            otherwise an image stream with a proper format.
+    """
+    return (
+        cover_art_url
+        if cover_art_url.endswith(("jpg", "jpeg", "png"))
+        else convert_image_format(genius.download_cover_art(cover_art_url), "jpeg")
+    )
 
 
 def fix_section_headers(string: str) -> str:

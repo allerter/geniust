@@ -1,9 +1,11 @@
 import os
 import re
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bs4 import BeautifulSoup
+from PIL import Image
 from telegram.utils.helpers import create_deep_linked_url
 
 from geniust import api, utils
@@ -109,6 +111,13 @@ def test_format_language_str(language):
         assert str(res) == "\nخط فقط با غیر اسمی۲"
     else:
         assert str(res) == string
+
+
+def test_convert_image_format(cover_art_path):
+    with open(cover_art_path, "rb") as f:
+        old_image = BytesIO(f.read())
+    new_image = Image.open(utils.convert_image_format(old_image, "png"))
+    assert new_image.format.lower() == "png"
 
 
 @pytest.mark.parametrize(

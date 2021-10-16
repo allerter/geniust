@@ -17,6 +17,11 @@ from geniust.constants import Preferences
 
 
 @pytest.fixture(scope="session")
+def cover_art_path(data_path):
+    return join(data_path, "cover_art.jpg")
+
+
+@pytest.fixture(scope="session")
 def song_id():
     return 4589365
 

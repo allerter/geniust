@@ -94,7 +94,7 @@ def display_artist(update: Update, context: CallbackContext) -> int:
             return END
 
     artist = genius.artist(artist_id)["artist"]
-    cover_art = artist["image_url"]
+    cover_art = utils.fix_image_format(genius, artist["image_url"])
     caption = artist_caption(update, context, artist, text["caption"], language)
 
     buttons = [

@@ -80,7 +80,7 @@ def display_user(update: Update, context: CallbackContext) -> int:
 
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
-    cover_art = user["photo_url"]
+    cover_art = utils.fix_image_format(genius, user["photo_url"])
     caption = user_caption(update, context, user, text["caption"])
 
     buttons: List = [[]]

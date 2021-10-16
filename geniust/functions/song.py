@@ -174,7 +174,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
             return END
 
     song = genius.song(genius_id)["song"]
-    cover_art = song["song_art_image_url"]
+    cover_art = utils.fix_image_format(genius, song["song_art_image_url"])
     caption = song_caption(update, context, song, text["caption"], language)
 
     callback_data = f"song_{song['id']}_lyrics"

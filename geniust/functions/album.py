@@ -105,7 +105,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
             return END
 
     album = genius.album(album_id)["album"]
-    cover_art = album["cover_art_url"]
+    cover_art = utils.fix_image_format(genius, album["cover_art_url"])
     caption = album_caption(update, context, album, text["caption"])
 
     buttons = [
