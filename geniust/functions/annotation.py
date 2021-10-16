@@ -38,7 +38,15 @@ def display_annotation(update: Update, context: CallbackContext) -> int:
         return END
 
     annotation = BeautifulSoup(annotation, "html.parser")
-    annotation = str(remove_unsupported_tags(annotation))
+    annotation = remove_unsupported_tags(annotation)
+    # remove_unsupported_tags fails to remove div and spans
+    # if they are inside supported tags.
+    # We could have remove_unsupported_tags do this too but
+    # it might break compatibility and/or decrease its performance.
+    for tag in annotation.find_all(("div", "span")):
+        tag.unwrap()
+        tag.decompose()
+    annotation = str(annotation)
 
     voters = genius.voters(annotation_id=annotation_id)["voters"]
 
