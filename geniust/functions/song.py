@@ -293,7 +293,7 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
     song = genius_t.song(song_id)["song"]
     song_url = song["url"]
 
-    if song["lyrics_state"] != "complete":
+    if song["lyrics_placeholder_reason"]:
         reason = song["lyrics_placeholder_reason"]
         text = texts.get(reason)
         if text is None:
