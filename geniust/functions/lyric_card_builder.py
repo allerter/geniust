@@ -328,6 +328,15 @@ def build_lyric_card(
         im = im.resize(original_size, Image.CUBIC)
     lyric_card = BytesIO()
     lyric_card.size = im.size  # type: ignore
-    im.save(lyric_card, format=format)
+    try:
+        im.save(lyric_card, format=format)
+    except OSError as e:
+        if "cannot write mode RGBA" in e.args[0]:
+            background = Image.new(im.mode[:-1], im.size, "white")
+            background.paste(im, im.split()[-1])
+            im = background
+            im.save(lyric_card, format=format)
+        else:
+            raise e
     lyric_card.seek(0)
     return lyric_card
