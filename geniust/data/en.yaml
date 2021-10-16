@@ -358,6 +358,7 @@ display_album:
   not_found: Album not found.
 
 display_album_covers:
+  0: "Album doesn't have any cover arts."
   1: "{} Cover Art"
   2: "{} Cover Arts"
 
