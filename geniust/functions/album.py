@@ -152,9 +152,11 @@ def display_album_covers(update: Update, context: CallbackContext) -> int:
         text = text[1].replace("{}", album)
         context.bot.send_photo(chat_id, covers[0], text)
     elif len(covers) > 1:
-        media = [InputMediaPhoto(x) for x in covers]
-        media[0].caption = text[2].replace("{}", album)
-        context.bot.send_media_group(chat_id, media)
+        for media in utils.grouper(10, [InputMediaPhoto(x) for x in covers]):
+            # grouper fills the remaining cells with None which we remove
+            media = list(filter(None, media))
+            media[0].caption = text[2].replace("{}", album)
+            context.bot.send_media_group(chat_id, media)
     else:
         context.bot.send_message(chat_id, text[0])
 

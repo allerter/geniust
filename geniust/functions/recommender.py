@@ -1,7 +1,6 @@
 import logging
-from itertools import zip_longest
 from os.path import join
-from typing import Iterable, Iterator, List, Optional
+from typing import List
 
 import tekore as tk
 from telegram import InlineKeyboardButton as IButton
@@ -176,31 +175,10 @@ def select_genres(update: Update, context: CallbackContext):
         buttons.append(IButton(button_text, callback_data=f"genre_{id}"))
 
     # 3 genres in each row
-    def grouper(
-        n: int, iterable: Iterable, fillvalue: Optional[str] = None
-    ) -> Iterator:
-        """Groups iterable values by n
-
-        Limits buttons to n button in every row
-        and if there are any remaining spaces
-        left in the last group, fills them with
-        the value of fillvalue.
-
-        Args:
-            n ([type]): [description]
-            iterable (Iterable): An iterable to be grouped.
-            fillvalue ([type], optional): Value to fill
-            remaining items of group. Defaults to None.
-
-        Returns:
-            Iterator: Iterator of grouped items.
-        """
-        # from https://stackoverflow.com/a/3415150
-        args = [iter(iterable)] * n
-        return zip_longest(fillvalue=IButton(fillvalue, callback_data="None"), *args)
-
     keyboard_buttons = []
-    for button_set in grouper(3, buttons):
+    for button_set in utils.grouper(
+        3, buttons, fillvalue=IButton(None, callback_data="None")
+    ):
         keyboard_buttons.append(button_set)
 
     if context.user_data["genres"]:

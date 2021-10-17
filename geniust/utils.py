@@ -2,7 +2,20 @@ import logging
 import re
 from functools import wraps
 from io import BytesIO
-from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, TypeVar, Union
+from itertools import zip_longest
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Pattern,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import Levenshtein
 from bs4 import BeautifulSoup, Comment, NavigableString
@@ -457,6 +470,28 @@ def get_song_metadata(song: dict) -> Tuple[str, List[str], List[str]]:
         primary_artists.clear()
         primary_artists.extend(artists.split(" & "))
     return title, primary_artists, featured_artists
+
+
+def grouper(n: int, iterable: Iterable, fillvalue: Optional[str] = None) -> Iterator:
+    """Groups iterable values by n
+
+    Limits buttons to n button in every row
+    and if there are any remaining spaces
+    left in the last group, fills them with
+    the value of fillvalue.
+
+    Args:
+        n ([type]): [description]
+        iterable (Iterable): An iterable to be grouped.
+        fillvalue ([type], optional): Value to fill
+        remaining items of group. Defaults to None.
+
+    Returns:
+        Iterator: Iterator of grouped items.
+    """
+    # from https://stackoverflow.com/a/3415150
+    args = [iter(iterable)] * n
+    return zip_longest(fillvalue=fillvalue, *args)
 
 
 def has_sentence(sentences: List[str], sentence: str) -> bool:
