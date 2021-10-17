@@ -481,7 +481,7 @@ def grouper(n: int, iterable: Iterable, fillvalue: Any = None) -> Iterator:
     the value of fillvalue.
 
     Args:
-        n (int): [description]
+        n (int): The size of each chunk.
         iterable (Iterable): An iterable to be grouped.
         fillvalue (Any, optional): Value to fill
             remaining items of group. Defaults to None.
