@@ -327,6 +327,13 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
     # the previous section with only one newline.
     lyrics = utils.fix_section_headers(lyrics)
 
+    if not lyrics:
+        bot.send_message(
+            chat_id,
+            texts["unreleased"],
+        )
+        return END
+
     def to_dict(entity):
         """Converts entity to a dict that is compatible with PTB"""
         dic = entity.dict
