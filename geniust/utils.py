@@ -21,7 +21,7 @@ import Levenshtein
 from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import Tag
 from lyricsgenius.utils import clean_str
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from telegram.utils.helpers import create_deep_linked_url
 
 import geniust
@@ -237,7 +237,7 @@ def find_matching_lyrics(lines: List[str], lyrics: str) -> Optional[str]:
 
 
 def fix_image_format(genius, cover_art_url: str) -> Union[str, BytesIO]:
-    """Makes sure section headers have two newline characters before them
+    """Makes sure the cover art is in a proper format
 
     Args:
         genius: (api.GeniusT): a GeniusT client to download the cover art
@@ -248,11 +248,17 @@ def fix_image_format(genius, cover_art_url: str) -> Union[str, BytesIO]:
         Union[str, BytesIO]: The URL itself if it has a proper format,
             otherwise an image stream with a proper format.
     """
-    return (
-        cover_art_url
-        if cover_art_url.endswith(("jpg", "jpeg", "png"))
-        else convert_image_format(genius.download_cover_art(cover_art_url), "jpeg")
-    )
+    try:
+        return (
+            cover_art_url
+            if cover_art_url.endswith(("jpg", "jpeg", "png"))
+            else convert_image_format(genius.download_cover_art(cover_art_url), "jpeg")
+        )
+    except UnidentifiedImageError:
+        logging.getLogger("geniust").error(
+            "Pillow failed to identify image: %s", cover_art_url
+        )
+        return geniust.DEFAULT_COVER_IMAGE
 
 
 def fix_section_headers(string: str) -> str:

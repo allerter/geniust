@@ -1,5 +1,6 @@
 import functools
 import pathlib
+from io import BytesIO
 from os import listdir
 from os.path import isfile, join
 from typing import Callable, TypeVar
@@ -67,3 +68,7 @@ spotify_auth = tk.UserAuth(
     scope=tk.scope.user_top_read,
 )
 auths = {"genius": genius_auth, "spotify": spotify_auth}
+
+
+with open(join(data_path, "default_cover_image.png"), "rb") as f:  # type:ignore
+    DEFAULT_COVER_IMAGE = BytesIO(f.read())  # type:ignore[arg-type]
