@@ -472,7 +472,7 @@ def get_song_metadata(song: dict) -> Tuple[str, List[str], List[str]]:
     return title, primary_artists, featured_artists
 
 
-def grouper(n: int, iterable: Iterable, fillvalue: Optional[str] = None) -> Iterator:
+def grouper(n: int, iterable: Iterable, fillvalue: Any = None) -> Iterator:
     """Groups iterable values by n
 
     Limits buttons to n button in every row
@@ -481,10 +481,10 @@ def grouper(n: int, iterable: Iterable, fillvalue: Optional[str] = None) -> Iter
     the value of fillvalue.
 
     Args:
-        n ([type]): [description]
+        n (int): [description]
         iterable (Iterable): An iterable to be grouped.
-        fillvalue ([type], optional): Value to fill
-        remaining items of group. Defaults to None.
+        fillvalue (Any, optional): Value to fill
+            remaining items of group. Defaults to None.
 
     Returns:
         Iterator: Iterator of grouped items.
