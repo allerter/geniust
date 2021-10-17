@@ -121,13 +121,12 @@ def display_account(update: Update, context: CallbackContext) -> int:
     ud = context.user_data
     language = ud["bot_lang"]
     texts = bd["texts"][language]["display_account"]
-    genius = bd["genius"]
 
     update.callback_query.message.delete()
 
     account = api.GeniusT(ud["genius_token"]).account()["user"]
 
-    avatar = utils.fix_image_format(genius, account["avatar"]["medium"]["url"])
+    avatar = account["avatar"]["medium"]["url"]
     caption = account_caption(update, context, account, texts["caption"])
     context.bot.send_photo(chat_id, avatar, caption)
 
