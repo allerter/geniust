@@ -131,18 +131,12 @@ def remove_unsupported_tags(
     Returns:
         BeautifulSoup
     """
-    restart = True
-    while restart:
-        restart = False
-        for tag in soup:
-            name = tag.name
-            if name is not None and name not in supported:
-                if tag.text:
-                    tag.unwrap()
-                tag.decompose()
-                restart = True
-                break
-
+    for tag in soup.find_all():
+        name = tag.name
+        if name is not None and name not in supported:
+            if tag.text:
+                tag.unwrap()
+            tag.decompose()
     return soup
 
 
