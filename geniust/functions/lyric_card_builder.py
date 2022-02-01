@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import Dict, List, Optional, Union
 
 from fontTools.ttLib import TTFont
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 from geniust import data_path
 
@@ -313,6 +313,11 @@ def build_lyric_card(
     original_size = im.size
     if original_size != BUILDER_IMAGE_SIZE:
         im = im.resize(BUILDER_IMAGE_SIZE, Image.BOX)
+        # Blur image to cover the loss in quality caused by resizing
+        # Images bigger than 700px don't seem to suffer noticeably
+        if original_size[0] <= 700:
+            ratio = BUILDER_IMAGE_SIZE[0] / original_size[0]
+            im = im.filter(ImageFilter.BoxBlur(radius=ratio))
     add_double_quotes(im, rtl=rtl_lyrics)
     draw = ImageDraw.Draw(im)
     pos_end = add_lyrics(draw, lyrics, rtl=rtl_lyrics)
@@ -324,8 +329,6 @@ def build_lyric_card(
         featured_artists if featured_artists else [],
         rtl=rtl_metadata,
     )
-    if original_size != BUILDER_IMAGE_SIZE:
-        im = im.resize(original_size, Image.CUBIC)
     lyric_card = BytesIO()
     lyric_card.size = im.size  # type: ignore
     im.save(lyric_card, format=format)
