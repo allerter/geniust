@@ -38,6 +38,9 @@ def display_annotation(update: Update, context: CallbackContext) -> int:
         return END
 
     annotation = BeautifulSoup(annotation, "html.parser")
+    # Previews are meant for web viewers, so their text is of no use to us
+    for embed_preview in annotation.find_all("div", class_="embedly_preview"):
+        embed_preview.decompose()
     annotation = remove_unsupported_tags(annotation)
     annotation = re.sub(r"<br[/]>", "\n", str(annotation))
     voters = genius.voters(annotation_id=annotation_id)["voters"]
