@@ -308,7 +308,7 @@ def build_lyric_card(
     Returns:
         BytesIO: The lyric card in an in-memory file.
     """
-    im = Image.open(cover_art)
+    im = Image.open(cover_art).convert("RGB")
     im = change_brightness(im, COVER_ART_BRIGHTNESS)
     original_size = im.size
     if original_size != BUILDER_IMAGE_SIZE:
@@ -328,15 +328,6 @@ def build_lyric_card(
         im = im.resize(original_size, Image.CUBIC)
     lyric_card = BytesIO()
     lyric_card.size = im.size  # type: ignore
-    try:
-        im.save(lyric_card, format=format)
-    except OSError as e:
-        if "cannot write mode RGBA" in e.args[0]:
-            background = Image.new(im.mode[:-1], im.size, "white")
-            background.paste(im, im.split()[-1])
-            im = background
-            im.save(lyric_card, format=format)
-        else:
-            raise e
+    im.save(lyric_card, format=format)
     lyric_card.seek(0)
     return lyric_card
