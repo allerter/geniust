@@ -1,3 +1,4 @@
+import imghdr
 import logging
 from datetime import timedelta
 from io import BytesIO
@@ -9,7 +10,7 @@ from lyricsgenius.utils import clean_str
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
-from geniust import get_user, utils
+from geniust import DEFAULT_COVER_IMAGE, get_user, utils
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
 from geniust.utils import log
@@ -94,6 +95,8 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     #     cover_art_url = "https://t2.genius.com/unsafe/1000x0/" + encoded_url
     cover_art = genius.download_cover_art(cover_art_url)
 
+    if imghdr.what(cover_art) is None:
+        cover_art = DEFAULT_COVER_IMAGE
     is_persian = bool(utils.PERSIAN_CHARACTERS.search(lyrics))
     lyric_card = build_lyric_card(
         cover_art=cover_art,
