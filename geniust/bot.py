@@ -267,14 +267,19 @@ def reply_to_user(update: Update, context: CallbackContext) -> int:
         chat_id = int(
             re.search(r"[0-9]+", update.message.reply_to_message.text).group()
         )
-        message_id = context.dispatcher.user_data[chat_id].pop("feedback_message_id")
-        bot.send_message(
-            chat_id,
-            update.message.text,
-            reply_to_message_id=message_id,
-            parse_mode="Markdown",
-        )
-        update.message.reply_text("Your reply has been sent.")
+        message_id = context.dispatcher.user_data[chat_id]["feedback_message_id"]
+        try:
+            bot.send_message(
+                chat_id,
+                update.message.text,
+                reply_to_message_id=message_id,
+                parse_mode="MarkdownV2",
+            )
+        except Exception as e:
+            raise e
+        else:
+            context.dispatcher.user_data[chat_id].pop("feedback_message_id")
+            update.message.reply_text("Your reply has been sent.")
     return END
 
 
