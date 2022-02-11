@@ -99,7 +99,6 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
         msg = text["body"]
 
         if update.message:
-            ud["command_entry"] = True
             update.message.reply_text(msg, reply_markup=keyboard)
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
@@ -157,7 +156,6 @@ def bot_language(update: Update, context: CallbackContext) -> int:
         msg = text["body"]
 
         if update.message:
-            ud["command_entry"] = True
             update.message.reply_text(msg, reply_markup=keyboard)
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
@@ -218,7 +216,6 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
         msg = text["body"]
 
         if update.message:
-            ud["command_entry"] = True
             update.message.reply_text(msg, reply_markup=keyboard)
         else:
             update.callback_query.edit_message_text(msg, reply_markup=keyboard)
