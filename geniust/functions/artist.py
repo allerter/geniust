@@ -26,6 +26,8 @@ def type_artist(update: Update, context: CallbackContext) -> int:
         update.callback_query.edit_message_text(text)
     else:
         if context.args:
+            if update.message is None and update.edited_message:
+                update.message = update.edited_message
             update.message.text = " ".join(context.args)
             search_artists(update, context)
             return END

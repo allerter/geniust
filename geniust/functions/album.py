@@ -32,6 +32,8 @@ def type_album(update: Update, context: CallbackContext) -> int:
         # If there is context.args, it means that the user
         # typed "/album query". So we don't need to ask for a query anymore.
         if context.args:
+            if update.message is None and update.edited_message:
+                update.message = update.edited_message
             update.message.text = " ".join(context.args)
             search_albums(update, context)
             return END
