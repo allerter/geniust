@@ -158,7 +158,7 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]["custom_lyric_card"]
     chat_id = update.effective_user.id
 
-    if update.message.chat.type == "group":
+    if update.message and update.message.chat.type == "group":
         chat_id = update.message.chat.id
         message_id = update.message.message_id
         msg = texts["unavailable"]
