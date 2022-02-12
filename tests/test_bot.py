@@ -134,7 +134,10 @@ def test_contact_us(update_message, context):
     res = bot.contact_us(update, context)
 
     update.message.reply_text.assert_called_once()
-    assert res == constants.TYPING_FEEDBACK
+    if update_message.message.chat.type == "group":
+        assert res == constants.END
+    else:
+        assert res == constants.TYPING_FEEDBACK
 
 
 @pytest.mark.parametrize(

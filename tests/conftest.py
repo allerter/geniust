@@ -188,6 +188,9 @@ def recommender_song(data_path):
 # ----------------- Update Fixtures -----------------
 
 
+is_chat_group = [True, False]
+
+
 @pytest.fixture(scope="session")
 def update_callback_query_class():
     update = create_autospec(Update)
@@ -198,11 +201,15 @@ def update_callback_query_class():
     return update
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", params=is_chat_group)
 def update_callback_query(update_callback_query_class):
     update = update_callback_query_class
     update.callback_query.reset_mock()
     update.callback_query.message.reset_mock()
+    if is_chat_group:
+        update.callback_query.message.chat.type = "group"
+    update.callback_query.message.reply_to_message.from_user.id = 123
+    update.callback_query.from_user.id = 123
     return update
 
 
@@ -215,10 +222,12 @@ def update_message_class():
     return update
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", params=is_chat_group)
 def update_message(update_message_class):
     update = update_message_class
     update.message.reset_mock()
+    if is_chat_group:
+        update.message.chat.type = "group"
     return update
 
 

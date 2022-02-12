@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List, Union
 
 from bs4 import BeautifulSoup
+from telegram import ForceReply
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
@@ -20,11 +21,18 @@ def type_user(update: Update, context: CallbackContext) -> int:
     """Prompts user to type username"""
     # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
-    msg = context.bot_data["texts"][language]["type_user"]
+    text = context.bot_data["texts"][language]["type_user"]
 
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text)
+        else:
+            update.callback_query.edit_message_text(
+                text, reply_markup=ForceReply(selective=True)
+            )
     else:
         if context.args:
             if update.message is None and update.edited_message:
@@ -32,7 +40,7 @@ def type_user(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_users(update, context)
             return END
-        update.message.reply_text(msg)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_USER
 
@@ -45,6 +53,9 @@ def search_users(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_users"]
     input_text = update.message.text
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_users(input_text)
@@ -57,9 +68,15 @@ def search_users(update: Update, context: CallbackContext) -> int:
         buttons.append([IButton(text=username, callback_data=callback)])
 
     if buttons:
-        update.message.reply_text(text["choose"], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(
+            text["choose"],
+            reply_markup=IBKeyboard(buttons),
+            reply_to_message_id=reply_to_message_id,
+        )
     else:
-        update.message.reply_text(text["no_users"])
+        update.message.reply_text(
+            text["no_users"], reply_to_message_id=reply_to_message_id
+        )
     return END
 
 
@@ -77,8 +94,11 @@ def display_user(update: Update, context: CallbackContext) -> int:
         _, user_id_str = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.message.delete()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, user_id_str = context.args[0].split("_")
+        reply_to_message_id = None
 
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
@@ -94,7 +114,13 @@ def display_user(update: Update, context: CallbackContext) -> int:
         buttons[0].append(IButton(text["header"], callback_data=callback_data))
 
     keyboard = IBKeyboard(buttons) if buttons[0] else None
-    bot.send_photo(chat_id, cover_art, caption, reply_markup=keyboard)
+    bot.send_photo(
+        chat_id,
+        cover_art,
+        caption,
+        reply_markup=keyboard,
+        reply_to_message_id=reply_to_message_id,
+    )
 
     return END
 
@@ -113,8 +139,11 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, user_id_str, _ = update.callback_query.data.split("_")
         update.callback_query.answer()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, user_id_str, _ = context.args[0].split("_")
+        reply_to_message_id = None
 
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
@@ -123,7 +152,7 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
     description = str(utils.remove_unsupported_tags(description))
 
     caption = text.format(username=user["name"], description=description)
-    context.bot.send_message(chat_id, caption)
+    context.bot.send_message(chat_id, caption, reply_to_message_id=reply_to_message_id)
 
     return END
 
@@ -142,15 +171,20 @@ def display_user_header(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, user_id_str, _ = update.callback_query.data.split("_")
         update.callback_query.answer()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, user_id_str, _ = context.args[0].split("_")
+        reply_to_message_id = None
 
     user_id = int(user_id_str)
     user = genius.user(user_id)["user"]
 
     photo = user["custom_header_image_url"]
     caption = text.format(username=user["name"])
-    context.bot.send_photo(chat_id, photo, caption)
+    context.bot.send_photo(
+        chat_id, photo, caption, reply_to_message_id=reply_to_message_id
+    )
 
     return END
 

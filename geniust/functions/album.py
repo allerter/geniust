@@ -2,6 +2,7 @@ import logging
 import threading
 from typing import Any, Dict
 
+from telegram import ForceReply
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import InputMediaPhoto, Update
@@ -27,17 +28,21 @@ def type_album(update: Update, context: CallbackContext) -> int:
     # user has entered the function through the main menu
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(text)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=ForceReply(selective=True))
+        else:
+            update.callback_query.edit_message_text(text)
     else:
-        # If there is context.args, it means that the user
-        # typed "/album query". So we don't need to ask for a query anymore.
         if context.args:
             if update.message is None and update.edited_message:
                 update.message = update.edited_message
             update.message.text = " ".join(context.args)
             search_albums(update, context)
             return END
-        update.message.reply_text(text)
+
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_ALBUM
 
@@ -50,6 +55,9 @@ def search_albums(update: Update, context: CallbackContext) -> int:
     input_text = update.message.text
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_albums"]
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     res = genius.search_albums(input_text)
 
@@ -64,9 +72,15 @@ def search_albums(update: Update, context: CallbackContext) -> int:
         buttons.append([IButton(title, callback_data=callback)])
 
     if buttons:
-        update.message.reply_text(text["choose"], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(
+            text["choose"],
+            reply_markup=IBKeyboard(buttons),
+            reply_to_message_id=reply_to_message_id,
+        )
     else:
-        update.message.reply_text(text["no_albums"])
+        update.message.reply_text(
+            text["no_albums"], reply_to_message_id=reply_to_message_id
+        )
 
     return END
 
@@ -86,8 +100,15 @@ def display_album(update: Update, context: CallbackContext) -> int:
         _, album_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.message.delete()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
+        is_chat_group = (
+            True if update.message and update.message.chat.type == "group" else False
+        )
     else:
         _, album_id_str, platform = context.args[0].split("_")
+        reply_to_message_id = None
+        is_chat_group = False
 
     if platform == "genius":
         album_id = int(album_id_str)
@@ -103,7 +124,11 @@ def display_album(update: Update, context: CallbackContext) -> int:
                 album_id = hit_album["id"]
                 break
         else:
-            context.bot.send_message(chat_id, text["not_found"])
+            context.bot.send_message(
+                chat_id,
+                text["not_found"],
+                reply_to_message_id=reply_to_message_id,
+            )
             return END
 
     album = genius.album(album_id)["album"]
@@ -114,7 +139,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
         [IButton(text["cover_arts"], callback_data=f"album_{album['id']}_covers")],
         [IButton(text["tracks"], callback_data=f"album_{album['id']}_tracks")],
     ]
-    if chat_id in DEVELOPERS:
+    if not is_chat_group and chat_id in DEVELOPERS:
         buttons.append(
             [IButton(text["lyrics"], callback_data=f"album_{album['id']}_lyrics")]
         )
@@ -126,7 +151,13 @@ def display_album(update: Update, context: CallbackContext) -> int:
         )
         buttons[0].append(button)
 
-    bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
+    bot.send_photo(
+        chat_id,
+        cover_art,
+        caption,
+        reply_markup=IBKeyboard(buttons),
+        reply_to_message_id=reply_to_message_id,
+    )
 
     return END
 
@@ -143,8 +174,11 @@ def display_album_covers(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         update.callback_query.answer()
         album_id = int(update.callback_query.data.split("_")[1])
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         album_id = int(context.args[0].split("_")[1])
+        reply_to_message_id = None
 
     covers = [x["image_url"] for x in genius.album_cover_arts(album_id)["cover_arts"]]
 
@@ -152,15 +186,21 @@ def display_album_covers(update: Update, context: CallbackContext) -> int:
 
     if len(covers) == 1:
         text = text[1].replace("{}", album)
-        context.bot.send_photo(chat_id, covers[0], text)
+        context.bot.send_photo(
+            chat_id, covers[0], text, reply_to_message_id=reply_to_message_id
+        )
     elif len(covers) > 1:
         for media in utils.grouper(10, [InputMediaPhoto(x) for x in covers]):
             # grouper fills the remaining cells with None which we remove
             media = list(filter(None, media))
             media[0].caption = text[2].replace("{}", album)
-            context.bot.send_media_group(chat_id, media)
+            context.bot.send_media_group(
+                chat_id, media, reply_to_message_id=reply_to_message_id
+            )
     else:
-        context.bot.send_message(chat_id, text[0])
+        context.bot.send_message(
+            chat_id, text[0], reply_to_message_id=reply_to_message_id
+        )
 
     return END
 
@@ -177,8 +217,11 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         update.callback_query.answer()
         album_id = int(update.callback_query.data.split("_")[1])
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         album_id = int(context.args[0].split("_")[1])
+        reply_to_message_id = None
 
     songs = []
     for track in genius.album_tracks(album_id, per_page=50)["tracks"]:
@@ -194,7 +237,7 @@ def display_album_tracks(update: Update, context: CallbackContext) -> int:
 
     text = f"{msg.replace('{}', album)}{''.join(songs)}"
 
-    context.bot.send_message(chat_id, text)
+    context.bot.send_message(chat_id, text, reply_to_message_id=reply_to_message_id)
 
     return END
 

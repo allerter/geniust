@@ -76,6 +76,8 @@ def lyrics_language(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
 
     # command
+    if update.message and update.message.chat.type == "group":
+        return END
     if update.message or update.callback_query.data == str(LYRICS_LANG):
 
         buttons = [
@@ -138,6 +140,8 @@ def bot_language(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
 
     # command
+    if update.message and update.message.chat.type == "group":
+        return END
     if update.message or update.callback_query.data == "bot_lang":
 
         buttons = []
@@ -190,6 +194,8 @@ def include_annotations(update: Update, context: CallbackContext) -> int:
     chat_id = update.effective_chat.id
 
     # command
+    if update.message and update.message.chat.type == "group":
+        return END
     if update.message or update.callback_query.data == str(INCLUDE):
         buttons = [
             [

@@ -23,6 +23,10 @@ def login_choices(update: Update, context: CallbackContext):
     ud = context.user_data
     bd = context.bot_data
 
+    if update.message.chat.type == "group":
+        update.message.reply_text(text["unavailable"])
+        return END
+
     buttons = []
     if ud["genius_token"] is None:
         buttons.append(
