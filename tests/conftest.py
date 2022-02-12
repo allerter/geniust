@@ -9,7 +9,7 @@ import pytest
 import tekore as tk
 import yaml
 from lyricsgenius import Genius, OAuth2
-from telegram import Bot, CallbackQuery, Chat, Message, Update
+from telegram import Bot, CallbackQuery, Chat, Message, Update, User
 from telegram.ext import CallbackContext
 
 from geniust import api, constants, data, db
@@ -199,6 +199,9 @@ def update_callback_query_class():
     update.callback_query = create_autospec(CallbackQuery)
     update.callback_query.message = create_autospec(Message)
     update.callback_query.message.chat = create_autospec(Chat)
+    update.callback_query.from_user = create_autospec(User)
+    update.callback_query.message.reply_to_message = create_autospec(Message)
+    update.callback_query.message.from_user = create_autospec(User)
     return update
 
 
