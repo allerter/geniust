@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from telegram.utils.helpers import create_deep_linked_url
 
-from geniust import api, utils
+from geniust import api, bot, utils
 
 
 @pytest.fixture(scope="function")
@@ -37,6 +37,16 @@ def lyrics(page):
             tag.unwrap()
 
     return str(lyrics).strip()
+
+
+def test_check_callback_query_user(update_callback_query, context):
+    update = update_callback_query
+    update.callback_query.from_user.id = 1234
+
+    res = bot.help_message(update, context)
+
+    assert res is None
+    update.callback_query.edit_message_text.assert_not_called()
 
 
 @pytest.mark.parametrize("download", [True, False])

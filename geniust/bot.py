@@ -81,7 +81,7 @@ from geniust.functions import (
     user,
 )
 from geniust.server import WebhookThread
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 warnings.filterwarnings(
     "ignore", message="If 'per_", module="telegram.ext.conversationhandler"
@@ -335,6 +335,7 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
@@ -380,6 +381,7 @@ def contact_us(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def donate(update: Update, context: CallbackContext) -> int:
     """Sends the /donate message to the user"""
     language = context.user_data["bot_lang"]

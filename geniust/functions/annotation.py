@@ -9,13 +9,14 @@ from telegram.ext import CallbackContext
 
 from geniust import api, get_user
 from geniust.constants import END
-from geniust.utils import log, remove_unsupported_tags
+from geniust.utils import check_callback_query_user, log, remove_unsupported_tags
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def display_annotation(update: Update, context: CallbackContext) -> int:
     """Displays annotation"""
     genius = context.bot_data["genius"]

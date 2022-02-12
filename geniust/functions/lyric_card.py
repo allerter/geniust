@@ -13,13 +13,14 @@ from telegram.ext import CallbackContext
 from geniust import DEFAULT_COVER_IMAGE, get_user, utils
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_lyrics(update: Update, context: CallbackContext) -> int:
     """Prompts user to type lyrics"""
     # user has entered the function through the main menu

@@ -18,10 +18,9 @@ from geniust.constants import (
     SPOTIFY_CLIENT_SECRET,
     SPOTIFY_REDIRECT_URI,
 )
+from geniust.utils import RT
 
 username: str = "genius_the_bot"  # Bot(BOT_TOKEN).get_me().username
-
-RT = TypeVar("RT")
 
 
 def get_user(func: Callable[..., RT]) -> Callable[..., RT]:

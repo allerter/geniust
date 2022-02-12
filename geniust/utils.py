@@ -1,3 +1,4 @@
+import functools
 import logging
 import re
 from functools import wraps
@@ -81,6 +82,34 @@ MESSAGE_ENTITY_TYPES = {
     "MessageEntityUnderline": "underline",
     "MessageEntityUrl": "url",
 }
+RT = TypeVar("RT")
+
+
+def check_callback_query_user(func: Callable[..., RT]) -> Optional[Callable[..., RT]]:
+    """Check the user clicking on the CallBackQuery
+
+    Compares the user the bot initiated the conversation with against
+    the user clicking on the inline buttons. If these two don't match,
+    the bot doesn't process the request. Useful for groups where other
+    people can click on menu buttons.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs) -> RT:
+        update = args[0]
+        # context = args[1]
+        if update.callback_query:
+            reply_to_message = update.callback_query.message.reply_to_message
+            if reply_to_message:
+                reply_user_id = reply_to_message.from_user.id
+                cbq_user_id = update.callback_query.from_user.id
+                if cbq_user_id != reply_user_id:
+                    update.callback_query.answer()
+                    return None
+        result = func(*args, **kwargs)
+        return result
+
+    return wrapper
 
 
 def deep_link(
@@ -539,9 +568,6 @@ def human_format(num: int) -> str:
         formatter = "%.1f%s"
 
     return formatter % (num, ["", "K", "M", "G", "T", "P"][magnitude])
-
-
-RT = TypeVar("RT")
 
 
 def log(func: Callable[..., RT]) -> Callable[..., RT]:

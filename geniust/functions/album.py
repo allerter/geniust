@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext
 
 from geniust import api, get_user, utils
 from geniust.constants import DEVELOPERS, END, TYPING_ALBUM
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 from .album_conversion import create_pages, create_pdf, create_zip
 
@@ -20,6 +20,7 @@ logger = logging.getLogger("geniust")
 
 @log
 @get_user
+@check_callback_query_user
 def type_album(update: Update, context: CallbackContext) -> int:
     """Prompts user to type album name"""
     language = context.user_data["bot_lang"]
@@ -87,6 +88,7 @@ def search_albums(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_album(update: Update, context: CallbackContext) -> int:
     """Displays album"""
     genius = context.bot_data["genius"]
@@ -164,6 +166,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_album_covers(update: Update, context: CallbackContext) -> int:
     """Displays an album's cover arts"""
     genius = context.bot_data["genius"]
@@ -207,6 +210,7 @@ def display_album_covers(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_album_tracks(update: Update, context: CallbackContext) -> int:
     """Displays an album's tracks"""
     genius = context.bot_data["genius"]

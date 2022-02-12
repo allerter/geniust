@@ -9,13 +9,14 @@ from telegram.ext import CallbackContext
 
 from geniust import get_user, utils
 from geniust.constants import END, TYPING_ARTIST
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_artist(update: Update, context: CallbackContext) -> int:
     """Prompts user to type artist name"""
     language = context.user_data["bot_lang"]
@@ -80,6 +81,7 @@ def search_artists(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist(update: Update, context: CallbackContext) -> int:
     """Displays artist"""
     genius = context.bot_data["genius"]
@@ -163,6 +165,7 @@ def display_artist(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist_albums(update: Update, context: CallbackContext) -> int:
     """Displays artist's albums"""
     genius = context.bot_data["genius"]
@@ -204,6 +207,7 @@ def display_artist_albums(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist_songs(update: Update, context: CallbackContext) -> int:
     """Displays artist's songs"""
     genius = context.bot_data["genius"]

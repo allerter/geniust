@@ -14,13 +14,14 @@ from telethon.utils import split_text
 
 from geniust import get_user, username, utils
 from geniust.constants import DEVELOPERS, END, TYPING_LYRICS, TYPING_SONG
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_lyrics(update: Update, context: CallbackContext) -> int:
     """Prompts user to type lyrics"""
     # user has entered the function through the main menu
@@ -148,6 +149,7 @@ def search_songs(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     language = context.user_data["bot_lang"]
@@ -274,6 +276,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def download_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     bot = context.bot
@@ -315,6 +318,7 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_lyrics(update: Update, context: CallbackContext) -> int:
     """Retrieves and sends song lyrics to user"""
 

@@ -10,13 +10,14 @@ from telegram.ext import CallbackContext
 
 from geniust import get_user, utils
 from geniust.constants import END, TYPING_USER
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_user(update: Update, context: CallbackContext) -> int:
     """Prompts user to type username"""
     # user has entered the function through the main menu
@@ -82,6 +83,7 @@ def search_users(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_user(update: Update, context: CallbackContext) -> int:
     """Displays user"""
     language = context.user_data["bot_lang"]
@@ -127,6 +129,7 @@ def display_user(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_user_description(update: Update, context: CallbackContext) -> int:
     """Displays user's description"""
     chat_id = update.effective_chat.id
@@ -159,6 +162,7 @@ def display_user_description(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_user_header(update: Update, context: CallbackContext) -> int:
     """Displays user's header image"""
     chat_id = update.effective_chat.id
