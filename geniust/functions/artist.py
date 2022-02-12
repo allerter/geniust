@@ -37,7 +37,7 @@ def type_artist(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_artists(update, context)
             return END
-        update.message.reply_text(text)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_ARTIST
 
