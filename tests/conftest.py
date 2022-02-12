@@ -212,8 +212,8 @@ def update_callback_query(update_callback_query_class):
     update = update_callback_query_class
     update.callback_query.reset_mock()
     update.callback_query.message.reset_mock()
-    update.callback_query.message.reply_to_message.from_user.reset_mock()
-    update.callback_query.from_user.reset_mock()
+    update.callback_query.message.reply_to_message.from_user.id = 123
+    update.callback_query.from_user.id = 123
     if is_chat_group:
         update.callback_query.message.chat.type = "group"
     return update
