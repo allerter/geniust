@@ -38,6 +38,12 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
 
     if update.callback_query:
         update.callback_query.delete_message()
+    elif update.message.chat.type == "group":
+        chat_id = update.message.chat.id
+        message_id = update.message.message_id
+        msg = text["unavailable"]
+        context.bot.send_message(chat_id, msg, reply_to_message_id=message_id)
+        return END
 
     caption = text["body"].format(recommender.num_songs)
 
@@ -359,6 +365,12 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         update.callback_query.answer()
         update.callback_query.message.delete()
+    elif update.message.chat.type == "group":
+        chat_id = update.message.chat.id
+        message_id = update.message.message_id
+        msg = text["unavailable"]
+        context.bot.send_message(chat_id, msg, reply_to_message_id=message_id)
+        return END
 
     songs = recommender.shuffle(user_preferences)
 

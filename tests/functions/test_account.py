@@ -15,6 +15,10 @@ def test_login_choices(update_message, context, genius_token, spotify_token):
 
     res = account.login_choices(update, context)
 
+    if update_message.message.chat.type == "group":
+        assert res == constants.END
+        return
+
     keyboard = update.message.reply_text.call_args[1]["reply_markup"]["inline_keyboard"]
     if genius_token and spotify_token:
         assert len(keyboard) == 0

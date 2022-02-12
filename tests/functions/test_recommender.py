@@ -17,7 +17,10 @@ def test_welcome_to_shuffle(update_message, context, genius_token, spotify_token
 
     res = rcr.welcome_to_shuffle(update, context)
 
-    assert res == constants.SELECT_ACTION
+    if update_message.message.chat.type == "group":
+        assert res == constants.END
+    else:
+        assert res == constants.SELECT_ACTION
 
 
 def test_input_preferences(update_callback_query, context):

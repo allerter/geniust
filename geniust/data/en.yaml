@@ -99,7 +99,9 @@ donate: |-
 
 inline_mode: Inline Mode
 
-contact_us: Send us what's on your mind :)
+contact_us:
+  reply: Send us what's on your mind :)
+  unavailable: To contact us, start a private chat with the bot and contact us from there.
 
 # ----------- Customize Menu -----------
 
@@ -264,6 +266,8 @@ login:
 login_choices:
   choose: What platform would you like to log into?
   logged_in: Already logged in :)
+  unavailable: To log into Genius or Spotify, start a private chat with the bot.
+
 
 logged_in:
   body: Welcome to your account dashboard.
@@ -432,6 +436,9 @@ custom_lyric_card:
     If there's more than one, put each one on a new line.
     If there is none, press the keyboard button.
   no_featured_artists: No featured artists on this song.
+  unavailable: |-
+    Sorry, but custom lyric cards aren't available in groups.
+    You can create one by starting a prviate chat.
 
 # ----------- Shuffle -----------
 
@@ -450,6 +457,9 @@ welcome_to_shuffle:
   preferences_from_spotify: Get Preferences from Spotify
   preferences_from_genius_login: Get Preferences from Genius (Login Required)
   preferences_from_spotify_login: Get Preferences from Spotify (Login Required)
+  unavailable: |-
+    Sorry, but Shuffle isn't available in groups.
+    Start a private chat to use it.
 
 input_preferences:
   body: >-
@@ -515,6 +525,9 @@ display_recommendations:
   body: "Recommended songs: \n{}"
   preview: Preview
   download: Download
+  unavailable: |-
+    Sorry, but custom lyric cards aren't available in groups.
+    You can create one by starting a prviate chat.
 
 reset_shuffle: Reset complete.
 

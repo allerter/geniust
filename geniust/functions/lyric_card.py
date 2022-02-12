@@ -7,28 +7,34 @@ from uuid import uuid4
 
 import Levenshtein
 from lyricsgenius.utils import clean_str
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext
 
 from geniust import DEFAULT_COVER_IMAGE, get_user, utils
 from geniust.constants import END, TYPING_LYRIC_CARD_CUSTOM, TYPING_LYRIC_CARD_LYRICS
 from geniust.functions.lyric_card_builder import build_lyric_card
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_lyrics(update: Update, context: CallbackContext) -> int:
     """Prompts user to type lyrics"""
     # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
-    msg = context.bot_data["texts"][language]["type_lyrics"]
+    text = context.bot_data["texts"][language]["type_lyrics"]
 
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=ForceReply(selective=True))
+        else:
+            update.callback_query.edit_message_text(text)
     else:
         if context.args:
             if update.message is None and update.edited_message:
@@ -36,7 +42,7 @@ def type_lyrics(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_lyrics(update, context)
             return END
-        update.message.reply_text(msg)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_LYRIC_CARD_LYRICS
 
@@ -50,6 +56,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["lyric_card_search_lyrics"]
     input_text = update.message.text.replace("\n", " ")
     cleaned_input = clean_str(input_text)
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_lyrics(input_text)
@@ -65,7 +74,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         if found_lyrics:
             break
     else:
-        update.message.reply_text(text["not_found"])
+        update.message.reply_text(
+            text["not_found"], reply_to_message_id=reply_to_message_id
+        )
         return END
 
     # Get lyrics for lyric card
@@ -81,7 +92,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
             "No lyrics matched despite initial highlight match. Query: %s",
             repr(input_text),
         )
-        update.message.reply_text(text["not_found"])
+        update.message.reply_text(
+            text["not_found"], reply_to_message_id=reply_to_message_id
+        )
         return END
 
     title, primary_artists, featured_artists = utils.get_song_metadata(song)
@@ -111,7 +124,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         format="JPEG",
     )
 
-    update.message.reply_photo(lyric_card)
+    update.message.reply_photo(lyric_card, reply_to_message_id=reply_to_message_id)
     return END
 
 
@@ -144,6 +157,13 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
     language = ud["bot_lang"]
     texts = context.bot_data["texts"][language]["custom_lyric_card"]
     chat_id = update.effective_user.id
+
+    if update.message.chat.type == "group":
+        chat_id = update.message.chat.id
+        message_id = update.message.message_id
+        msg = texts["unavailable"]
+        context.bot.send_message(chat_id, msg, reply_to_message_id=message_id)
+        return END
 
     # User started the conversation
     if "lyric_card" not in ud:

@@ -87,6 +87,8 @@ def test_display_album(update, context, album_data, platform):
         update.callback_query.data = f"album_1_{platform}"
     else:
         context.args = [f"album_1_{platform}"]
+        # context.args is only present in private chats
+        update.message.chat.type = "private"
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_data
@@ -127,6 +129,7 @@ def test_display_album_covers(update, context, album_dict, album_covers_dict):
         update.callback_query.data = "album_1_covers"
     else:
         context.args = ["album_1_covers"]
+        update.message.chat.type = "private"
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_dict
@@ -172,6 +175,7 @@ def test_display_album_tracks(update, context, album_dict, album_tracks_dict):
         update.callback_query.data = "album_1_tracks"
     else:
         context.args = ["album_1_tracks"]
+        update.message.chat.type = "private"
 
     genius = context.bot_data["genius"]
     genius.album.return_value = album_dict

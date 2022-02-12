@@ -81,7 +81,7 @@ from geniust.functions import (
     user,
 )
 from geniust.server import WebhookThread
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 warnings.filterwarnings(
     "ignore", message="If 'per_", module="telegram.ext.conversationhandler"
@@ -135,6 +135,10 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     language = ud["bot_lang"]
     text = context.bot_data["texts"][language]["main_menu"]
 
+    message = update.message if update.message else update.callback_query.message
+    is_chat_group = message.chat.type == "group"
+    reply_to_message_id = message.message_id if is_chat_group else None
+
     logger.debug(
         "ID: %s, INCLUDE: %s, LLANG: %s, BOTLANG: %s",
         chat_id,
@@ -151,30 +155,46 @@ def main_menu(update: Update, context: CallbackContext) -> int:
             IButton(text["user"], callback_data=str(TYPING_USER)),
         ],
         [IButton(text["lyrics"], callback_data=str(TYPING_LYRICS))],
-        [
-            IButton(text["lyric_card"], callback_data=str(TYPING_LYRIC_CARD_LYRICS)),
-            IButton(
-                text["lyric_card_custom"], callback_data=str(TYPING_LYRIC_CARD_CUSTOM)
-            ),
-        ],
-        [
-            IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
-            IButton(text["change_language"], callback_data="bot_lang"),
-        ],
-        [IButton(text["help"], callback_data=str(HELP))],
-        [IButton(text["donate"], callback_data=str(DONATE))],
+        [IButton(text["lyric_card"], callback_data=str(TYPING_LYRIC_CARD_LYRICS))],
     ]
 
-    token = context.user_data.get(
-        "genius_token", context.user_data.get("spotify_token")
-    )
-    if token is not None:
-        buttons.append([IButton(text["view_accounts"], callback_data=str(LOGGED_IN))])
+    if not is_chat_group:
+        # Custom Lyric Card Button
+        buttons[2].append(
+            IButton(
+                text["lyric_card_custom"],
+                callback_data=str(TYPING_LYRIC_CARD_CUSTOM),
+            )
+        )
 
-    if context.user_data["preferences"] is not None:
-        buttons.append([IButton(text["reset_shuffle"], callback_data="shuffle_reset")])
-    else:
-        buttons.append([IButton(text["shuffle"], callback_data="shuffle")])
+        # Change Language and Customize Lyrics Buttons
+        buttons.append(
+            [
+                IButton(text["customize_lyrics"], callback_data=str(CUSTOMIZE_MENU)),
+                IButton(text["change_language"], callback_data="bot_lang"),
+            ],
+        )
+
+        # View Account Button
+        token = context.user_data.get(
+            "genius_token", context.user_data.get("spotify_token")
+        )
+        if token is not None:
+            buttons.append(
+                [IButton(text["view_accounts"], callback_data=str(LOGGED_IN))]
+            )
+
+        # Shuffle Button
+        if context.user_data["preferences"] is not None:
+            buttons.append(
+                [IButton(text["reset_shuffle"], callback_data="shuffle_reset")]
+            )
+        else:
+            buttons.append([IButton(text["shuffle"], callback_data="shuffle")])
+
+    # Help and Donate Buttons
+    buttons.append([IButton(text["help"], callback_data=str(HELP))])
+    buttons.append([IButton(text["donate"], callback_data=str(DONATE))])
 
     keyboard = IBKeyboard(buttons)
 
@@ -193,7 +213,10 @@ def main_menu(update: Update, context: CallbackContext) -> int:
 
     if send_as_message:
         context.bot.send_message(
-            chat_id=chat_id, text=text["body"], reply_markup=keyboard
+            chat_id=chat_id,
+            text=text["body"],
+            reply_markup=keyboard,
+            reply_to_message_id=reply_to_message_id,
         )
 
     return END
@@ -312,6 +335,7 @@ def end_describing(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def help_message(update: Update, context: CallbackContext) -> int:
     """Sends the /help text to the user"""
     language = context.user_data["bot_lang"]
@@ -329,8 +353,12 @@ def help_message(update: Update, context: CallbackContext) -> int:
     )
 
     if update.callback_query:
+        reply_to_message = update.callback_query.message.reply_to_message
         update.callback_query.answer()
-        update.callback_query.edit_message_text(text, reply_markup=keyboard)
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=keyboard)
+        else:
+            update.callback_query.edit_message_text(text, reply_markup=keyboard)
     else:
         update.message.reply_text(text, reply_markup=keyboard)
 
@@ -342,14 +370,18 @@ def help_message(update: Update, context: CallbackContext) -> int:
 def contact_us(update: Update, context: CallbackContext) -> int:
     """Prompts the user to send a message"""
     language = context.user_data["bot_lang"]
-    text = context.bot_data["texts"][language]["contact_us"]
-
-    update.message.reply_text(text)
-    return TYPING_FEEDBACK
+    texts = context.bot_data["texts"][language]["contact_us"]
+    if update.message.chat.type == "group":
+        update.message.reply_text(texts["unavailable"])
+        return END
+    else:
+        update.message.reply_text(texts["reply"])
+        return TYPING_FEEDBACK
 
 
 @log
 @get_user
+@check_callback_query_user
 def donate(update: Update, context: CallbackContext) -> int:
     """Sends the /donate message to the user"""
     language = context.user_data["bot_lang"]
@@ -357,8 +389,12 @@ def donate(update: Update, context: CallbackContext) -> int:
     text = text.format(BTC_ADDRESS)
 
     if update.callback_query:
+        reply_to_message = update.callback_query.message.reply_to_message
         update.callback_query.answer()
-        update.callback_query.edit_message_text(text)
+        if reply_to_message:
+            reply_to_message.reply_text(text)
+        else:
+            update.callback_query.edit_message_text(text)
     else:
         update.message.reply_text(text)
 
@@ -391,28 +427,37 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         error_msg = error_msg[diff:]
     logger.error(error_msg)
 
-    # normally, we always have an user. If not, its either a channel or a poll update.
-    if update and update.effective_user:
-        language = user_data.get("bot_lang", "en")
-        chat_id = update.effective_user.id
-        if chat_id in DEVELOPERS and LOG_LEVEL_NUM == logging.DEBUG:
-            return
-        try:
-            if isinstance(exception, HTTPError) and exception.args[0] == 403:
-                msg = texts[language]["genius_403_error"]
-            else:
-                msg = texts[language]["error"]
-        except NameError:
-            logger.error("texts global was unaccessable in error handler")
-            msg = "Something went wrong. Start again using /start"
-
-        invalid_query = (
-            "query is too old and response timeout expired or query id is invalid"
-        )
-        if update.inline_query:
+    language = user_data.get("bot_lang", "en")
+    try:
+        if isinstance(exception, HTTPError) and exception.args[0] == 403:
+            msg = texts[language]["genius_403_error"]
+        else:
+            msg = texts[language]["error"]
+    except NameError:
+        logger.error("texts global was unaccessable in error handler")
+        msg = "Something went wrong. Start again using /start"
+    if update:
+        if update.message:
+            message = update.message
+        elif update.callback_query:
+            message = update.callback_query.message.reply_to_message
+        else:
+            message = None
+        if message and message.chat.type == "group":
+            chat_id = message.chat.id
+            context.bot.send_message(
+                chat_id=chat_id, text=msg, reply_to_message_id=message.message_id
+            )
+        elif update.inline_query:
+            invalid_query = (
+                "query is too old and response timeout expired or query id is invalid"
+            )
             if invalid_query not in str(context.error).lower():
                 update.inline_query.answer([])
-        else:
+        elif update.effective_user:
+            chat_id = update.effective_user.id
+            if chat_id in DEVELOPERS and LOG_LEVEL_NUM == logging.DEBUG:
+                return
             context.bot.send_message(chat_id=chat_id, text=msg)
 
 

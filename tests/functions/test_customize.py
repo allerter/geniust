@@ -63,6 +63,9 @@ def test_lyrics_language(update, context, option):
                 "reply_markup"
             ]["inline_keyboard"]
         else:
+            if update.message.chat.type == "group":
+                assert res == constants.END
+                return
             keyboard = update.message.reply_text.call_args[1]["reply_markup"][
                 "inline_keyboard"
             ]
@@ -100,6 +103,9 @@ def test_bot_language(update, context, option):
                 "reply_markup"
             ]["inline_keyboard"]
         else:
+            if update.message.chat.type == "group":
+                assert res == constants.END
+                return
             keyboard = update.message.reply_text.call_args[1]["reply_markup"][
                 "inline_keyboard"
             ]
@@ -142,6 +148,9 @@ def test_include_annotations(update, context, option):
                 "reply_markup"
             ]["inline_keyboard"]
         else:
+            if update.message.chat.type == "group":
+                assert res == constants.END
+                return
             keyboard = update.message.reply_text.call_args[1]["reply_markup"][
                 "inline_keyboard"
             ]

@@ -4,6 +4,7 @@ from functools import partial
 from typing import Any
 
 from bs4 import BeautifulSoup
+from telegram import ForceReply
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
@@ -13,22 +14,28 @@ from telethon.utils import split_text
 
 from geniust import get_user, username, utils
 from geniust.constants import DEVELOPERS, END, TYPING_LYRICS, TYPING_SONG
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_lyrics(update: Update, context: CallbackContext) -> int:
     """Prompts user to type lyrics"""
     # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
-    msg = context.bot_data["texts"][language]["type_lyrics"]
+    text = context.bot_data["texts"][language]["type_lyrics"]
 
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=ForceReply(selective=True))
+        else:
+            update.callback_query.edit_message_text(text)
     else:
         if context.args:
             if update.message is None and update.edited_message:
@@ -36,7 +43,7 @@ def type_lyrics(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_lyrics(update, context)
             return END
-        update.message.reply_text(msg)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_LYRICS
 
@@ -47,11 +54,16 @@ def type_song(update: Update, context: CallbackContext) -> int:
     """Prompts user to type song title"""
     # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
-    msg = context.bot_data["texts"][language]["type_song"]
+    text = context.bot_data["texts"][language]["type_song"]
 
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(msg)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=ForceReply(selective=True))
+        else:
+            update.callback_query.edit_message_text(text)
     else:
         if context.args:
             if update.message is None and update.edited_message:
@@ -59,7 +71,7 @@ def type_song(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_songs(update, context)
             return END
-        update.message.reply_text(msg)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_SONG
 
@@ -72,6 +84,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_lyrics"]
     input_text = update.message.text
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_lyrics(input_text)
@@ -87,9 +102,11 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
         caption += f'''\n\n◽️{i + 1}. {full_title}\n"{highlight}"'''
 
     if caption:
-        update.message.reply_text(caption)
+        update.message.reply_text(caption, reply_to_message_id=reply_to_message_id)
     else:
-        update.message.reply_text(text["no_lyrics"])
+        update.message.reply_text(
+            text["no_lyrics"], reply_to_message_id=reply_to_message_id
+        )
     return END
 
 
@@ -101,6 +118,9 @@ def search_songs(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_songs"]
     input_text = update.message.text
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     # get <= 10 hits for user input from Genius API search
     json_search = genius.search_songs(input_text)
@@ -115,14 +135,21 @@ def search_songs(update: Update, context: CallbackContext) -> int:
         buttons.append([IButton(text=title, callback_data=callback)])
 
     if buttons:
-        update.message.reply_text(text["choose"], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(
+            text["choose"],
+            reply_markup=IBKeyboard(buttons),
+            reply_to_message_id=reply_to_message_id,
+        )
     else:
-        update.message.reply_text(text["no_songs"])
+        update.message.reply_text(
+            text["no_songs"], reply_to_message_id=reply_to_message_id
+        )
     return END
 
 
 @log
 @get_user
+@check_callback_query_user
 def display_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     language = context.user_data["bot_lang"]
@@ -137,8 +164,11 @@ def display_song(update: Update, context: CallbackContext) -> int:
         _, song_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.message.delete()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, song_id_str, platform = context.args[0].split("_")
+        reply_to_message_id = None
 
     preview_url = None
     download_url = None
@@ -174,6 +204,7 @@ def display_song(update: Update, context: CallbackContext) -> int:
                 performer=song_artist,
                 title=song_name,
                 caption=f"@{username}",
+                reply_to_message_id=reply_to_message_id,
             )
             return END
 
@@ -232,14 +263,20 @@ def display_song(update: Update, context: CallbackContext) -> int:
                     )
                 ]
             )
-
-    bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
+    bot.send_photo(
+        chat_id,
+        cover_art,
+        caption,
+        reply_markup=IBKeyboard(buttons),
+        reply_to_message_id=reply_to_message_id,
+    )
 
     return END
 
 
 @log
 @get_user
+@check_callback_query_user
 def download_song(update: Update, context: CallbackContext) -> int:
     """Displays song"""
     bot = context.bot
@@ -250,8 +287,11 @@ def download_song(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         _, song_id_str, platform, type = update.callback_query.data.split("_")
         update.callback_query.answer()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, song_id_str, platform, type = context.args[0].split("_")
+        reply_to_message_id = None
 
     if platform == "recommender":
         song = recommender.song(int(song_id_str))
@@ -265,7 +305,12 @@ def download_song(update: Update, context: CallbackContext) -> int:
         name = song.name
 
     bot.send_audio(
-        chat_id, song_url, performer=artist, title=name, caption=f"@{username}"
+        chat_id,
+        song_url,
+        performer=artist,
+        title=name,
+        caption=f"@{username}",
+        reply_to_message_id=reply_to_message_id,
     )
 
     return END
@@ -273,14 +318,18 @@ def download_song(update: Update, context: CallbackContext) -> int:
 
 @log
 @get_user
+@check_callback_query_user
 def display_lyrics(update: Update, context: CallbackContext) -> int:
     """Retrieves and sends song lyrics to user"""
 
     if update.callback_query:
         update.callback_query.answer()
         song_id = int(update.callback_query.data.split("_")[1])
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         song_id = int(context.args[0].split("_")[1])
+        reply_to_message_id = None
 
     user_data = context.user_data
     bot = context.bot
@@ -308,7 +357,7 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
                 reason,
             )
             text = reason
-        bot.send_message(chat_id, text)
+        bot.send_message(chat_id, text, reply_to_message_id=reply_to_message_id)
         return END
 
     try:
@@ -335,6 +384,7 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
         bot.send_message(
             chat_id,
             texts["unreleased"],
+            reply_to_message_id=reply_to_message_id,
         )
         return END
 
@@ -359,6 +409,7 @@ def display_lyrics(update: Update, context: CallbackContext) -> int:
             parse_mode=None,  # If it's set, Telegram will ignore the entities.
             # And since we've set a default for it in bot.py,
             # here we have to override and set to None.
+            reply_to_message_id=reply_to_message_id,
         )
     return END
 

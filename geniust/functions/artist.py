@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict
 
+from telegram import ForceReply
 from telegram import InlineKeyboardButton as IButton
 from telegram import InlineKeyboardMarkup as IBKeyboard
 from telegram import Update
@@ -8,22 +9,28 @@ from telegram.ext import CallbackContext
 
 from geniust import get_user, utils
 from geniust.constants import END, TYPING_ARTIST
-from geniust.utils import log
+from geniust.utils import check_callback_query_user, log
 
 logger = logging.getLogger("geniust")
 
 
 @log
 @get_user
+@check_callback_query_user
 def type_artist(update: Update, context: CallbackContext) -> int:
     """Prompts user to type artist name"""
-    # user has entered the function through the main menu
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["type_artist"]
 
+    # user has entered the function through the main menu
     if update.callback_query:
         update.callback_query.answer()
-        update.callback_query.edit_message_text(text)
+        # in groups, it's best to send a reply to the user
+        reply_to_message = update.callback_query.message.reply_to_message
+        if reply_to_message:
+            reply_to_message.reply_text(text, reply_markup=ForceReply(selective=True))
+        else:
+            update.callback_query.edit_message_text(text)
     else:
         if context.args:
             if update.message is None and update.edited_message:
@@ -31,7 +38,7 @@ def type_artist(update: Update, context: CallbackContext) -> int:
             update.message.text = " ".join(context.args)
             search_artists(update, context)
             return END
-        update.message.reply_text(text)
+        update.message.reply_text(text, reply_markup=ForceReply(selective=True))
 
     return TYPING_ARTIST
 
@@ -44,6 +51,9 @@ def search_artists(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_artists"]
     input_text = update.message.text
+    reply_to_message_id = (
+        update.message.message_id if update.message.chat.type == "group" else None
+    )
 
     res = genius.search_artists(input_text)
     buttons = []
@@ -56,15 +66,22 @@ def search_artists(update: Update, context: CallbackContext) -> int:
         buttons.append([IButton(title, callback_data=callback_data)])
 
     if buttons:
-        update.message.reply_text(text["choose"], reply_markup=IBKeyboard(buttons))
+        update.message.reply_text(
+            text["choose"],
+            reply_markup=IBKeyboard(buttons),
+            reply_to_message_id=reply_to_message_id,
+        )
     else:
-        update.message.reply_text(text["no_artists"])
+        update.message.reply_text(
+            text["no_artists"], reply_to_message_id=reply_to_message_id
+        )
 
     return END
 
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist(update: Update, context: CallbackContext) -> int:
     """Displays artist"""
     genius = context.bot_data["genius"]
@@ -78,8 +95,11 @@ def display_artist(update: Update, context: CallbackContext) -> int:
         _, artist_id_str, platform = update.callback_query.data.split("_")
         update.callback_query.answer()
         update.callback_query.message.delete()
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         _, artist_id_str, platform = context.args[0].split("_")
+        reply_to_message_id = None
 
     if platform == "genius":
         artist_id = int(artist_id_str)
@@ -92,7 +112,11 @@ def display_artist(update: Update, context: CallbackContext) -> int:
                 artist_id = hit_artist
                 break
         else:
-            context.bot.send_message(chat_id, text["not_found"])
+            context.bot.send_message(
+                chat_id,
+                text["not_found"],
+                reply_to_message_id=reply_to_message_id,
+            )
             return END
 
     artist = genius.artist(artist_id)["artist"]
@@ -128,13 +152,20 @@ def display_artist(update: Update, context: CallbackContext) -> int:
         )
         buttons[0].append(button)
 
-    bot.send_photo(chat_id, cover_art, caption, reply_markup=IBKeyboard(buttons))
+    bot.send_photo(
+        chat_id,
+        cover_art,
+        caption,
+        reply_markup=IBKeyboard(buttons),
+        reply_to_message_id=reply_to_message_id,
+    )
 
     return END
 
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist_albums(update: Update, context: CallbackContext) -> int:
     """Displays artist's albums"""
     genius = context.bot_data["genius"]
@@ -145,8 +176,11 @@ def display_artist_albums(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         update.callback_query.answer()
         artist_id = int(update.callback_query.data.split("_")[1])
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
     else:
         artist_id = int(context.args[0].split("_")[1])
+        reply_to_message_id = None
 
     albums = []
 
@@ -163,16 +197,17 @@ def display_artist_albums(update: Update, context: CallbackContext) -> int:
     else:
         artist = genius.artist(artist_id)["artist"]["name"]
         text = text["no_albums"].replace("{}", artist)
-        context.bot.send_message(chat_id, text)
+        context.bot.send_message(chat_id, text, reply_to_message_id=reply_to_message_id)
         return END
 
-    context.bot.send_message(chat_id, string)
+    context.bot.send_message(chat_id, string, reply_to_message_id=reply_to_message_id)
 
     return END
 
 
 @log
 @get_user
+@check_callback_query_user
 def display_artist_songs(update: Update, context: CallbackContext) -> int:
     """Displays artist's songs"""
     genius = context.bot_data["genius"]
@@ -185,11 +220,18 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
         message = update.callback_query.message
         # A message with a photo means the user came from display_artist
         # and so we send the songs as a new message
-        message = message if message.photo is None else None
+        message = message if not message.photo else None
         _, artist_id_str, _, sort, page_str = update.callback_query.data.split("_")
+        reply_to_message = update.callback_query.message.reply_to_message
+        reply_to_message_id = reply_to_message.message_id if reply_to_message else None
+        is_chat_group = (
+            True if update.callback_query.message.chat.type == "group" else False
+        )
     else:
         message = None
         _, artist_id_str, _, sort, page_str = context.args[0].split("_")
+        reply_to_message_id = None
+        is_chat_group = False
 
     page = int(page_str)
     artist_id = int(artist_id_str)
@@ -225,7 +267,7 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
     else:
         artist = genius.artist(artist_id)["artist"]["name"]
         text = text["no_songs"].replace("{}", artist)
-        context.bot.send_message(chat_id, text)
+        context.bot.send_message(chat_id, text, reply_to_message_id=reply_to_message_id)
         return END
 
     logger.debug("%s - %s - %s", previous_page, page, next_page)
@@ -258,10 +300,15 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
     buttons = [[previous_button, current_button, next_button]]
     keyboard = IBKeyboard(buttons)
 
-    if message:
+    if not is_chat_group and message:
         update.callback_query.edit_message_caption(string, reply_markup=keyboard)
     else:
-        context.bot.send_message(chat_id, string, reply_markup=keyboard)
+        context.bot.send_message(
+            chat_id,
+            string,
+            reply_markup=keyboard,
+            reply_to_message_id=reply_to_message_id,
+        )
 
     return END
 
