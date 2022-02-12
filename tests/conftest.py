@@ -198,10 +198,6 @@ def update_callback_query_class():
     update.message = None
     update.callback_query = create_autospec(CallbackQuery)
     update.callback_query.message = create_autospec(Message)
-    update.callback_query.message.chat = create_autospec(Chat)
-    update.callback_query.from_user = create_autospec(User)
-    update.callback_query.message.reply_to_message = create_autospec(Message)
-    update.callback_query.message.reply_to_message.from_user = create_autospec(User)
     update.callback_query.message.reply_to_message.from_user.id = 123
     update.callback_query.from_user.id = 123
     return update
