@@ -32,7 +32,7 @@ def type_user(update: Update, context: CallbackContext) -> int:
             reply_to_message.reply_text(text)
         else:
             update.callback_query.edit_message_text(
-                text, reply_markup=ForceReply(selective=True)
+                text, reply_markup=ForceReply(selective=True)  # type: ignore
             )
     else:
         if context.args:
