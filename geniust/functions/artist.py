@@ -371,4 +371,4 @@ def artist_caption(
         + alternate_names
     )
 
-    return string.strip()
+    return utils.check_length(string.strip())

@@ -178,4 +178,4 @@ def account_caption(
     if artist := account["artist"]:
         artist = utils.deep_link(artist["name"], artist["id"], "artist", "genius")
         string += caption["artist"].replace("{}", artist)  # type: ignore
-    return string
+    return utils.check_length(string)

@@ -456,4 +456,4 @@ def album_caption(
         + labels
     )
 
-    return string.strip()
+    return utils.check_length(string.strip())

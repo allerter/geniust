@@ -546,28 +546,4 @@ def song_caption(
     )
     string = string.strip()
 
-    return check_length(string)
-
-
-def check_length(caption: str, limit: int = 1024) -> str:
-    """checks length of message against Telegram limits
-
-    Args:
-        caption (str): Message string.
-        limit (int, optional): Message length limit. Defaults to 1024.
-
-    Returns:
-        str: If caption length minus entities if more than the limit,
-            removes info till message length is within limits. Each <b> denotes
-            one piece of info (e.g. contributing artists).
-    """
-    soup = BeautifulSoup(caption, "html.parser")
-    text = soup.get_text()
-    length = len(text)
-
-    while length >= limit:
-        caption = caption[: caption.rfind("<b>") - 3]
-        soup = BeautifulSoup(caption, "html.parser")
-        length = len(soup.get_text())
-
-    return str(soup)
+    return utils.check_length(string)

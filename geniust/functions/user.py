@@ -233,4 +233,4 @@ def user_caption(
     if artist := user["artist"]:
         artist = utils.deep_link(artist["name"], artist["id"], "artist", "genius")
         string += caption["artist"].replace("{}", artist)  # type: ignore
-    return string
+    return utils.check_length(string)
