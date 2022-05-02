@@ -429,9 +429,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
     language = user_data.get("bot_lang", "en")
     try:
-        if isinstance(exception, Timeout) or (
-            isinstance(exception, HTTPError) and exception.args[0] == 403
-        ):
+        if isinstance(exception, (HTTPError, Timeout)):
             msg = texts[language]["genius_403_error"]
         else:
             msg = texts[language]["error"]
