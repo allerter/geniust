@@ -301,7 +301,7 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
     keyboard = IBKeyboard(buttons)
 
     if not is_chat_group and message:
-        update.callback_query.edit_message_caption(string, reply_markup=keyboard)
+        update.callback_query.edit_message_text(string, reply_markup=keyboard)
     else:
         context.bot.send_message(
             chat_id,
