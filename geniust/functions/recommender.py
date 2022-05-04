@@ -38,7 +38,7 @@ def welcome_to_shuffle(update: Update, context: CallbackContext) -> int:
 
     if update.callback_query:
         update.callback_query.delete_message()
-    elif update.message.chat.type == "group":
+    elif "group" in update.message.chat.type:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
         msg = text["unavailable"]
@@ -365,7 +365,7 @@ def display_recommendations(update: Update, context: CallbackContext) -> int:
     if update.callback_query:
         update.callback_query.answer()
         update.callback_query.message.delete()
-    elif update.message.chat.type == "group":
+    elif "group" in update.message.chat.type:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
         msg = text["unavailable"]

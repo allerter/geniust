@@ -52,7 +52,7 @@ def search_artists(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["search_artists"]
     input_text = update.message.text
     reply_to_message_id = (
-        update.message.message_id if update.message.chat.type == "group" else None
+        update.message.message_id if "group" in update.message.chat.type else None
     )
 
     res = genius.search_artists(input_text)
@@ -225,7 +225,7 @@ def display_artist_songs(update: Update, context: CallbackContext) -> int:
         reply_to_message = update.callback_query.message.reply_to_message
         reply_to_message_id = reply_to_message.message_id if reply_to_message else None
         is_chat_group = (
-            True if update.callback_query.message.chat.type == "group" else False
+            True if "group" in update.callback_query.message.chat.type else False
         )
     else:
         message = None

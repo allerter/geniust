@@ -55,7 +55,7 @@ def search_users(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["search_users"]
     input_text = update.message.text
     reply_to_message_id = (
-        update.message.message_id if update.message.chat.type == "group" else None
+        update.message.message_id if "group" in update.message.chat.type else None
     )
 
     # get <= 10 hits for user input from Genius API search

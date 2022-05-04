@@ -84,7 +84,7 @@ def upvote_annotation(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]["upvote_annotation"]
     message = update.callback_query.message
     is_chat_group = (
-        True if update.callback_query.message.chat.type == "group" else False
+        True if "group" in update.callback_query.message.chat.type else False
     )
 
     annotation_id = int(update.callback_query.data.split("_")[1])
@@ -130,7 +130,7 @@ def downvote_annotation(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]["downvote_annotation"]
     message = update.callback_query.message
     is_chat_group = (
-        True if update.callback_query.message.chat.type == "group" else False
+        True if "group" in update.callback_query.message.chat.type else False
     )
 
     annotation_id = int(update.callback_query.data.split("_")[1])

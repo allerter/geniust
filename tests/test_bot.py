@@ -134,7 +134,7 @@ def test_contact_us(update_message, context):
     res = bot.contact_us(update, context)
 
     update.message.reply_text.assert_called_once()
-    if update_message.message.chat.type == "group":
+    if "group" in update.message.chat.type:
         assert res == constants.END
     else:
         assert res == constants.TYPING_FEEDBACK

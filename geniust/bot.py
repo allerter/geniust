@@ -136,7 +136,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["main_menu"]
 
     message = update.message if update.message else update.callback_query.message
-    is_chat_group = message.chat.type == "group"
+    is_chat_group = "group" in update.message.chat.type
     reply_to_message_id = message.message_id if is_chat_group else None
 
     logger.debug(
@@ -371,7 +371,7 @@ def contact_us(update: Update, context: CallbackContext) -> int:
     """Prompts the user to send a message"""
     language = context.user_data["bot_lang"]
     texts = context.bot_data["texts"][language]["contact_us"]
-    if update.message.chat.type == "group":
+    if "group" in update.message.chat.type:
         update.message.reply_text(texts["unavailable"])
         return END
     else:
@@ -443,7 +443,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
             message = update.callback_query.message.reply_to_message
         else:
             message = None
-        if message and message.chat.type == "group":
+        if message and "group" in message.chat.type:
             chat_id = message.chat.id
             context.bot.send_message(
                 chat_id=chat_id, text=msg, reply_to_message_id=message.message_id

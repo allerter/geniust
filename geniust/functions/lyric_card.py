@@ -57,7 +57,7 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     input_text = update.message.text.replace("\n", " ")
     cleaned_input = clean_str(input_text)
     reply_to_message_id = (
-        update.message.message_id if update.message.chat.type == "group" else None
+        update.message.message_id if "group" in update.message.chat.type else None
     )
 
     # get <= 10 hits for user input from Genius API search
@@ -158,7 +158,7 @@ def custom_lyric_card(update: Update, context: CallbackContext) -> int:
     texts = context.bot_data["texts"][language]["custom_lyric_card"]
     chat_id = update.effective_user.id
 
-    if update.message and update.message.chat.type == "group":
+    if update.message and "group" in update.message.chat.type:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
         msg = texts["unavailable"]

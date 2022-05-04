@@ -23,7 +23,7 @@ def login_choices(update: Update, context: CallbackContext):
     ud = context.user_data
     bd = context.bot_data
 
-    if update.message.chat.type == "group":
+    if "group" in update.message.chat.type:
         update.message.reply_text(text["unavailable"])
         return END
 

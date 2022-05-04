@@ -57,7 +57,7 @@ def search_albums(update: Update, context: CallbackContext) -> int:
     language = context.user_data["bot_lang"]
     text = context.bot_data["texts"][language]["search_albums"]
     reply_to_message_id = (
-        update.message.message_id if update.message.chat.type == "group" else None
+        update.message.message_id if "group" in update.message.chat.type else None
     )
 
     res = genius.search_albums(input_text)
@@ -105,7 +105,7 @@ def display_album(update: Update, context: CallbackContext) -> int:
         reply_to_message = update.callback_query.message.reply_to_message
         reply_to_message_id = reply_to_message.message_id if reply_to_message else None
         is_chat_group = (
-            True if update.message and update.message.chat.type == "group" else False
+            True if update.message and "group" in update.message.chat.type else False
         )
     else:
         _, album_id_str, platform = context.args[0].split("_")
