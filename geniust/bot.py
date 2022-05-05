@@ -136,7 +136,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["main_menu"]
 
     message = update.message if update.message else update.callback_query.message
-    is_chat_group = "group" in update.message.chat.type
+    is_chat_group = "group" in message
     reply_to_message_id = message.message_id if is_chat_group else None
 
     logger.debug(
