@@ -64,6 +64,9 @@ def search_lyrics(update: Update, context: CallbackContext) -> int:
     json_search = genius.search_lyrics(input_text)
     found_lyrics = []
     for hit in json_search["sections"][0]["hits"][:10]:
+        # A hit with Genius as the artist means it's not a song, but a calender or etc.
+        if hit["result"]["primary_artist"]["name"].lower() == "genius":
+            continue
         highlight = hit["highlights"][0]
         for line in highlight["value"].split("\n"):
             if (
