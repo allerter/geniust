@@ -89,9 +89,7 @@ warnings.filterwarnings(
 
 # Enable logging
 LOG_LEVEL_NUM: int = getattr(logging, LOG_LEVEL)
-logging.getLogger("telegram").setLevel(
-    logging.INFO if LOG_LEVEL_NUM <= logging.INFO else LOG_LEVEL
-)
+logging.getLogger("telegram").setLevel(LOG_LEVEL)
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
 logger.setLevel(LOG_LEVEL)
