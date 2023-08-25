@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+import os
 
 import tekore as tk
 import tornado.ioloop
@@ -14,8 +15,14 @@ from tornado.web import RequestHandler, url
 from geniust.db import Database
 from geniust.utils import log
 
+class BaseHandler(RequestHandler):
 
-class CronHandler(RequestHandler):
+  def prepare(self):
+    if self.request.protocol == 'http':
+        self.redirect('https://' + self.request.host, permanent=False)
+
+
+class CronHandler(BaseHandler):
     """Handles cron-job requests"""
 
     def get(self):
@@ -27,7 +34,7 @@ class CronHandler(RequestHandler):
         self.finish()
 
 
-class TokenHandler(RequestHandler):
+class TokenHandler(BaseHandler):
     """Handles redirected URLs from Genius
 
     This class will handle the URLs that Genius
@@ -128,7 +135,7 @@ class TokenHandler(RequestHandler):
         self.bot.send_message(chat_id, text)
 
 
-class PreferencesHandler(RequestHandler):  # pragma: no cover
+class PreferencesHandler(BaseHandler):  # pragma: no cover
     def initialize(self, auths, recommender) -> None:
         self.auths = auths
         self.recommender = recommender
@@ -180,6 +187,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
         self, bot_token, server_port, auths, database, texts, username, dispatcher
     ):
         super().__init__()
+        parent_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
         app = tornado.web.Application(
             [
                 url(r"/get", CronHandler),
@@ -202,8 +210,12 @@ class WebhookThread(threading.Thread):  # pragma: no cover
                 ),
             ]
         )
+        ssl_options = {
+            "certfile": os.path.join(parent_dir, "fullchain.pem"),
+            "keyfile": os.path.join(parent_dir, "privkey.pem")
+        }
         # noinspection PyTypeChecker
-        self.webhooks = WebhookServer("0.0.0.0", server_port, app, None)
+        self.webhooks = WebhookServer("0.0.0.0", server_port, app, None, ssl_options)
 
     def run(self):
         """start web hook server"""
