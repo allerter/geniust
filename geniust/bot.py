@@ -472,7 +472,7 @@ def main():
 
     dp = updater.dispatcher
     dp.bot_data["texts"]: Dict[Any, str] = texts
-    database = Database(DATABASE_URL.replace("postgres", "postgresql+psycopg2"))
+    database = Database(DATABASE_URL)
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
     dp.bot_data["lyricsgenius"]: lg.Genius = lg.Genius(
