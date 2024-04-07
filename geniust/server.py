@@ -15,11 +15,11 @@ from tornado.web import RequestHandler, url
 from geniust.db import Database
 from geniust.utils import log
 
-class BaseHandler(RequestHandler):
 
-  def prepare(self):
-    if self.request.protocol == 'http':
-        self.redirect('https://' + self.request.host, permanent=False)
+class BaseHandler(RequestHandler):
+    def prepare(self):
+        if self.request.protocol == "http":
+            self.redirect("https://" + self.request.host, permanent=False)
 
 
 class CronHandler(BaseHandler):
@@ -187,7 +187,9 @@ class WebhookThread(threading.Thread):  # pragma: no cover
         self, bot_token, server_port, auths, database, texts, username, dispatcher
     ):
         super().__init__()
-        parent_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir))
+        parent_dir = os.path.abspath(
+            os.path.join(os.path.realpath(__file__), os.pardir)
+        )
         app = tornado.web.Application(
             [
                 url(r"/get", CronHandler),
@@ -212,7 +214,7 @@ class WebhookThread(threading.Thread):  # pragma: no cover
         )
         ssl_options = {
             "certfile": os.path.join(parent_dir, "fullchain.pem"),
-            "keyfile": os.path.join(parent_dir, "privkey.pem")
+            "keyfile": os.path.join(parent_dir, "privkey.pem"),
         }
         # noinspection PyTypeChecker
         self.webhooks = WebhookServer("0.0.0.0", server_port, app, None, ssl_options)
