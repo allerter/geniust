@@ -89,9 +89,7 @@ warnings.filterwarnings(
 
 # Enable logging
 LOG_LEVEL_NUM: int = getattr(logging, LOG_LEVEL)
-logging.getLogger("telegram").setLevel(
-    logging.INFO if LOG_LEVEL_NUM <= logging.INFO else LOG_LEVEL
-)
+logging.getLogger("telegram").setLevel(LOG_LEVEL)
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("geniust")
 logger.setLevel(LOG_LEVEL)
@@ -136,7 +134,7 @@ def main_menu(update: Update, context: CallbackContext) -> int:
     text = context.bot_data["texts"][language]["main_menu"]
 
     message = update.message if update.message else update.callback_query.message
-    is_chat_group = "group" in message
+    is_chat_group = hasattr(message, "group")
     reply_to_message_id = message.message_id if is_chat_group else None
 
     logger.debug(
@@ -472,7 +470,7 @@ def main():
 
     dp = updater.dispatcher
     dp.bot_data["texts"]: Dict[Any, str] = texts
-    database = Database(DATABASE_URL.replace("postgres", "postgresql+psycopg2"))
+    database = Database(DATABASE_URL.replace("postgres", "postgresql"))
     dp.bot_data["db"]: Database = database
     dp.bot_data["genius"]: GeniusT = GeniusT()
     dp.bot_data["lyricsgenius"]: lg.Genius = lg.Genius(
